@@ -1,15 +1,20 @@
-type Shift = {
-  id: number;
-  name: string;
-  role: string;
-  start: string | null;
-  end: string | null;
-};
+import { type Shift } from '../types/types';
 
+/**
+ * ShiftCards Component
+ * Displays all shifts for a specific location
+ * Shows user's current shift in a highlighted card, then lists other employees' shifts
+ */
+
+/** Represents a single shift with employee and timing details */
+/** Represents a single shift with employee and timing details */
+
+
+/** Props for ShiftCards component */
 interface ShiftCardsProps {
-  locationName: string;
-  shifts: Shift[];
-  userShift?: {
+  locationName: string;                                    // Name of the location
+  shifts: Shift[];                                         // Array of all shifts at this location
+  userShift?: {                                           // Optional: current user's shift in this location
     name: string;
     role: string;
     start: string | null;
@@ -17,8 +22,26 @@ interface ShiftCardsProps {
   };
 }
 
+/**
+ * ShiftCards component
+ * Renders a location card containing all shifts for that location
+ * Highlights the current user's shift if they are scheduled here
+ */
 export default function ShiftCards({ locationName, shifts, userShift }: ShiftCardsProps) {
+  /**
+   * Returns CSS classes for badge styling based on employee role
+   * Different roles get different colors for visual distinction
+   * @param role - Employee role to style
+   * @returns Tailwind CSS classes for badge styling
+   */
+  /**
+   * Returns CSS classes for badge styling based on employee role
+   * Different roles get different colors for visual distinction
+   * @param role - Employee role to style
+   * @returns Tailwind CSS classes for badge styling
+   */
   const getRoleBadgeColor = (role: string) => {
+    // Color mapping for different roles
     switch (role) {
       case 'Manager':
         return 'bg-purple-600 text-white';
@@ -29,21 +52,28 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
       case 'Waitress':
         return 'bg-lime-400 text-black';
       default:
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-100 text-red-700'; // Fallback color for unknown roles
     }
   };
 
   return (
+    // ===== LOCATION CARD CONTAINER =====
     <div className="bg-gray-100 rounded-lg p-4 md:p-6">
+      {/* ===== LOCATION HEADER ===== */}
       <h3 className="rounded bg-gray-800 px-4 py-3 text-white text-lg font-semibold mb-4 flex items-center justify-between">
         <span>{locationName}</span>
         <span className="text-xs font-normal text-gray-300">Today</span>
       </h3>
 
+      {/* ===== SHIFTS GRID ===== */}
       <div className="grid grid-cols-1 gap-4">
+        {/* ===== USER'S SHIFT CARD (highlighted in green) ===== */}
+        {/* ===== USER'S SHIFT CARD (highlighted in green) ===== */}
         {userShift && (
           <div className="bg-emerald-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-center gap-4 border border-emerald-200">
+            {/* Time display box with green styling */}
             <div className="bg-emerald-100 rounded-lg min-w-40 h-16 px-4 py-3 flex border border-emerald-200 justify-between items-center">
+              {/* Start time */}
               <div className="text-center">
                 <span className="block text-xs font-medium text-emerald-700 uppercase tracking-wider mb-1">
                   In
@@ -53,6 +83,7 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
                 </span>
               </div>
 
+              {/* Arrow separator */}
               <div className="text-emerald-400 px-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -64,6 +95,7 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
                 </svg>
               </div>
 
+              {/* End time */}
               <div className="text-center">
                 <span className="block text-xs font-medium text-emerald-700 uppercase tracking-wider mb-1">
                   Out
@@ -74,6 +106,7 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
               </div>
             </div>
 
+            {/* User info section */}
             <div className="flex-1 flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
@@ -81,6 +114,7 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
                 </p>
                 <p className="text-lg font-bold text-gray-900 truncate">{userShift.name}</p>
               </div>
+              {/* Role badge */}
               <span
                 className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(
                   userShift.role,
@@ -92,13 +126,17 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
           </div>
         )}
 
+        {/* ===== OTHER EMPLOYEE SHIFTS ===== */}
+        {/* Iterate through all shifts and display them */}
         {shifts.map((shift) => {
+          // Handle unassigned shifts (no start time) with special styling
           if (shift.start === null) {
             return (
               <div
                 key={shift.id}
                 className="bg-yellow-50 p-4 rounded-lg shadow-sm flex md:flex-row flex-col md:items-center justify-between gap-4"
               >
+                {/* Clock icon for unassigned shifts */}
                 <div className="bg-gray-50 rounded-lg p-3 md:min-w-42 min-w-16 h-16 flex border border-gray-300 items-center justify-center">
                   <svg
                     className="w-6 h-6 text-yellow-500"
@@ -128,12 +166,15 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
             );
           }
 
+          // Regular shift with start and end times
           return (
             <div
               key={shift.id}
               className="bg-white p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-center gap-4"
             >
+              {/* ===== TIME DISPLAY SECTION ===== */}
               <div className="bg-gray-50 rounded-lg min-w-40 h-16 px-4 py-3 flex border border-gray-200 justify-between items-center">
+                {/* Start time */}
                 <div className="text-center">
                   <span className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
                     In
@@ -141,6 +182,7 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
                   <span className="text-lg font-semibold text-emerald-600">{shift.start}</span>
                 </div>
 
+                {/* Arrow icon */}
                 <div className="text-gray-300 px-2">
                   <svg
                     className="w-5 h-5"
@@ -157,6 +199,7 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
                   </svg>
                 </div>
 
+                {/* End time */}
                 <div className="text-center">
                   <span className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
                     Out
@@ -167,6 +210,7 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
                 </div>
               </div>
 
+              {/* ===== EMPLOYEE INFO SECTION ===== */}
               <div className="flex-1 flex items-center justify-between gap-3">
                 <p className="text-lg font-bold text-gray-900 truncate">{shift.name}</p>
                 <span
