@@ -3,7 +3,6 @@ import { useState } from 'react';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import ShiftCards from './components/ShiftCards';
-import { useAuth } from './auth/AuthContext';
 
 type Shift = {
   id: number;
@@ -25,7 +24,7 @@ const defaultShifts: Shift[] = [
   { id: 3, name: 'Petr Hamhalter', role: 'Supervisor', start: '10:30', end: '22:00' },
   { id: 4, name: 'Luca Lucio', role: 'Manager', start: null, end: null },
   { id: 5, name: 'Anna Arestova', role: 'Supervisor', start: '07:00', end: '15:00' },
-  { id: 6, name: 'Alina Melnikova', role: 'Waiter', start: '14:00', end: '23:30' },
+  { id: 6, name: 'Alina Melnikova', role: 'Waitress', start: '14:00', end: '23:30' },
   { id: 7, name: 'Mehded Taha', role: 'Waiter', start: '08:00', end: null },
 ];
 
@@ -63,29 +62,46 @@ const locations: Location[] = [
 ];
 
 export default function App() {
-  const { user } = useAuth();
-  const [startedAt, setStartedAt] = useState<string | null>(null);
-  const [endedAt, setEndedAt] = useState<string | null>(null);
-
-  const scrollToLocation = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+  const user = {
+    username: 'Ahmed Taha',
+    role: 'Admin',
   };
 
+  interface Location {
+    id: string;
+    name: string;
+  }
+
+  const [startedAt, setStartedAt] = useState<string | null>(null);
+  const [endedAt, setEndedAt] = useState<string | null>(null);
+  // track the currently selected location id while picking a place to start a shift
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
+  const [isLocationPopupOpen, setIsLocationPopupOpen] = useState(false);
+  const [location, setLocation] = useState<Location | null>(null);
+  const [isChangedLocation, setIsChangedLocation] = useState(false);
+
+
   const handleStartShift = () => {
-    const now = new Date();
-    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (!selectedLocationId) {
+      // guard: don't start a shift without choosing a location first
+      alert('Please pick a location before starting your shift.');
+      return;
+    }
+
+    const now = new Date("February 19, 2026 11:01:30 GMT+01:00"); // Add 2 hours to current time
+    const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     setStartedAt(time);
     setEndedAt(null);
   };
 
   const handleEndShift = () => {
-    const now = new Date();
-    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const now = new Date("February 19, 2026 22:45:30 GMT+01:00"); // Add 2 hours to current time
+    const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     setEndedAt(time);
+    // setSelectedLocationId(null); // reset selected location after ending the shift
   };
+
+
 
   return (
     <div className="App min-h-screen bg-gray-50 font-sans">
@@ -104,13 +120,13 @@ export default function App() {
             <section className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm">
               <div>
                 <p className="text-sm font-semibold text-gray-700">
-                  Your shift, {user.role === 'Admin' ? 'Admin' : 'Supervisor'}:
+                  Your shift, {user.role}:
                 </p>
                 <p className="text-sm text-gray-600 mt-1">
                   {startedAt
                     ? endedAt
-                      ? `Shift finished. Started at ${startedAt}, ended at ${endedAt}.`
-                      : `Shift running. Started at ${startedAt}.`
+                      ? `Shift finished at ${locations.find(l => l.id === selectedLocationId)?.name || 'unknown location'}. Started at ${startedAt}, ended at ${endedAt}.`
+                      : `Shift running at ${locations.find(l => l.id === selectedLocationId)?.name || 'unknown location'}. Started at ${startedAt}.`
                     : 'You have not started your shift yet.'}
                 </p>
               </div>
@@ -120,7 +136,7 @@ export default function App() {
                   type="button"
                   onClick={handleStartShift}
                   className="px-4 py-2 text-sm font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={!!startedAt && !endedAt}
+                  disabled={!!startedAt && !endedAt || !selectedLocationId}
                 >
                   Start shift
                 </button>
@@ -138,12 +154,27 @@ export default function App() {
         </div>
 
         <nav className="flex flex-wrap gap-2 mb-8">
+
+          {/* <p className="text-sm text-gray-500">
+              Your shift is running at {locations.find(l => l.id === selectedLocationId)?.name || 'Unknown Location'}
+            </p> */}
+
           {locations.map((location) => (
             <button
               key={location.id}
               type="button"
-              onClick={() => scrollToLocation(location.id)}
-              className="px-3 py-1.5 rounded-full text-sm border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 hover:border-gray-300 transition-colors shadow-sm"
+              onClick={() => {
+                setIsLocationPopupOpen(true)
+                if (selectedLocationId && selectedLocationId !== location.id) {
+                  setIsChangedLocation(true)
+                } else {
+                  setIsChangedLocation(false)
+                }
+                setLocation({ id: location.id, name: location.name })
+              }}
+
+              className={`px-3 py-1.5 rounded-full text-sm border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 hover:border-gray-300 transition-colors shadow-sm ${selectedLocationId === location.id ? 'ring-2 ring-emerald-500' : ''
+                }`}
             >
               {location.name}
             </button>
@@ -151,19 +182,19 @@ export default function App() {
         </nav>
 
         <div className="space-y-6">
-          {locations.map((location, index) => (
+          {locations.map((location) => (
             <section key={location.id} id={location.id}>
               <ShiftCards
                 locationName={location.name}
                 shifts={location.shifts}
                 userShift={
-                  index === 0 && user
+                  user && location.id === selectedLocationId
                     ? {
-                        name: user.username,
-                        role: user.role,
-                        start: startedAt,
-                        end: endedAt,
-                      }
+                      name: user.username,
+                      role: user.role,
+                      start: startedAt,
+                      end: endedAt,
+                    }
                     : undefined
                 }
               />
@@ -171,6 +202,40 @@ export default function App() {
           ))}
         </div>
       </main>
-    </div>
+      {
+        isLocationPopupOpen && (
+
+          <div className='fixed inset-0 z-100 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity'>
+            <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md transform transition-all">
+              {isChangedLocation ? (
+                <h2 className="text-2xl font-bold text-amber-600 mb-4">Change Your Location Shift to </h2>
+              ) : (
+                <h2 className="text-2xl font-bold text-emerald-600 mb-4">Confirm Location Shift as </h2>
+              )}
+              <h3 className="text-lg font-semibold text-gray-700">{location?.name}</h3>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setIsLocationPopupOpen(false)
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
+                  onClick={() => {
+                    setSelectedLocationId(location?.id || null)
+                    setIsLocationPopupOpen(false)
+                  }}
+                >
+                  Yes
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 }

@@ -21,14 +21,15 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'Manager':
-        return 'bg-red-100 text-red-700';
+        return 'bg-purple-600 text-white';
       case 'Supervisor':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-emerald-500 text-white';
       case 'Waiter':
+        return 'bg-lime-400 text-black';
       case 'Waitress':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-lime-400 text-black';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-red-100 text-red-700';
     }
   };
 

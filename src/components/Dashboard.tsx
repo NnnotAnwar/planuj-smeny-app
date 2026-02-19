@@ -1,68 +1,73 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
+    const user = {
+        username: 'Ahmed Taha',
+        role: 'Admin',
+    };
 
-  const handleAdminClick = () => {
-    navigate('/admin');
-  };
+    const navigate = useNavigate();
 
-  const handleLoginClick = () => {
-    navigate('/login');
-  };
+    const handleAdminClick = () => {
+        navigate('/admin');
+    };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
-  };
+    const handleLoginClick = () => {
+        navigate('/login');
+    };
 
-  return (
-    <header className="flex items-center justify-between px-6 py-4 bg-white shadow-sm border-b border-gray-100">
-      <div className="flex items-center space-x-4">
-        <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center shadow-sm">
-          <span className="text-white font-bold text-xl">PS</span>
-        </div>
-        <span className="text-xl font-bold text-gray-800 tracking-tight">Planuj Směny</span>
-      </div>
+    const handleLogout = () => {
+        navigate('/login', { replace: true });
+    };
 
-      <div className="flex items-center space-x-4">
-        {user && (
-          <div className="text-right text-sm">
-            <p className="font-semibold text-gray-800">{user.username}</p>
-            <p className="text-xs text-gray-500">{user.role}</p>
-          </div>
-        )}
 
-        {user?.role === 'Admin' && (
-          <button
-            type="button"
-            onClick={handleAdminClick}
-            className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-          >
-            Admin Panel
-          </button>
-        )}
+    return (
+        <header className="md:flex items-center sticky top-0 z-50 justify-between px-6 py-4 bg-white shadow-sm border-b border-gray-100">
+            <a href='/' className="flex items-center space-x-4 mb-4 md:mb-0">
 
-        {user ? (
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors shadow-sm active:scale-95"
-          >
-            Logout
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleLoginClick}
-            className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors shadow-sm active:scale-95"
-          >
-            Login
-          </button>
-        )}
-      </div>
-    </header>
-  );
+                <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center shadow-sm">
+                    <span className="text-white font-bold text-xl">PS</span>
+                </div>
+                <span className="text-xl font-bold text-gray-800 tracking-tight">Planuj Směny</span>
+
+            </a>
+
+            <div className="flex items-center space-x-4">
+                {user && (
+                    <div className="hidden md:block text-right text-sm">
+                        <p className="font-semibold text-gray-800">{user.username}</p>
+                        <p className="text-xs text-gray-500">{user.role}</p>
+                    </div>
+                )}
+
+                {user?.role === 'Admin' && (
+                    <button
+                        type="button"
+                        onClick={handleAdminClick}
+                        className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                    >
+                        Admin Panel
+                    </button>
+                )}
+
+                {user ? (
+                    <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors shadow-sm active:scale-95"
+                    >
+                        Logout
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={handleLoginClick}
+                        className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors shadow-sm active:scale-95"
+                    >
+                        Login
+                    </button>
+                )}
+            </div>
+        </header>
+    );
 }
