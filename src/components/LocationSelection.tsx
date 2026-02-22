@@ -8,7 +8,6 @@ type LocationSelectionProps = {
 
 export default function LocationSelection({ locations, selectedLocationId, onLocationSelect }: LocationSelectionProps) {
 
-    console.log(locations);
     return (
         <nav className="grid xl:flex xl:justify-around xl:overflow-x-auto gap-3 mb-8 pb-2 snap-x scrollbar-hide w-full">
             {/* Map through each location and create a button for selection */}
