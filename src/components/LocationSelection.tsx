@@ -3,13 +3,12 @@ type LocationSelectionProps = {
     locations: Location[]; // Array of restaurant locations to display
     selectedLocationId: string | null; // Currently selected location ID for styling
     previousLocationId?: string | null; // Previously selected location ID for comparison (optional)
-    onLocationSelect: (locationId: string) => void; // Callback when a location is selected
+    onLocationSelect: (locationId: string | null) => void; // Callback when a location is selected
 }
 
 export default function LocationSelection({ locations, selectedLocationId, onLocationSelect }: LocationSelectionProps) {
-
     return (
-        <nav className="grid xl:flex xl:justify-around xl:overflow-x-auto gap-3 mb-8 pb-2 snap-x scrollbar-hide w-full">
+        <nav className="grid lg:flex lg:justify-around lg:overflow-x-auto gap-3 mb-6 snap-x scrollbar-hide w-full">
             {/* Map through each location and create a button for selection */}
             {locations.map((location) => (
                 <button

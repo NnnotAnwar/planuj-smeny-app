@@ -5,11 +5,7 @@
  */
 
 /** Type definition for a restaurant location */
-/** Type definition for a restaurant location */
-interface Location {
-    id: string;      // Unique location identifier
-    name: string;    // Display name of location
-}
+import { type Location } from '../types/types';
 
 /** Props for the LocationPopup component */
 interface LocationPopupProps {
@@ -20,8 +16,9 @@ interface LocationPopupProps {
     location: Location | null;                                   // The location being confirmed
     setIsLocationPopupOpen: (isOpen: boolean) => void;          // Callback to close the popup
     setSelectedLocationId: (id: string) => void;                // Callback to confirm location selection
-    previousLocationId?: string | null;                             // Optional ID of previously selected location for comparison
+    handleChangeLocation: (change: boolean) => void;                                      // Indicates if the user is changing locations
 }
+
 
 /**
  * LocationPopup component
@@ -33,7 +30,12 @@ export default function LocationPopup({
     location,
     setIsLocationPopupOpen,
     setSelectedLocationId,
+    handleChangeLocation
 }: LocationPopupProps) {
+    // const [changeShift, setChangeShift] = useState({
+    //     isChanged: false,
+    //     currentTime: '',
+    // });
     /**
      * Confirms location selection and closes the popup
      * Updates the parent component's selectedLocationId state
@@ -46,6 +48,9 @@ export default function LocationPopup({
             // Close the popup
             setIsLocationPopupOpen(false);
         }
+        if (changeLocation) {
+            handleChangeLocation(true);
+        } // Indicate that a location change is occurring       }
     };
 
     /**
@@ -58,6 +63,8 @@ export default function LocationPopup({
     };
 
     const changeLocation = isChangedLocation.selectedLocationId && isChangedLocation.pendingLocationId
+
+
 
     return (
         // ===== MODAL OVERLAY ===== 

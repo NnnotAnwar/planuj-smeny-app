@@ -12,7 +12,7 @@ export type Shift = {
 };
 
 export type Location = {
-    id: string;
+    id: string | null;
     name: string;
     shifts: Shift[];
 };

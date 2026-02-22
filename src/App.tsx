@@ -3,7 +3,7 @@
  * Manages employee shift timing, location selection, and displays all shifts
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import ShiftCards from './components/ShiftCards';
@@ -73,6 +73,7 @@ const locations: Location[] = [
   },
 ];
 
+
 /**
  * Utility function to format a date string into HH:MM format
  * Used for displaying consistent time formatting throughout the app
@@ -109,12 +110,33 @@ export default function App() {
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [isLocationPopupOpen, setIsLocationPopupOpen] = useState(false);
   const [pendingLocation, setPendingLocation] = useState<{
-    id: string;
+    id: string | null;
     name: string;
+    shifts: Shift[];
   } | null>(null);
   const [activeShiftLocationId, setActiveShiftLocationId] = useState<string | null>(null);
   const [isShiftRunning, setIsShiftRunning] = useState(false);
   const [isShiftFinished, setIsShiftFinished] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [changeLocation, setChangeLocation] = useState(false);
+
+
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formattedTime = currentTime.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+
+
+
 
   // ===== EVENT HANDLERS =====
   /**
@@ -122,9 +144,11 @@ export default function App() {
    * Opens the confirmation popup when a location is clicked
    * @param locationId - ID of the selected location
    */
-  const handleLocationSelect = (locationId: string) => {
+  const handleLocationSelect = (locationId: string | null) => {
     // Find the location in the array by ID
     const selected = locations.find((loc) => loc.id === locationId);
+    const id = selected?.id || null;
+    const name = selected?.name || 'Unknown Location';
     if (selected) {
       // If user clicks the currently selected location, deselect it and close popup
       if (locationId === selectedLocationId && !isShiftRunning) {
@@ -135,11 +159,16 @@ export default function App() {
         return;
       }
       // Store the location for the popup to display
-      setPendingLocation({ id: selected.id, name: selected.name });
+      setPendingLocation({ id: id, name: name, shifts: selected.shifts });
       // Show the confirmation popup
       setIsLocationPopupOpen(true);
     }
   };
+
+  const handleChangeLocation = (change: boolean) => {
+    setChangeLocation(change);
+    console.log('Location change status:', change); // Debug log for location change status
+  }
 
   /**
    * Initiates a new shift for the user at the selected location
@@ -149,7 +178,6 @@ export default function App() {
   const handleStartShift = () => {
     // Ensure user has selected a location before starting
     if (!selectedLocationId) {
-      alert('Please pick a location before starting your shift.');
       return;
     }
 
@@ -176,6 +204,7 @@ export default function App() {
     setActiveShiftLocationId(selectedLocationId);
     setEndedAt(time);
     setSelectedLocationId(null);
+    setChangeLocation(false);
     setIsShiftRunning(false);
     setIsShiftFinished(true);
   };
@@ -196,27 +225,34 @@ export default function App() {
     <div className="App min-h-screen bg-gray-50 font-sans">
       <Dashboard user={user} />
 
-      <main className="p-6 pb-32 md:pb-6 max-w-7xl mx-auto">
+      <main className="p-6 px-3 pb-32 max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="mb-6 space-y-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 text-center md:text-left">Planuj Směny</h1>
+        <div className="mb-6 px-0 lg:px-3 space-y-4">
+          <div className="flex gap-4 md:gap-0 justify-between items-center">
+            <h1 className="text-2xl sm:text-3xl md:hidden font-bold text-gray-900">Planuj Směny</h1>
+            <div className="flex md:px-4 md:w-auto ">
+              <span className="text-xl sm:text-2xl font-mono font-bold text-gray-700">
+                {formattedTime}
+              </span>
+            </div>
             {/* <p className="text-gray-500 mt-1">
               Quickly see who is working in each location and manage attendance.
             </p> */}
+            {user && (
+              <CheckIn
+                user={user}
+                shiftStatusMessage={shiftStatusMessage}
+                selectedLocationId={selectedLocationId}
+                isShiftRunning={isShiftRunning}
+                handleStartShift={handleStartShift}
+                handleEndShift={handleEndShift}
+              />
+            )}
+
           </div>
 
           {/* Shift Control Section */}
-          {user && (
-            <CheckIn
-              user={user}
-              shiftStatusMessage={shiftStatusMessage}
-              selectedLocationId={selectedLocationId}
-              isShiftRunning={isShiftRunning}
-              handleStartShift={handleStartShift}
-              handleEndShift={handleEndShift}
-            />
-          )}
+
         </div>
 
         {/* Location Selection Navigation */}
@@ -227,7 +263,7 @@ export default function App() {
         <div className="space-y-6">
           {/* Render a ShiftCards component for each location */}
           {locations.map((location) => (
-            <section key={location.id} id={location.id}>
+            <section key={location.id} id={location.id ? location.id : undefined}>
               {/* 
                 ShiftCards displays all shifts at this location
                 Shows user's shift if they are assigned to this location
@@ -243,6 +279,7 @@ export default function App() {
                       role: user.role,
                       start: startedAt,
                       end: endedAt,
+                      isChangeLocation: changeLocation
                     }
                     : undefined
                 }
@@ -262,7 +299,7 @@ export default function App() {
           location={pendingLocation}
           setIsLocationPopupOpen={setIsLocationPopupOpen}
           setSelectedLocationId={setSelectedLocationId}
-          previousLocationId={activeShiftLocationId}
+          handleChangeLocation={handleChangeLocation}
         />
       )}
     </div>

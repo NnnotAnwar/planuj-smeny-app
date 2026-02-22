@@ -1,5 +1,7 @@
 // import { useNavigate, Link } from 'react-router-dom';
 
+// import { useEffect, useState } from "react";
+
 // Описываем тип данных пользователя, которые принимает шапка
 interface DashboardProps {
     user: {
@@ -26,6 +28,7 @@ export default function Dashboard({ user }: DashboardProps) {
             .toUpperCase();
     };
 
+
     return (
         // ===== ГЛАВНЫЙ КОНТЕЙНЕР ШАПКИ =====
         // sticky top-0 z-50: прилипает к верху поверх остальных элементов
@@ -45,7 +48,7 @@ export default function Dashboard({ user }: DashboardProps) {
                             <span className="text-white font-black text-xl tracking-wider">PS</span>
                         </div>
                         {/* Название приложения */}
-                        <span className="text-xl font-extrabold text-gray-800 tracking-tight hidden sm:block">
+                        <span className="font-extrabold text-gray-800 tracking-tight hidden md:inline text-2xl">
                             Planuj Směny
                         </span>
                     </div>

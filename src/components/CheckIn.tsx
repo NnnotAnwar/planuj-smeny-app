@@ -12,7 +12,7 @@ interface ShiftControlsProps {
 export default function CheckIn(props: ShiftControlsProps) {
     const { user, shiftStatusMessage, selectedLocationId, isShiftRunning, handleStartShift, handleEndShift } = props;
     return (
-        <section className="
+        <section className="block items-center
                 fixed bottom-0 left-0 w-full z-40 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]
                 md:static md:w-auto md:border md:rounded-lg md:shadow-sm md:flex md:flex-row md:items-center md:justify-between gap-4 transition-all
             ">
