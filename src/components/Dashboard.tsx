@@ -1,4 +1,4 @@
-import { useNavigate, Link } from 'react-router-dom';
+// import { useNavigate, Link } from 'react-router-dom';
 
 // Описываем тип данных пользователя, которые принимает шапка
 interface DashboardProps {
@@ -9,12 +9,12 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ user }: DashboardProps) {
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
 
     // ===== ОБРАБОТЧИКИ КЛИКОВ =====
-    const handleAdminClick = () => navigate('/admin');
-    const handleLoginClick = () => navigate('/login');
-    const handleLogout = () => navigate('/login', { replace: true });
+    // const handleAdminClick = () => navigate('/admin');
+    // const handleLoginClick = () => navigate('/login');
+    // const handleLogout = () => navigate('/login', { replace: true });
 
     // Вспомогательная функция для получения инициалов (Ahmed Taha -> AT)
     const getInitials = (name: string) => {
@@ -38,17 +38,17 @@ export default function Dashboard({ user }: DashboardProps) {
 
                     {/* ===== ЛЕВАЯ ЧАСТЬ: ЛОГОТИП ===== */}
                     {/* Используем Link вместо <a> для плавной навигации без перезагрузки */}
-                    <Link to='/' className="flex items-center gap-3 group">
+                    {/* <Link to='/' className="flex items-center gap-3 group"> */}
+                    <div className="flex items-center gap-3 group">
                         {/* Иконка логотипа с красивым градиентом */}
-                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-md shadow-emerald-200 group-hover:shadow-emerald-300 transition-all duration-300 transform group-hover:-translate-y-0.5">
+                        <div className="w-10 h-10 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-md shadow-emerald-200 group-hover:shadow-emerald-300 transition-all duration-300 transform group-hover:-translate-y-0.5">
                             <span className="text-white font-black text-xl tracking-wider">PS</span>
                         </div>
                         {/* Название приложения */}
                         <span className="text-xl font-extrabold text-gray-800 tracking-tight hidden sm:block">
                             Planuj Směny
                         </span>
-                    </Link>
-
+                    </div>
                     {/* ===== ПРАВАЯ ЧАСТЬ: ПОЛЬЗОВАТЕЛЬ И КНОПКИ ===== */}
                     <div className="flex items-center gap-4 sm:gap-6">
 
@@ -72,9 +72,9 @@ export default function Dashboard({ user }: DashboardProps) {
                             <div className="hidden sm:block h-8 w-px bg-gray-200"></div>
                         )}
 
-                        {/* Кнопки управления */}
+                        {/* Кнопки управления 
                         <div className="flex items-center gap-2">
-                            {/* Кнопка Админ панели (только для Admin) */}
+
                             {user?.role === 'Admin' && (
                                 <button
                                     type="button"
@@ -84,8 +84,7 @@ export default function Dashboard({ user }: DashboardProps) {
                                     Admin Panel
                                 </button>
                             )}
-
-                            {/* Кнопка Logout / Login */}
+=
                             {user ? (
                                 <button
                                     type="button"
@@ -104,6 +103,7 @@ export default function Dashboard({ user }: DashboardProps) {
                                 </button>
                             )}
                         </div>
+                            */}
 
                     </div>
                 </div>

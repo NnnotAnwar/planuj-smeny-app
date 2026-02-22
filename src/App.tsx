@@ -10,6 +10,7 @@ import ShiftCards from './components/ShiftCards';
 import LocationPopup from './components/LocationPopup';
 import { type Shift, type Location, type User } from './types/types';
 import CheckIn from './components/CheckIn';
+import LocationSelection from './components/LocationSelection';
 
 /** Represents a single shift assignment with timing and role information */
 
@@ -112,6 +113,8 @@ export default function App() {
     name: string;
   } | null>(null);
   const [activeShiftLocationId, setActiveShiftLocationId] = useState<string | null>(null);
+  const [isShiftRunning, setIsShiftRunning] = useState(false);
+  const [isShiftFinished, setIsShiftFinished] = useState(false);
 
   // ===== EVENT HANDLERS =====
   /**
@@ -123,6 +126,14 @@ export default function App() {
     // Find the location in the array by ID
     const selected = locations.find((loc) => loc.id === locationId);
     if (selected) {
+      // If user clicks the currently selected location, deselect it and close popup
+      if (locationId === selectedLocationId && !isShiftRunning) {
+        setSelectedLocationId(null);
+        return;
+      } else if (locationId === selectedLocationId && isShiftRunning) {
+        setIsLocationPopupOpen(true);
+        return;
+      }
       // Store the location for the popup to display
       setPendingLocation({ id: selected.id, name: selected.name });
       // Show the confirmation popup
@@ -147,6 +158,8 @@ export default function App() {
     setStartedAt(time);
     // Clear any existing end time
     setEndedAt(null);
+    setIsShiftRunning(true);
+    setIsShiftFinished(false);
 
     setActiveShiftLocationId(selectedLocationId);
   };
@@ -160,16 +173,12 @@ export default function App() {
   const handleEndShift = () => {
     // Format and record the end time
     const time = getFormattedTime('February 19, 2026 22:45:30 GMT+01:00');
+    setActiveShiftLocationId(selectedLocationId);
     setEndedAt(time);
+    setSelectedLocationId(null);
+    setIsShiftRunning(false);
+    setIsShiftFinished(true);
   };
-
-  // ===== COMPUTED STATE VALUES =====
-  /** Get the name of the currently selected location */
-  const shiftLocationName = getLocationName(activeShiftLocationId)
-  /** Boolean: true if shift has started and not ended */
-  const isShiftRunning = startedAt && !endedAt;
-  /** Boolean: true if both start and end times are recorded */
-  const isShiftFinished = startedAt && endedAt;
 
 
   /**
@@ -179,8 +188,8 @@ export default function App() {
 
   const shiftStatusMessage = startedAt
     ? isShiftFinished
-      ? `Shift finished at ${shiftLocationName}. Started at ${startedAt}, ended at ${endedAt}.`
-      : `Shift running at ${shiftLocationName}. Started at ${startedAt}.`
+      ? `Shift finished at ${getLocationName(activeShiftLocationId)}. Started at ${startedAt}, ended at ${endedAt}.`
+      : `Shift running at ${getLocationName(selectedLocationId)}. Started at ${startedAt}.`
     : 'You have not started your shift yet.';
 
   return (
@@ -211,25 +220,7 @@ export default function App() {
         </div>
 
         {/* Location Selection Navigation */}
-        <nav className="grid xl:flex xl:justify-around xl:overflow-x-auto gap-3 mb-8 pb-2 snap-x scrollbar-hide w-full">
-          {/* Map through each location and create a button for selection */}
-          {locations.map((location) => (
-            <>
-              <button
-                key={location.id}
-                type="button"
-                onClick={() => handleLocationSelect(location.id)}
-                className={`whitespace-nowrap snap-start px-4 py-2 rounded-full text-sm font-medium border transition-all shadow-sm 
-                ${selectedLocationId === location.id
-                    ? 'bg-emerald-500 text-white border-emerald-500'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
-                  }`}
-              >
-                {location.name}
-              </button>
-            </>
-          ))}
-        </nav>
+        <LocationSelection locations={locations} selectedLocationId={selectedLocationId} onLocationSelect={handleLocationSelect} />
 
         {/* Shift Cards Grid */}
         {/* Display all locations with their shifts */}
@@ -266,12 +257,12 @@ export default function App() {
       {isLocationPopupOpen && pendingLocation && (
         <LocationPopup
           isChangedLocation={
-            // True if switching from one location to another
-            selectedLocationId !== null && selectedLocationId !== pendingLocation.id
+            { selectedLocationId, pendingLocationId: pendingLocation.id }
           }
           location={pendingLocation}
           setIsLocationPopupOpen={setIsLocationPopupOpen}
           setSelectedLocationId={setSelectedLocationId}
+          previousLocationId={activeShiftLocationId}
         />
       )}
     </div>

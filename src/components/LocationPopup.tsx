@@ -13,10 +13,14 @@ interface Location {
 
 /** Props for the LocationPopup component */
 interface LocationPopupProps {
-    isChangedLocation: boolean;                                  // True if switching to a different location
+    isChangedLocation: {
+        selectedLocationId: string | null; // Currently selected location ID
+        pendingLocationId: string | null;  // Location ID being selected in the popup
+    };                                  // True if switching to a different location
     location: Location | null;                                   // The location being confirmed
     setIsLocationPopupOpen: (isOpen: boolean) => void;          // Callback to close the popup
     setSelectedLocationId: (id: string) => void;                // Callback to confirm location selection
+    previousLocationId?: string | null;                             // Optional ID of previously selected location for comparison
 }
 
 /**
@@ -53,6 +57,8 @@ export default function LocationPopup({
         setIsLocationPopupOpen(false);
     };
 
+    const changeLocation = isChangedLocation.selectedLocationId && isChangedLocation.pendingLocationId
+
     return (
         // ===== MODAL OVERLAY ===== 
         // Fixed position backdrop with dark semi-transparent overlay
@@ -61,32 +67,47 @@ export default function LocationPopup({
             <div className="bg-white p-6 sm:rounded-2xl rounded-t-3xl shadow-xl w-full max-w-md transform transition-all sm:animate-none">
                 {/* ===== DYNAMIC TITLE ===== */}
                 {/* Shows different title based on whether this is a new selection or a location change */}
-                {isChangedLocation ? (
-                    <h2 className="text-2xl font-bold text-amber-600 mb-4">Change Your Location Shift to </h2>
-                ) : (
-                    <h2 className="text-2xl font-bold text-emerald-600 mb-4">Confirm Location Shift as </h2>
-                )}
+                {
+                    changeLocation
+                        && isChangedLocation.selectedLocationId !== isChangedLocation.pendingLocationId
+                        ? <h2 className="text-3xl md:text-2xl font-bold text-amber-600 mb-4">Change Location?</h2>
+                        : changeLocation && isChangedLocation.selectedLocationId === isChangedLocation.pendingLocationId
+                            ? <h2 className="text-2xl font-bold text-red-600 mb-4">You are already at this location.</h2>
+                            : <h2 className="text-3xl md:text-2xl font-bold text-emerald-600 mb-4">Confirm Location?</h2>
+
+
+                }
                 {/* ===== LOCATION NAME ===== */}
                 <h3 className="text-lg font-semibold text-gray-700">{location?.name}</h3>
 
                 {/* ===== ACTION BUTTONS ===== */}
                 <div className="flex justify-end space-x-3 mt-6">
-                    {/* Cancel button - closes popup without changes */}
-                    <button
-                        onClick={handleCancel}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    {/* Confirm button - applies the location selection */}
-                    <button
-                        onClick={handleConfirm}
-                        className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
-                    >
-                        Yes
-                    </button>
+                    {isChangedLocation.selectedLocationId !== isChangedLocation.pendingLocationId
+                        ?
+                        (<>
+                            <button
+                                onClick={handleCancel}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirm}
+                                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
+                            >
+                                Yes
+                            </button>
+                        </>)
+                        : (
+                            <button
+                                onClick={handleConfirm}
+                                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
+                            >
+                                Confirm
+                            </button>
+                        )}
                 </div>
             </div>
-        </div>
+        </div >
     )
 }
