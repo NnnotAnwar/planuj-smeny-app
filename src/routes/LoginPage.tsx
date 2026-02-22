@@ -1,11 +1,22 @@
-import { useState, type SubmitEventHandler } from 'react';
+import { useState, type ChangeEvent, type SubmitEventHandler } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
+const INPUT_CLASS =
+  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500';
+
+/**
+ * State passed by React Router when redirecting unauthenticated user to login.
+ * Used to send user back to the page they tried to open after successful login.
+ */
 type LocationState = {
   from?: { pathname?: string };
 };
 
+/**
+ * Login page: form with username/password, auth via AuthContext, redirect to
+ * original destination or home. Shows demo credentials for testing.
+ */
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -30,9 +41,14 @@ export default function LoginPage() {
       return;
     }
 
-    const redirectTo = state?.from?.pathname || '/';
-    navigate(redirectTo, { replace: true });
+    const redirectTo = state?.from?.pathname ?? '/';
+    navigate(redirectTo, { replace: true }); // replace: true — чтобы "Назад" не вело на страницу входа
   };
+
+  const bindInput = (setter: (v: string) => void) => ({
+    onChange: (e: ChangeEvent<HTMLInputElement>) => setter(e.target.value),
+    className: INPUT_CLASS,
+  });
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -51,8 +67,7 @@ export default function LoginPage() {
             <input
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              {...bindInput(setUsername)}
               autoComplete="username"
               required
             />
@@ -63,8 +78,7 @@ export default function LoginPage() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              {...bindInput(setPassword)}
               autoComplete="current-password"
               required
             />
@@ -88,8 +102,7 @@ export default function LoginPage() {
         <div className="text-xs text-gray-400 space-y-1">
           <p>Demo accounts:</p>
           <p>
-            <span className="font-semibold text-gray-600">Admin</span> — user: admin / pass:
-            admin
+            <span className="font-semibold text-gray-600">Admin</span> — user: admin / pass: admin
           </p>
           <p>
             <span className="font-semibold text-gray-600">Supervisor</span> — user: supervisor /
@@ -100,4 +113,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
