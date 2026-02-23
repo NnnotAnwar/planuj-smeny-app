@@ -80,7 +80,7 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg">
 
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl mx-auto flex items-center justify-center shadow-md shadow-emerald-200">
+          <div className="w-16 h-16 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-2xl mx-auto flex items-center justify-center shadow-md shadow-emerald-200">
             <span className="text-white font-black text-2xl tracking-wider">PS</span>
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
