@@ -1,114 +1,136 @@
-import { useState, type ChangeEvent, type SubmitEventHandler } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { useState, useEffect, type SyntheticEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from '../../supabaseClient'
 
-const INPUT_CLASS =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500';
-
-/**
- * State passed by React Router when redirecting unauthenticated user to login.
- * Used to send user back to the page they tried to open after successful login.
- */
-type LocationState = {
-  from?: { pathname?: string };
-};
-
-/**
- * Login page: form with username/password, auth via AuthContext, redirect to
- * original destination or home. Shows demo credentials for testing.
- */
 export default function LoginPage() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const state = location.state as LocationState | null;
+  const navigate = useNavigate()
 
-  const [username, setUsername] = useState('');
+  const [loginInput, setLoginInput] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true)
 
-  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (e) => {
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session) {
+        navigate('/', { replace: true });
+      } else {
+        setIsAuthChecking(false);
+      }
+    };
+    checkUser()
+  }, [navigate])
+
+
+  const handleLogin = async (e: SyntheticEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setIsLoading(true);
+    setErrorMsg('');
 
-    const success = await login(username, password);
-    setLoading(false);
+    try {
+      let emailToUse = loginInput.trim()
+      if (!emailToUse.includes('@')) {
+        const { data: profile, error: searchError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', emailToUse)
+          .single()
 
-    if (!success) {
-      setError('Invalid username or password.');
-      return;
+        if (searchError || !profile || !profile.email) {
+          throw new Error('No username exists');
+        }
+
+        emailToUse = profile.email;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailToUse,
+        password: password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        navigate('/', { replace: true });
+      }
     }
-
-    const redirectTo = state?.from?.pathname ?? '/';
-    navigate(redirectTo, { replace: true }); // replace: true — чтобы "Назад" не вело на страницу входа
+    catch (error: unknown) {
+      setErrorMsg((error instanceof Error ? error.message : "Authorization error") || "Authorization error")
+      console.log(error)
+    }
+    finally {
+      setIsLoading(false)
+    }
   };
 
-  const bindInput = (setter: (v: string) => void) => ({
-    onChange: (e: ChangeEvent<HTMLInputElement>) => setter(e.target.value),
-    className: INPUT_CLASS,
-  });
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 space-y-6">
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-xl">
-            PS
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg">
+
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl mx-auto flex items-center justify-center shadow-md shadow-emerald-200">
+            <span className="text-white font-black text-2xl tracking-wider">PS</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Planuj Směny</h1>
-          <p className="text-gray-500 text-sm">Sign in to plan and track shifts.</p>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Log in to your account
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Planuj Směny Employee Portal
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Username</label>
-            <input
-              type="text"
-              value={username}
-              {...bindInput(setUsername)}
-              autoComplete="username"
-              required
-            />
+        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email address</label>
+              <input
+                type="text"
+                required
+                value={loginInput}
+                onChange={(e) => setLoginInput(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                placeholder="Username"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                placeholder="••••••••"
+              />
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              type="password"
-              value={password}
-              {...bindInput(setPassword)}
-              autoComplete="current-password"
-              required
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
-              {error}
-            </p>
+          {errorMsg && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm text-center">
+              {errorMsg}
+            </div>
           )}
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full inline-flex justify-center items-center rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            disabled={isLoading}
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-
-        <div className="text-xs text-gray-400 space-y-1">
-          <p>Demo accounts:</p>
-          <p>
-            <span className="font-semibold text-gray-600">Admin</span> — user: admin / pass: admin
-          </p>
-          <p>
-            <span className="font-semibold text-gray-600">Supervisor</span> — user: supervisor /
-            pass: super
-          </p>
-        </div>
       </div>
     </div>
   );

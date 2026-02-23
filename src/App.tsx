@@ -4,37 +4,16 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import ShiftCards from './components/ShiftCards';
 import LocationPopup from './components/LocationPopup';
 import LocationSelection from './components/LocationSelection';
 import CheckIn from './components/CheckIn';
-import { type Shift, type Location, type User } from './types/types';
+import { type Location, type User } from './types/types';
+import { supabase } from '../supabaseClient';
 
-const DEFAULT_USER: User = {
-  username: 'Anuar Kairulla',
-  role: 'Supervisor',
-};
-
-const defaultShifts: Shift[] = [
-  { id: 1, name: 'Ahmed Taha', role: 'Manager', start: '08:00', end: null },
-  { id: 2, name: 'Elizabeth Dron', role: 'Supervisor', start: '09:00', end: '18:00' },
-  { id: 3, name: 'Petr Hamhalter', role: 'Waiter', start: '10:30', end: '22:00' },
-  { id: 4, name: 'Luca Lucio', role: 'Manager', start: null, end: null },
-  { id: 5, name: 'Anna Arestova', role: 'Supervisor', start: '07:00', end: '15:00' },
-  { id: 6, name: 'Alina Melnikova', role: 'Waitress', start: '14:00', end: '23:30' },
-  { id: 7, name: 'Mehded Taha', role: 'Waiter', start: '08:00', end: null },
-];
-
-const locations: Location[] = [
-  { id: 'san-carlo-dittrichova', name: 'San Carlo - Dittrichova', shifts: defaultShifts },
-  { id: 'san-carlo-mala-strana', name: 'San Carlo - Malá Strana', shifts: defaultShifts },
-  { id: 'san-carlo-vinohrady', name: 'San Carlo - Vinohrady', shifts: defaultShifts },
-  { id: 'san-carlo-karlin', name: 'San Carlo - Karlín', shifts: defaultShifts },
-  { id: 'san-carlo-letna', name: 'San Carlo - Letna', shifts: defaultShifts },
-  { id: 'san-carlo-holesovice', name: 'San Carlo - Holešovice', shifts: defaultShifts },
-];
 
 /** Formats a date string to HH:MM (24h). Demo uses fixed strings; prod would use real timestamps. */
 function getFormattedTime(dateString: string): string {
@@ -44,12 +23,13 @@ function getFormattedTime(dateString: string): string {
   });
 }
 
-function getLocationName(locationId: string | null): string {
-  return locations.find((l) => l.id === locationId)?.name ?? 'Unknown Location';
-}
 
 export default function App() {
-  const user: User = DEFAULT_USER;
+
+  const navigate = useNavigate();
+
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
 
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [endedAt, setEndedAt] = useState<string | null>(null);
@@ -61,6 +41,73 @@ export default function App() {
   const [isShiftFinished, setIsShiftFinished] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [changeLocation, setChangeLocation] = useState(false);
+  const [locations, setLocations] = useState<Location[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<User>({ username: 'Unknown User', role: "" })
+
+  function getLocationName(locationId: string | null): string {
+    return locations.find((l) => l.id === locationId)?.name ?? 'Unknown Location';
+  }
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        navigate('/login', { replace: true });
+      } else {
+        setIsAuthChecking(false);
+      }
+    };
+    checkUser()
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        navigate('/login', { replace: true });
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setIsLoading(true)
+      const { data, error } = await supabase
+        .from('locations')
+        .select('*')
+
+      if (error) console.error(error)
+      else if (data) {
+        const formattedLocations: Location[] = data.map(loc => ({
+          id: loc.id,
+          name: loc.name,
+          shifts: []
+        }))
+        setLocations(formattedLocations)
+      }
+      setIsLoading(false)
+    }
+
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+        setUser({
+          username: data.username,
+          role: data.role
+        })
+      }
+    }
+    fetchUser()
+    fetchLocations()
+  }, [])
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -110,6 +157,18 @@ export default function App() {
       ? `Shift finished at ${getLocationName(activeShiftLocationId)}. Started at ${startedAt}, ended at ${endedAt}.`
       : `Shift running at ${getLocationName(selectedLocationId)}. Started at ${startedAt}.`
     : 'You have not started your shift yet.';
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-emerald-600 font-bold">Loading locations...</div>;
+  }
+
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="App min-h-screen bg-gray-50 font-sans">
