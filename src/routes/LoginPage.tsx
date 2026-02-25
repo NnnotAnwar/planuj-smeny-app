@@ -33,19 +33,19 @@ export default function LoginPage() {
 
     try {
       let emailToUse = loginInput.trim()
-      if (!emailToUse.includes('@')) {
-        const { data: profile, error: searchError } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('username', emailToUse)
-          .single()
 
-        if (searchError || !profile || !profile.email) {
-          throw new Error('No username exists');
+      if (!emailToUse.includes('@')) {
+        const { data: foundEmail, error: searchError } = await supabase.rpc('get_email_by_username', {
+          u_name: emailToUse
+        });
+
+        if (searchError || !foundEmail) {
+          throw new Error('No username found');
         }
 
-        emailToUse = profile.email;
+        emailToUse = foundEmail;
       }
+
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: emailToUse,
