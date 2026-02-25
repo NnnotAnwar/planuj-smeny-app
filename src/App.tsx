@@ -261,7 +261,8 @@ export default function App() {
         />
         <div className="space-y-6">
           {locations.map((location) => {
-            // 1. Фильтруем коллег (те, кто в этой локации и это НЕ я)
+            const userFullName = `${user.first_name} ${user.last_name || ''}`
+
             const colleaguesInLocation: ShiftDisplayData[] = allActiveShifts
               .filter((s) => s.location_id === location.id && s.user_id !== user.id)
               .map((s) => ({
@@ -270,17 +271,16 @@ export default function App() {
                   hour: '2-digit',
                   minute: '2-digit'
                 }),
-                name: s.profiles?.first_name
-                  ? `${s.profiles.first_name} ${s.profiles.last_name || ''}`
+                name: userFullName
+                  ? userFullName
                   : s.profiles?.username || 'Employee',
                 role: s.role,
                 end: null
               }));
 
-            // 2. Готовим данные для текущего пользователя (userShift)
             const currentUserShiftData: ShiftDisplayData | undefined = (activeShift && location.id === selectedLocationId)
               ? {
-                name: user.username,
+                name: userFullName,
                 role: user.role,
                 start: new Date(activeShift.started_at).toLocaleTimeString('en-GB', {
                   hour: '2-digit',

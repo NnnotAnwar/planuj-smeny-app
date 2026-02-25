@@ -30,7 +30,7 @@ export default function CheckIn({
       {/* Текст: отступ снизу работает до lg */}
       <div className="mb-3 lg:mb-0">
         <p className="text-sm font-semibold text-gray-700">
-          {user.username}, {user.role}:
+          {user.first_name}{user.last_name ? ' ' + user.last_name : ''}, {user.role}:
         </p>
         <p className="text-sm text-gray-600 mt-1">{shiftStatusMessage}</p>
       </div>
