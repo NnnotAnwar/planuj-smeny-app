@@ -1,20 +1,36 @@
-/** Logged-in user: display name, role, and organization ID. */
+export type Shift = {
+  id: string;
+  user_id: string;
+  location_id: string;
+  organization_id: string;
+  started_at: string;
+  ended_at: string | null;
+  role: string;
+  profiles?: {
+    username: string;
+    first_name: string;
+    last_name: string;
+  };
+};
+
 export type User = {
+  id?: string;
   username: string;
+  first_name?: string;
+  last_name?: string;
   role: string;
   organization_id: string;
 };
 
-
-export type Shift = {
-  id: number;
+export type ShiftDisplayData = {
+  id?: string;
   name: string;
   role: string;
-  start: string | null;
+  start: string;
   end: string | null;
+  isChangeLocation?: boolean;
 };
 
-/** Restaurant location with id, name, and list of shifts. */
 export type Location = {
   id: string | null;
   name: string;

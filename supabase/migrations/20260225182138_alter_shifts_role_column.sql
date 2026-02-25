@@ -1,0 +1,1 @@
+ALTER TABLE public.shifts ADD COLUMN role TEXT NOT NULL;

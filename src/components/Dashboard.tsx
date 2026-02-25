@@ -1,8 +1,8 @@
-import { type User } from '../types/types';
-
+import { type User } from '../types/types'
 /** Props for the app header: current user or null. */
 interface DashboardProps {
-  user: Pick<User, 'username' | 'role'> | null;
+  user: Pick<User, 'username' | 'first_name' | 'last_name' | 'role'>
+  onLogout: () => void
 }
 
 /** Builds initials from full name (e.g. "Ahmed Taha" → "AT"). */
@@ -19,7 +19,7 @@ function getInitials(name: string): string {
  * Sticky app header: logo, title, and current user avatar + role.
  * No nav actions (login/admin) while auth is disabled.
  */
-export default function Dashboard({ user }: DashboardProps) {
+export default function Dashboard({ user, onLogout }: DashboardProps) {
   return (
     <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,8 +36,14 @@ export default function Dashboard({ user }: DashboardProps) {
           <div className="flex items-center gap-4 sm:gap-6">
             {user && (
               <div className="flex items-center gap-3">
+                <button
+                  onClick={onLogout}
+                  className="ml-4 text-sm font-medium text-white hover:text-gray-100 transition-colors hover:bg-gray-800 border-gray-200 rounded p-2 bg-gray-600"
+                >
+                  Logout
+                </button>
                 <div className="hidden md:block text-right">
-                  <p className="text-sm font-bold text-gray-900 leading-tight">{user.username}</p>
+                  <p className="text-sm font-bold text-gray-900 leading-tight">{user.first_name} {user.last_name}</p>
                   <p className="text-xs font-medium text-emerald-600">{user.role}</p>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-emerald-100 border-2 border-emerald-200 flex items-center justify-center text-emerald-700 font-bold shadow-sm">
