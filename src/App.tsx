@@ -42,24 +42,55 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [changeLocation, setChangeLocation] = useState(false);
   const [locations, setLocations] = useState<Location[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [user, setUser] = useState<User>({ username: 'Unknown User', role: "" })
+  const [user, setUser] = useState<User>({ username: 'Unknown User', role: "", organization_id: "" })
 
   function getLocationName(locationId: string | null): string {
     return locations.find((l) => l.id === locationId)?.name ?? 'Unknown Location';
   }
 
   useEffect(() => {
-    const checkUser = async () => {
+    const initData = async () => {
+      setIsAuthChecking(true)
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
         navigate('/login', { replace: true });
-      } else {
-        setIsAuthChecking(false);
+        return;
       }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select('*')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profile) {
+        setUser({
+          username: profile.username,
+          role: profile.role,
+          organization_id: profile.organization_id
+        })
+
+        const { data: locs, error: locError } = await supabase
+          .from('locations')
+          .select("*")
+          .eq("organization_id", profile.organization_id)
+
+        if (locs) {
+          const formattedLocations: Location[] = locs.map(loc => ({
+            id: loc.id,
+            name: loc.name,
+            shifts: [],
+            organization_id: loc.organization_id
+          }))
+          setLocations(formattedLocations)
+        } else console.log(locError)
+      } else console.log(profileError)
+      setIsAuthChecking(false)
+
+
     };
-    checkUser()
+    initData()
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         navigate('/login', { replace: true });
@@ -71,43 +102,6 @@ export default function App() {
     };
   }, [navigate]);
 
-
-  useEffect(() => {
-    const fetchLocations = async () => {
-      setIsLoading(true)
-      const { data, error } = await supabase
-        .from('locations')
-        .select('*')
-
-      if (error) console.error(error)
-      else if (data) {
-        const formattedLocations: Location[] = data.map(loc => ({
-          id: loc.id,
-          name: loc.name,
-          shifts: []
-        }))
-        setLocations(formattedLocations)
-      }
-      setIsLoading(false)
-    }
-
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-        setUser({
-          username: data.username,
-          role: data.role
-        })
-      }
-    }
-    fetchUser()
-    fetchLocations()
-  }, [])
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -158,9 +152,9 @@ export default function App() {
       : `Shift running at ${getLocationName(selectedLocationId)}. Started at ${startedAt}.`
     : 'You have not started your shift yet.';
 
-  if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-emerald-600 font-bold">Loading locations...</div>;
-  }
+  // if (isLoading) {
+  //   return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-emerald-600 font-bold">Loading locations...</div>;
+  // }
 
   if (isAuthChecking) {
     return (
