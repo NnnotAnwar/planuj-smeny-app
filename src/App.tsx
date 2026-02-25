@@ -82,7 +82,7 @@ export default function App() {
 
         const { data: activeShiftsData } = await supabase
           .from('shifts')
-          .select('*, profiles(username)')
+          .select('*, profiles(username, first_name, last_name)')
           .eq('organization_id', profile.organization_id)
           .is('ended_at', null);
 
@@ -271,9 +271,7 @@ export default function App() {
                   hour: '2-digit',
                   minute: '2-digit'
                 }),
-                name: userFullName
-                  ? userFullName
-                  : s.profiles?.username || 'Employee',
+                name: `${s.profiles?.first_name || 'Employee'} ${s.profiles?.last_name || ''}`,
                 role: s.role,
                 end: null
               }));
