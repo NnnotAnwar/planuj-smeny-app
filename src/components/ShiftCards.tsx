@@ -1,18 +1,11 @@
-import { type Shift } from '../types/types';
+import { type ShiftDisplayData } from '../types/types';
 
 /** Props for a location's shift list and optional current user shift. */
 interface ShiftCardsProps {
   locationName: string;
-  shifts: Shift[];
-  userShift?: {
-    name: string;
-    role: string;
-    start: string | null;
-    end: string | null;
-    isChangeLocation: boolean;
-  };
+  shifts: ShiftDisplayData[];
+  userShift?: ShiftDisplayData;
 }
-
 /** Tailwind badge classes by role; fallback for unknown roles. */
 function getRoleBadgeColor(role: string): string {
   switch (role) {
@@ -116,7 +109,7 @@ function UnassignedShiftCard({
   shift,
   getRoleBadgeColor,
 }: {
-  shift: Shift;
+  shift: ShiftDisplayData;
   getRoleBadgeColor: (role: string) => string;
 }) {
   return (
@@ -140,7 +133,7 @@ function AssignedShiftCard({
   shift,
   getRoleBadgeColor,
 }: {
-  shift: Shift;
+  shift: ShiftDisplayData;
   getRoleBadgeColor: (role: string) => string;
 }) {
   return (

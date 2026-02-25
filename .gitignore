@@ -16,6 +16,7 @@ dist-ssr
 .env*
 schema.sql
 .DS_Store
+old_migrations
 
 # Editor directories and files
 .vscode/*
