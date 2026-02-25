@@ -1,8 +1,7 @@
-import { type User } from '../types/types';
-
+import { type User } from '../types/types'
 /** Props for the app header: current user or null. */
 interface DashboardProps {
-  user: User | null;
+  user: Pick<User, 'username' | 'first_name' | 'last_name' | 'role'>
   onLogout: () => void
 }
 

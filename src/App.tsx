@@ -264,19 +264,18 @@ export default function App() {
             // 1. Фильтруем коллег (те, кто в этой локации и это НЕ я)
             const colleaguesInLocation: ShiftDisplayData[] = allActiveShifts
               .filter((s) => s.location_id === location.id && s.user_id !== user.id)
-              .map((s) => {
-                const fullName = s.profiles?.first_name && s.profiles?.last_name
-                  ? `${s.profiles.first_name} ${s.profiles.last_name}`
-                  : s.profiles?.username || 'Employee';
-
-                return {
-                  id: s.id,
-                  name: fullName,
-                  role: s.role,
-                  start: s.started_at,
-                  end: s.ended_at
-                };
-              });
+              .map((s) => ({
+                id: s.id,
+                start: new Date(s.started_at).toLocaleTimeString('en-GB', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }),
+                name: s.profiles?.first_name
+                  ? `${s.profiles.first_name} ${s.profiles.last_name || ''}`
+                  : s.profiles?.username || 'Employee',
+                role: s.role,
+                end: null
+              }));
 
             // 2. Готовим данные для текущего пользователя (userShift)
             const currentUserShiftData: ShiftDisplayData | undefined = (activeShift && location.id === selectedLocationId)
