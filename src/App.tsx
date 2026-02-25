@@ -118,17 +118,16 @@ export default function App() {
       .on(
         'postgres_changes',
         {
-          event: '*', // Слушаем INSERT, UPDATE и DELETE
+          event: '*',
           schema: 'public',
           table: 'shifts',
           filter: `organization_id=eq.${user.organization_id}`
         },
         async (payload) => {
           if (payload.eventType === 'INSERT') {
-            // Если кто-то начал смену, загружаем данные нового сотрудника и добавляем в список
             const { data: newShift } = await supabase
               .from('shifts')
-              .select('*, profiles(username)')
+              .select('*, profiles(username, first_name, last_name)')
               .eq('id', payload.new.id)
               .single();
 
@@ -136,7 +135,6 @@ export default function App() {
               setAllActiveShifts((prev) => [...prev, newShift]);
             }
           } else if (payload.eventType === 'UPDATE') {
-            // Если смена закончилась (появился ended_at), удаляем её из списка активных
             if (payload.new.ended_at) {
               setAllActiveShifts((prev) => prev.filter(s => s.id !== payload.new.id));
             }
