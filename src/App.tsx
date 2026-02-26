@@ -8,6 +8,7 @@ import LocationSelection from './components/LocationSelection';
 import CheckIn from './components/CheckIn';
 import { type Location, type User, type Shift, type ShiftDisplayData } from './types/types';
 import { supabase } from '../supabaseClient';
+import ActiveShift from './components/ActiveShift';
 
 export default function App() {
   const navigate = useNavigate();
@@ -17,16 +18,14 @@ export default function App() {
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [isLocationPopupOpen, setIsLocationPopupOpen] = useState(false);
   const [pendingLocation, setPendingLocation] = useState<Location | null>(null);
-  const [isShiftFinished, setIsShiftFinished] = useState(false);
-  const [currentTime, setCurrentTime] = useState(() => new Date());
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User>({ id: '', username: 'Unknown User', role: "", organization_id: "" });
   const [allActiveShifts, setAllActiveShifts] = useState<Shift[]>([]);
 
-  function getLocationName(locationId: string | null): string {
-    return locations.find((l) => l.id === locationId)?.name ?? 'Unknown Location';
-  }
+  // function getLocationName(locationId: string | null): string {
+  //   return locations.find((l) => l.id === locationId)?.name ?? 'Unknown Location';
+  // }
 
   useEffect(() => {
     const initData = async () => {
@@ -106,11 +105,6 @@ export default function App() {
   }, [navigate]);
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
     if (!user.organization_id) return;
 
     const channel = supabase
@@ -188,7 +182,6 @@ export default function App() {
 
     if (data) {
       setActiveShift(data);
-      setIsShiftFinished(false);
     } else if (error) {
       console.error("Error starting shift:", error.message);
     }
@@ -207,21 +200,10 @@ export default function App() {
     if (data) {
       setActiveShift(null);
       setSelectedLocationId(null);
-      setIsShiftFinished(true);
     } else if (error) {
       console.error("Error ending shift:", error.message);
     }
   };
-
-  const formattedTime = currentTime.toLocaleTimeString('en-GB', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-  });
-
-  const shiftStatusMessage = activeShift
-    ? `Shift running at ${getLocationName(activeShift.location_id)}. Started at ${new Date(activeShift.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.`
-    : isShiftFinished
-      ? 'Shift finished successfully.'
-      : 'You have not started your shift yet.';
 
   if (isLoading || isAuthChecking) {
     return (
@@ -234,30 +216,24 @@ export default function App() {
   return (
     <div className="App min-h-screen bg-gray-50 font-sans">
       <Dashboard user={user} onLogout={handleLogout} />
-      <main className="p-6 px-3 pb-32 max-w-7xl mx-auto">
-        <div className="mb-6 px-0 lg:px-3 space-y-4">
-          <div className="flex gap-4 md:gap-0 justify-between items-center">
-            <h1 className="text-2xl sm:text-3xl md:hidden font-bold text-gray-900">Planuj Směny</h1>
-            <div className="flex md:px-4 md:w-auto">
-              <span className="text-xl sm:text-2xl font-mono font-bold text-gray-700">{formattedTime}</span>
-            </div>
-            <CheckIn
-              user={user}
-              shiftStatusMessage={shiftStatusMessage}
-              selectedLocationId={selectedLocationId}
-              isShiftRunning={!!activeShift}
-              handleStartShift={handleStartShift}
-              handleEndShift={handleEndShift}
-            />
-          </div>
-        </div>
+      <main className="p-3 pb-32 max-w-7xl mx-auto">
+
+        <ActiveShift activeShift={activeShift} />
+
+        <CheckIn
+          selectedLocationId={selectedLocationId}
+          isShiftRunning={!!activeShift}
+          handleStartShift={handleStartShift}
+          handleEndShift={handleEndShift}
+        />
+
 
         <LocationSelection
           locations={locations}
           selectedLocationId={selectedLocationId}
           onLocationSelect={handleLocationSelect}
         />
-        <div className="space-y-6">
+        <div className="space-y-4">
           {locations.map((location) => {
             const userFullName = `${user.first_name} ${user.last_name || ''}`
 
