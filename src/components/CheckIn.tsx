@@ -18,7 +18,7 @@ export default function CheckIn({
 }: CheckInProps) {
   return (
     <section
-      className="block bg-white fixed md:static bottom-0 left-0 w-full z-40 border-t-gray-400 py-3 px-6 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] gap-4 transition-all"
+      className="block md:static fixed bottom-0 right-0 w-full z-40 py-3 px-6 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] gap-4 transition-all"
     >
 
       <div className="flex flex-row gap-3">

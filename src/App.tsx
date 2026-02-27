@@ -22,6 +22,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User>({ id: '', username: 'Unknown User', role: "", organization_id: "" });
   const [allActiveShifts, setAllActiveShifts] = useState<Shift[]>([]);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
 
   // function getLocationName(locationId: string | null): string {
   //   return locations.find((l) => l.id === locationId)?.name ?? 'Unknown Location';
@@ -142,6 +143,12 @@ export default function App() {
     };
   }, [user.organization_id]);
 
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
@@ -214,10 +221,19 @@ export default function App() {
   }
 
   return (
-    <div className="App min-h-screen bg-gray-50 font-sans">
-      <Dashboard user={user} onLogout={handleLogout} />
-      <main className="p-3 pb-32 max-w-7xl mx-auto">
-
+    <div className="App min-h-screen bg-gray-50 font-sans md:flex md:flex-row">
+      <Dashboard
+        user={user}
+        locProbs={{
+          locations: locations,
+          selectedLocationId: selectedLocationId,
+          handleLocationSelect: handleLocationSelect
+        }}
+        onLogout={handleLogout} />
+      <main className="p-3 pb-32 max-w-7xl w-full md:w-2/3 lg:w-3/4">
+        <p className="text-xl font-bold text-center mb-2 hidden md:block">{currentTime.toLocaleTimeString('en-GB', {
+          hour: '2-digit', minute: '2-digit'
+        })}</p>
         <ActiveShift activeShift={activeShift} />
 
         <CheckIn
@@ -227,12 +243,13 @@ export default function App() {
           handleEndShift={handleEndShift}
         />
 
-
-        <LocationSelection
-          locations={locations}
-          selectedLocationId={selectedLocationId}
-          onLocationSelect={handleLocationSelect}
-        />
+        <div className="md:hidden">
+          <LocationSelection
+            locations={locations}
+            selectedLocationId={selectedLocationId}
+            onLocationSelect={handleLocationSelect}
+          />
+        </div>
         <div className="space-y-4">
           {locations.map((location) => {
             const userFullName = `${user.first_name} ${user.last_name || ''}`

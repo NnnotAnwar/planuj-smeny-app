@@ -46,7 +46,7 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
     end ?? (start ? 'Ongoing' : '--:--');
   if (shifts.length === 0 && !userShift) return (<></>)
   return (
-    <div className="bg-gray-100 rounded-lg p-0 lg:p-4">
+    <div className="bg-gray-100 rounded-lg p-0 md:p-4">
       <h3 className="rounded bg-gray-800 px-2 py-1.5 text-white text-sm font-semibold mb-2 flex items-center justify-between">
         <span>{locationName}</span>
       </h3>

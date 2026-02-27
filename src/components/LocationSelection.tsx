@@ -17,17 +17,19 @@ export default function LocationSelection({
   selectedLocationId,
   onLocationSelect,
 }: LocationSelectionProps) {
-  const [locationsToggle, setLocationToggle] = useState(false)
+  const [locationsToggle, setLocationToggle] = useState(true)
 
   const toggleList = () => {
     if (locationsToggle) setLocationToggle(false)
     else setLocationToggle(true)
   }
 
+  // locations.push({ id: "dsd", name: "San Carlo - Test", organization_id: locations[0].organization_id, shifts: [] })
+
   return (
-    <div className='flex flex-col items-center text-white'>
+    <div className="flex flex-col items-center text-white">
       <button
-        className='rounded-xl px-4 py-1.5 mb-2'
+        className='rounded-xl px-4 py-1.5 mb-2 hidden'
         onClick={toggleList}
       >
         <svg viewBox="0 0 18 15" className="h-4 w-4">
@@ -36,14 +38,16 @@ export default function LocationSelection({
           <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z" />
         </svg>
       </button>
-      <nav className={`${locationsToggle ? "grid" : "hidden h-0"} grid-cols-2 gap-2 mb-3 scrollbar-hide w-full transition-all duration-300`}>
+      <nav className={`${locationsToggle ? "grid" : "hidden h-0"} grid-cols-2 md:grid-cols-1 gap-2 mb-3 scrollbar-hide w-full transition-all duration-300`}>
         {locations.map((location) => (
           <button
             key={location.id}
             type="button"
             onClick={() => onLocationSelect(location.id)}
-            className={`whitespace-nowrap snap-start px-4 py-2 rounded-full font-medium border transition-all shadow-sm text-xs
-            ${location.id === selectedLocationId ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+            className={`whitespace-nowrap snap-start px-4 py-2 md:gap-2 md:px-1 md:py-0 rounded-full font-medium border transition-all shadow-sm md:shadow-none text-[10px] min-[350px]:text-xs sm:text-sm md:text-left
+            ${location.id === selectedLocationId
+                ? 'bg-emerald-500 md:bg-white/0 text-white md:text-emerald-700 border-emerald-500 md:border-0 md:font-semibold md:text-lg'
+                : 'bg-white md:bg-inherit text-gray-700 border-gray-200 md:border-0 hover:bg-gray-100'}`}
           >
             {location.name}
           </button>

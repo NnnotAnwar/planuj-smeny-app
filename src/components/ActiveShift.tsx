@@ -12,31 +12,38 @@ export default function ActiveShift({ activeShift }: ActiveShiftProbs) {
         : 'No Active Shift'
 
     const bgColor = !activeShift
-        ? 'bg-gray-300 text-black justify-center'
-        : 'bg-emerald-200 text-emerald-800'
+        ? 'bg-gray-500/20 text-black'
+        : 'bg-emerald-500/25 text-emerald-500'
 
     return (
-        <div className="mb-3 lg:mb-0 justify-items-center">
+        <div className="mb-3 justify-items-center ">
             {/* <p className="text-sm font-semibold text-gray-700 justify-self-start">
                     {user.first_name}{user.last_name ? ' ' + user.last_name : ''}, {user.role}:
                   </p> */}
-            <p className={`flex gap-1.5 p-1.5 px-3 text-sm ${bgColor} items-center shadow-sm w-auto justify-around rounded-4xl mt-1`}>
+            <div className={`flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${bgColor}`}>
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
                     viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className='w-4 h-4 inline'
+                    strokeWidth={2.5}
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`h-4 w-4 ${!activeShift && "animate-pulse"}`}
                 >
+                    <circle cx="12" cy="12" r="9" />
+
+                    <path d="M12 7v5" />
+
                     <path
-                        fillRule="evenodd"
-                        d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .241.096.472.267.643l4.5 4.5a.75.75 0 001.06-1.06l-4.077-4.077V6z"
-                        clipRule="evenodd"
+                        d={activeShift ? "M12 12v-5" : "M12 12h4"}
+                        className={`origin-center ${activeShift && "animate-[spin_8s_steps(6)_infinite]"}`}
                     />
                 </svg>
-                <span>
+                <span className={`${!activeShift && "animate-pulse"}`}>
                     {shiftMessage}
                 </span>
-            </p>
+            </div>
         </div>
     )
 }
