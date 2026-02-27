@@ -268,13 +268,19 @@ export default function App() {
           <Clock seconds={true} />
         </p>
 
-        {/* 1. Desktop & Mobile Status Card */}
         <ActiveShift
           activeShift={activeShift}
           onEndShift={handleEndShift}
           userName={`${user.first_name} ${user.last_name || ''}`.trim() || user.username}
           userRole={user.role}
           locationName={locations.find(l => l.id === activeShift?.location_id)?.name || 'Unknown Location'}
+        />
+
+        <CheckIn
+          selectedLocationId={selectedLocationId}
+          isShiftRunning={!!activeShift}
+          handleStartShift={handleStartShift}
+          handleEndShift={handleEndShift}
         />
 
         {/* 2. Mobile ONLY: Sticky bottom "End Shift" button */}
@@ -291,16 +297,6 @@ export default function App() {
               End Shift
             </button>
           </div>
-        )}
-
-        {/* 3. Show Start Shift CheckIn ONLY if there is NO active shift */}
-        {!activeShift && (
-          <CheckIn
-            selectedLocationId={selectedLocationId}
-            isShiftRunning={false}
-            handleStartShift={handleStartShift}
-            handleEndShift={handleEndShift}
-          />
         )}
 
         <div className="md:hidden">
