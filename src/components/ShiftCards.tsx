@@ -1,116 +1,69 @@
 import { type ShiftDisplayData } from '../types/types';
 
-/** Props for a location's shift list and optional current user shift. */
 interface ShiftCardsProps {
   locationName: string;
   shifts: ShiftDisplayData[];
   userShift?: ShiftDisplayData;
 }
-/** Tailwind badge classes by role; fallback for unknown roles. */
+
+const ROLE_COLORS: Record<string, string> = {
+  Manager: 'bg-purple-600 text-white',
+  Supervisor: 'bg-emerald-500 text-white',
+  Waiter: 'bg-lime-400 text-black',
+  Waitress: 'bg-lime-400 text-black',
+};
+
 function getRoleBadgeColor(role: string): string {
-  switch (role) {
-    case 'Manager':
-      return 'bg-purple-600 text-white';
-    case 'Supervisor':
-      return 'bg-emerald-500 text-white';
-    case 'Waiter':
-    case 'Waitress':
-      return 'bg-lime-400 text-black';
-    default:
-      return 'bg-red-100 text-red-700';
-  }
+  return ROLE_COLORS[role] || 'bg-red-100 text-red-700';
 }
 
-// function getInitials(name: string): string {
-//   return name
-//     .split(' ')
-//     .map((n) => n[0])
-//     .join('')
-//     .substring(0, 2)
-//     .toUpperCase();
-// }
-
-// const TIME_ARROW = (
-//   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-//   </svg>
-// );
-
-/**
- * One location block: header + list of shift cards.
- * Renders user's shift (emerald or yellow if isChangeLocation) then other employees.
- * Unassigned shifts (no start) get a distinct yellow style.
- */
 export default function ShiftCards({ locationName, shifts, userShift }: ShiftCardsProps) {
-  const endLabel = (start: string | null, end: string | null) =>
-    end ?? (start ? 'Ongoing' : '--:--');
-  if (shifts.length === 0 && !userShift) return (<></>)
+  if (shifts.length === 0 && !userShift) return null;
+
   return (
-    <div className="bg-gray-100 rounded-lg p-0 md:p-4">
-      <h3 className="rounded bg-gray-800 px-2 py-1.5 text-white text-sm font-semibold mb-2 flex items-center justify-between">
+    <div className="rounded-lg bg-gray-100 p-0 md:p-4">
+      <h3 className="mb-2 flex items-center justify-between rounded bg-gray-800 px-2 py-1.5 text-sm font-semibold text-white">
         <span>{locationName}</span>
       </h3>
 
       <div className="grid grid-cols-1 gap-2">
-        {userShift && (
-          <UserShiftCard
-            userShift={userShift}
-            variant={userShift.isChangeLocation ? 'yellow' : 'emerald'}
-            getRoleBadgeColor={getRoleBadgeColor}
-            endLabel={endLabel(userShift.start, userShift.end)}
-          />
-        )}
+        {userShift && <UserShiftCard userShift={userShift} />}
 
         {shifts.map((shift) =>
           shift.start === null ? (
-            <UnassignedShiftCard key={shift.id} shift={shift} getRoleBadgeColor={getRoleBadgeColor} />
+            <UnassignedShiftCard key={shift.id} shift={shift} />
           ) : (
-            <AssignedShiftCard key={shift.id} shift={shift} getRoleBadgeColor={getRoleBadgeColor} />
-          ),
+            <AssignedShiftCard key={shift.id} shift={shift} />
+          )
         )}
       </div>
     </div>
   );
 }
 
-interface UserShiftCardProps {
-  userShift: NonNullable<ShiftCardsProps['userShift']>;
-  variant: 'emerald' | 'yellow';
-  getRoleBadgeColor: (role: string) => string;
-  endLabel: string;
-}
-
-function UserShiftCard({ userShift, variant, getRoleBadgeColor }: UserShiftCardProps) {
-  const isEmerald = variant === 'emerald';
+function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['userShift']> }) {
+  const isEmerald = !userShift.isChangeLocation;
   const bg = isEmerald ? 'bg-emerald-50' : 'bg-yellow-50';
-  const box = isEmerald ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-100 border-yellow-200 text-yellow-700';
-  // const arrow = isEmerald ? 'text-emerald-400' : 'text-yellow-400';
+  const box = isEmerald
+    ? 'bg-emerald-100 text-emerald-700'
+    : 'bg-yellow-100 border-yellow-200 text-yellow-700';
   const label = isEmerald ? 'text-emerald-700' : 'text-yellow-700';
 
   return (
-    <div className={`${bg} rounded-lg p-1.5 shadow-sm flex md:flex-row md:items-center gap-4`}>
-      <div className={`${box} rounded-lg px-1.5 flex justify-between items-center`}>
+    <div className={`flex flex-col gap-4 rounded-lg p-1.5 shadow-sm md:flex-row md:items-center ${bg}`}>
+      <div className={`flex items-center justify-between rounded-lg px-2 py-1 ${box}`}>
         <div className="text-center">
-          {/* <span className={`block text-xs font-medium ${label} uppercase tracking-wider mb-1`}>In</span> */}
           <span className={`text-sm font-semibold ${label}`}>{userShift.start ?? '--:--'}</span>
         </div>
-        {/* <div className={`${arrow} px-2`}>{TIME_ARROW}</div>
-        <div className="text-center">
-          <span className={`block text-xs font-medium ${label} uppercase tracking-wider mb-1`}>Out</span>
-          <span className={`text-lg font-semibold ${label}`}>{endLabel}</span>
-        </div> */}
       </div>
-      <div className="flex items-center w-full">
+      <div className="flex w-full items-center">
         <div className="flex flex-1 items-center gap-3">
-          {/* <div className="w-9 h-9 text-sm rounded-full bg-emerald-100 border-2 border-emerald-200 flex items-center justify-center text-emerald-700 font-semibold shadow-sm">
-            {getInitials(userShift.name)}
-          </div> */}
           <div>
-            <p className={`text-xs font-semibold ${label} uppercase tracking-wide`}>Your shift</p>
-            <p className="text-sm font-bold text-gray-900 truncate">{userShift.name}</p>
+            <p className={`text-xs font-semibold uppercase tracking-wide ${label}`}>Your shift</p>
+            <p className="truncate text-sm font-bold text-gray-900">{userShift.name}</p>
           </div>
         </div>
-        <div className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(userShift.role)}`}>
+        <div className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getRoleBadgeColor(userShift.role)}`}>
           {userShift.role}
         </div>
       </div>
@@ -118,62 +71,39 @@ function UserShiftCard({ userShift, variant, getRoleBadgeColor }: UserShiftCardP
   );
 }
 
-function UnassignedShiftCard({
-  shift,
-  getRoleBadgeColor,
-}: {
-  shift: ShiftDisplayData;
-  getRoleBadgeColor: (role: string) => string;
-}) {
+function AssignedShiftCard({ shift }: { shift: ShiftDisplayData }) {
   return (
-    <div className="bg-yellow-50 p-4 rounded-lg shadow-sm flex md:flex-row flex-col md:items-center justify-between gap-4">
-      <div className="bg-gray-50 rounded-lg p-3 md:min-w-42 min-w-16 h-16 flex border border-gray-300 items-center justify-center">
-        <svg className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+    <div className="flex flex-col gap-4 rounded-lg p-1.5 shadow-sm md:flex-row md:items-center">
+      <div className="flex items-center justify-between rounded-lg bg-gray-400 px-2 py-1 text-black">
+        <div className="text-center">
+          <span className="text-sm font-semibold">{shift.start ?? '--:--'}</span>
+        </div>
       </div>
-      <div className="flex-1 flex items-center justify-between">
-        <p className="flex-1 text-lg font-bold text-gray-900 truncate">{shift.name}</p>
-        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(shift.role)}`}>
+      <div className="flex w-full items-center">
+        <div className="flex flex-1 items-center gap-3">
+          <p className="truncate text-sm font-bold text-gray-900">{shift.name}</p>
+        </div>
+        <div className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getRoleBadgeColor(shift.role)}`}>
           {shift.role}
-        </span>
+        </div>
       </div>
     </div>
   );
 }
 
-function AssignedShiftCard({
-  shift,
-  getRoleBadgeColor,
-}: {
-  shift: ShiftDisplayData;
-  getRoleBadgeColor: (role: string) => string;
-}) {
+function UnassignedShiftCard({ shift }: { shift: ShiftDisplayData }) {
   return (
-    <div className={`rounded-lg p-1.5 shadow-sm flex md:flex-row md:items-center gap-4`}>
-      <div className={`bg-gray-400 text-black rounded-lg px-1.5 flex justify-between items-center`}>
-        <div className="text-center">
-          {/* <span className={`block text-xs font-medium ${label} uppercase tracking-wider mb-1`}>In</span> */}
-          <span className={`text-sm font-semibold`}>{shift.start ?? '--:--'}</span>
-        </div>
-        {/* <div className={`${arrow} px-2`}>{TIME_ARROW}</div>
-        <div className="text-center">
-          <span className={`block text-xs font-medium ${label} uppercase tracking-wider mb-1`}>Out</span>
-          <span className={`text-lg font-semibold ${label}`}>{endLabel}</span>
-        </div> */}
+    <div className="flex flex-col justify-between gap-4 rounded-lg bg-yellow-50 p-4 shadow-sm md:flex-row md:items-center">
+      <div className="flex h-16 min-w-16 items-center justify-center rounded-lg border border-gray-300 bg-gray-50 p-3 md:min-w-42">
+        <svg className="h-6 w-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
       </div>
-      <div className="flex items-center w-full">
-        <div className="flex flex-1 items-center gap-3">
-          {/* <div className="w-9 h-9 text-sm rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-black font-semibold shadow-sm">
-            {getInitials(shift.name)}
-          </div> */}
-          <div>
-            <p className="text-sm font-bold text-gray-900 truncate">{shift.name}</p>
-          </div>
-        </div>
-        <div className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(shift.role)}`}>
+      <div className="flex flex-1 items-center justify-between">
+        <p className="flex-1 truncate text-lg font-bold text-gray-900">{shift.name}</p>
+        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getRoleBadgeColor(shift.role)}`}>
           {shift.role}
-        </div>
+        </span>
       </div>
     </div>
   );
