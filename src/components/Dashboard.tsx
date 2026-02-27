@@ -1,6 +1,6 @@
 import { type Location, type User } from '../types/types'
-import { useState, useEffect } from 'react'
 import LocationSelection from './LocationSelection';
+import Clock from './Clock';
 /** Props for the app header: current user or null. */
 interface DashboardProps {
   user: Pick<User, 'username' | 'first_name' | 'last_name' | 'role'>
@@ -31,17 +31,6 @@ function getInitials(name: string): string {
  */
 export default function Dashboard({ user, locProbs, onLogout }: DashboardProps) {
 
-  const [currentTime, setCurrentTime] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formattedTime = currentTime.toLocaleTimeString('en-GB', {
-    hour: '2-digit', minute: '2-digit'
-  });
-
   return (
     <header className="sticky top-0 z-50 h-auto w-full md:w-1/3 lg:w-1/4 bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 transition-all duration-300">
       <div className="flex flex-col h-full max-w-7xl mx-auto px-4 py-1.5 md:gap-3">
@@ -54,8 +43,9 @@ export default function Dashboard({ user, locProbs, onLogout }: DashboardProps) 
               Planuj Směny
             </span> */}
           </div>
-          <div className="text-xl font-bold md:hidden">{formattedTime}</div>
-
+          <div className="text-xl font-bold md:hidden">
+            <Clock />
+          </div>
           <div className="flex items-center gap-4 sm:gap-6">
             {user && (
               <div className="flex items-center gap-3">

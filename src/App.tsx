@@ -9,6 +9,7 @@ import CheckIn from './components/CheckIn';
 import { type Location, type User, type Shift, type ShiftDisplayData } from './types/types';
 import { supabase } from '../supabaseClient';
 import ActiveShift from './components/ActiveShift';
+import Clock from './components/Clock';
 
 export default function App() {
   const navigate = useNavigate();
@@ -22,7 +23,6 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User>({ id: '', username: 'Unknown User', role: "", organization_id: "" });
   const [allActiveShifts, setAllActiveShifts] = useState<Shift[]>([]);
-  const [currentTime, setCurrentTime] = useState(() => new Date());
 
   // function getLocationName(locationId: string | null): string {
   //   return locations.find((l) => l.id === locationId)?.name ?? 'Unknown Location';
@@ -143,12 +143,6 @@ export default function App() {
     };
   }, [user.organization_id]);
 
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
@@ -231,9 +225,9 @@ export default function App() {
         }}
         onLogout={handleLogout} />
       <main className="p-3 pb-32 max-w-7xl w-full md:w-2/3 lg:w-3/4">
-        <p className="text-xl font-bold text-center mb-2 hidden md:block">{currentTime.toLocaleTimeString('en-GB', {
-          hour: '2-digit', minute: '2-digit'
-        })}</p>
+        <p className="text-xl font-bold text-center mb-2 hidden md:block">
+          <Clock />
+        </p>
         <ActiveShift activeShift={activeShift} />
 
         <CheckIn
