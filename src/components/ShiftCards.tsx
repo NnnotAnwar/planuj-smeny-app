@@ -50,7 +50,7 @@ function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['
   const label = isEmerald ? 'text-emerald-700' : 'text-yellow-700';
 
   return (
-    <div className={`flex flex-col gap-4 rounded-lg p-1.5 shadow-sm md:flex-row md:items-center ${bg}`}>
+    <div className={`flex flex-row gap-4 rounded-lg p-1.5 shadow-sm md:items-center ${bg}`}>
       <div className={`flex items-center justify-between rounded-lg px-2 py-1 ${box}`}>
         <div className="text-center">
           <span className={`text-sm font-semibold ${label}`}>{userShift.start ?? '--:--'}</span>
@@ -73,7 +73,7 @@ function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['
 
 function AssignedShiftCard({ shift }: { shift: ShiftDisplayData }) {
   return (
-    <div className="flex flex-col gap-4 rounded-lg p-1.5 shadow-sm md:flex-row md:items-center">
+    <div className="flex flex-row gap-4 rounded-lg p-1.5 shadow-sm md:items-center">
       <div className="flex items-center justify-between rounded-lg bg-gray-400 px-2 py-1 text-black">
         <div className="text-center">
           <span className="text-sm font-semibold">{shift.start ?? '--:--'}</span>
