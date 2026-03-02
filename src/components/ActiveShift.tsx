@@ -1,21 +1,12 @@
-import type { Shift } from '../types/types';
 import LiveClockIcon from './LiveClockIcon';
+import { useAuthContext } from '../context/AuthContext';
+import { useShiftContext } from '../context/ShiftContext';
 
-interface ActiveShiftProps {
-    activeShift: Shift | null;
-    onEndShift: () => void;
-    userName: string;
-    userRole: string;
-    locationName: string;
-}
+export default function ActiveShift() {
+    const { user } = useAuthContext();
+    const { activeShift, handleEndShift, locations } = useShiftContext();
 
-export default function ActiveShift({
-    activeShift,
-    onEndShift,
-    userName,
-    userRole,
-    locationName,
-}: ActiveShiftProps) {
+    if (!user) return null;
 
     const startTime = activeShift
         ? new Date(activeShift.started_at).toLocaleTimeString('en-GB', {
@@ -23,6 +14,10 @@ export default function ActiveShift({
             minute: '2-digit',
         })
         : '';
+
+    const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+    const userRole = user.role;
+    const locationName = locations.find(l => l.id === activeShift?.location_id)?.name || 'Unknown Location';
 
     // 1. STATE: NO ACTIVE SHIFT
     if (!activeShift) {
@@ -70,7 +65,7 @@ export default function ActiveShift({
                 </div>
                 <div className="w-auto">
                     <button
-                        onClick={onEndShift}
+                        onClick={handleEndShift}
                         className="flex items-center justify-center gap-2 rounded-xl bg-red-500 px-8 py-3 font-medium text-white shadow-sm shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -84,7 +79,7 @@ export default function ActiveShift({
             {/* --- MOBILE VIEW: Sticky Bottom "End Shift" Button --- */}
             <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white p-4 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:hidden">
                 <button
-                    onClick={onEndShift}
+                    onClick={handleEndShift}
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-8 py-4 text-lg font-bold text-white shadow-sm transition-all hover:bg-red-600 active:scale-95"
                 >
                     {/* Square Stop Icon */}

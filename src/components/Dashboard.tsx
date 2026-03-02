@@ -1,17 +1,15 @@
 import { useState } from 'react';
-import { type Location, type User } from '../types/types';
 import LocationSelection from './LocationSelection';
 import Clock from './Clock';
+import { useAuthContext } from '../context/AuthContext';
+import { useShiftContext } from '../context/ShiftContext';
 
 interface DashboardProps {
-  user: Pick<User, 'username' | 'first_name' | 'last_name' | 'role'>;
-  locations: Location[];
-  selectedLocationId: string | null;
   onLocationSelect: (locationId: string | null) => void;
-  onLogout: () => void;
 }
 
 function getInitials(name: string): string {
+  if (!name) return '??';
   return name
     .split(' ')
     .map((n) => n[0])
@@ -21,13 +19,10 @@ function getInitials(name: string): string {
 }
 
 export default function Dashboard({
-  user,
-  locations,
-  selectedLocationId,
   onLocationSelect,
-  onLogout,
 }: DashboardProps) {
-  // State to control the mobile dropdown menu
+  const { user, logout } = useAuthContext();
+  const { locations, selectedLocationId } = useShiftContext();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -70,7 +65,6 @@ export default function Dashboard({
             )}
 
             {/* --- MOBILE DROPDOWN MENU --- */}
-            {/* Renders only when isMobileMenuOpen is true, hidden on desktop */}
             {isMobileMenuOpen && (
               <div className="absolute right-0 top-12 mt-2 w-56 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl md:hidden">
 
@@ -100,7 +94,7 @@ export default function Dashboard({
 
                   {/* Mobile Logout Button */}
                   <button
-                    onClick={onLogout}
+                    onClick={logout}
                     className="flex w-full items-center gap-2 rounded-xl p-2 text-left text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
@@ -145,7 +139,7 @@ export default function Dashboard({
         {/* --- DESKTOP ONLY: Logout Button --- */}
         <div className="hidden md:block mt-auto pt-4">
           <button
-            onClick={onLogout}
+            onClick={logout}
             className="flex w-full items-center justify-center gap-2 text-sm font-medium text-red-600 hover:text-red-700 transition-colors hover:bg-red-50 border border-red-100 rounded-xl p-2.5 bg-white shadow-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5">

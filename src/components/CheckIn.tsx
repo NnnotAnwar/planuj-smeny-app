@@ -1,17 +1,10 @@
-interface CheckInProps {
-  selectedLocationId: string | null;
-  isShiftRunning: boolean;
-  handleStartShift: () => void;
-  handleEndShift: () => void;
-}
+import { useShiftContext } from '../context/ShiftContext';
 
-export default function CheckIn({
-  selectedLocationId,
-  isShiftRunning,
-  handleStartShift,
-}: CheckInProps) {
+export default function CheckIn() {
+  const { selectedLocationId, activeShift, handleStartShift } = useShiftContext();
+
   // If shift is running, hide this component completely
-  if (isShiftRunning) return null;
+  if (activeShift) return null;
 
   const isDisabled = !selectedLocationId;
 
