@@ -9,17 +9,17 @@ import { ShiftProvider } from './context/ShiftContext.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <ShiftProvider>
-        <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <ShiftProvider>
           <Routes>
             <Route path="/" element={<App />} />
             <Route path="/login" element={<LoginPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </BrowserRouter>
-      </ShiftProvider>
-    </AuthProvider>
+        </ShiftProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </StrictMode >,
 );
