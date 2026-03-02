@@ -1,6 +1,6 @@
 import { useState, useEffect, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from '../../supabaseClient'
+import { authService } from '../services/authService'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -14,7 +14,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await authService.getSession();
 
       if (session) {
         navigate('/', { replace: true });
@@ -35,11 +35,9 @@ export default function LoginPage() {
       let emailToUse = loginInput.trim()
 
       if (!emailToUse.includes('@')) {
-        const { data: foundEmail, error: searchError } = await supabase.rpc('get_email_by_username', {
-          u_name: emailToUse
-        });
+        const foundEmail = await authService.getEmailByUsername(emailToUse);
 
-        if (searchError || !foundEmail) {
+        if (!foundEmail) {
           throw new Error('No username found');
         }
 
@@ -47,10 +45,7 @@ export default function LoginPage() {
       }
 
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailToUse,
-        password: password,
-      });
+      const { data, error } = await authService.signIn(emailToUse, password);
 
       if (error) throw error;
 
@@ -60,7 +55,7 @@ export default function LoginPage() {
     }
     catch (error: unknown) {
       setErrorMsg((error instanceof Error ? error.message : "Authorization error") || "Authorization error")
-      console.log(error)
+      console.error(error)
     }
     finally {
       setIsLoading(false)

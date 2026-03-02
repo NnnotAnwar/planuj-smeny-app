@@ -1,161 +1,30 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import ShiftCards from './components/ShiftCards';
 import LocationPopup from './components/LocationPopup';
 import LocationSelection from './components/LocationSelection';
 import CheckIn from './components/CheckIn';
-import { type Location, type User, type Shift, type ShiftDisplayData } from './types/types';
-import { supabase } from '../supabaseClient';
+import { type Location, type ShiftDisplayData } from './types/types';
+import ActiveShift from './components/ActiveShift';
+import Clock from './components/Clock';
+import { useAuthContext } from './context/AuthContext';
+import { useShiftContext } from './context/ShiftContext';
 
 export default function App() {
-  const navigate = useNavigate();
+  const { user, isAuthChecking, isLoading: isAuthLoading } = useAuthContext();
+  
+  const {
+    activeShift,
+    allActiveShifts,
+    locations,
+    isLoading: isShiftsLoading,
+    selectedLocationId,
+    setSelectedLocationId,
+  } = useShiftContext();
 
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
-  const [activeShift, setActiveShift] = useState<Shift | null>(null);
-  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [isLocationPopupOpen, setIsLocationPopupOpen] = useState(false);
   const [pendingLocation, setPendingLocation] = useState<Location | null>(null);
-  const [isShiftFinished, setIsShiftFinished] = useState(false);
-  const [currentTime, setCurrentTime] = useState(() => new Date());
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<User>({ id: '', username: 'Unknown User', role: "", organization_id: "" });
-  const [allActiveShifts, setAllActiveShifts] = useState<Shift[]>([]);
-
-  function getLocationName(locationId: string | null): string {
-    return locations.find((l) => l.id === locationId)?.name ?? 'Unknown Location';
-  }
-
-  useEffect(() => {
-    const initData = async () => {
-      setIsLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        navigate('/login', { replace: true });
-        return;
-      }
-
-      // 1. Загружаем профиль
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, username, first_name, last_name, role, organization_id')
-        .eq('id', session.user.id)
-        .single();
-
-
-      if (profile) {
-        const userData: User = {
-          id: profile.id,
-          username: profile.username,
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          role: profile.role,
-          organization_id: profile.organization_id
-        };
-        setUser(userData);
-
-        // 2. Ищем активную смену
-        const { data: currentShift } = await supabase
-          .from('shifts')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .is('ended_at', null)
-          .maybeSingle();
-
-        if (currentShift) {
-          setActiveShift(currentShift);
-          setSelectedLocationId(currentShift.location_id);
-        }
-
-        // 3. Загружаем локации организации
-        const { data: locs } = await supabase
-          .from('locations')
-          .select('*')
-          .eq('organization_id', profile.organization_id);
-
-        if (locs) {
-          setLocations(locs.map(l => ({ id: l.id, name: l.name, shifts: [] })));
-        }
-
-        const { data: activeShiftsData } = await supabase
-          .from('shifts')
-          .select('*, profiles(username, first_name, last_name)')
-          .eq('organization_id', profile.organization_id)
-          .is('ended_at', null);
-
-        if (activeShiftsData) {
-          setAllActiveShifts(activeShiftsData);
-        }
-      }
-      setIsLoading(false);
-      setIsAuthChecking(false);
-    };
-
-    initData();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        navigate('/login', { replace: true });
-      }
-    });
-
-    return () => authListener.subscription.unsubscribe();
-  }, [navigate]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!user.organization_id) return;
-
-    const channel = supabase
-      .channel('realtime_shifts')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'shifts',
-          filter: `organization_id=eq.${user.organization_id}`
-        },
-        async (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const { data: newShift } = await supabase
-              .from('shifts')
-              .select('*, profiles(username, first_name, last_name)')
-              .eq('id', payload.new.id)
-              .single();
-
-            if (newShift) {
-              setAllActiveShifts((prev) => [...prev, newShift]);
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            if (payload.new.ended_at) {
-              setAllActiveShifts((prev) => prev.filter(s => s.id !== payload.new.id));
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user.organization_id]);
-
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
-      navigate('/login', { replace: true });
-    } else {
-      console.error("Error logging out:", error.message);
-    }
-  };
 
   const handleLocationSelect = (locationId: string | null) => {
     const selected = locations.find((loc) => loc.id === locationId);
@@ -168,62 +37,9 @@ export default function App() {
     setIsLocationPopupOpen(true);
   };
 
-  const handleStartShift = async () => {
-    if (!selectedLocationId || !user) return;
+  const isLoading = isAuthLoading || isShiftsLoading || isAuthChecking;
 
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) return;
-
-    const { data, error } = await supabase
-      .from('shifts')
-      .insert({
-        user_id: authUser.id,
-        location_id: selectedLocationId,
-        organization_id: user.organization_id,
-        started_at: new Date().toISOString(),
-        role: user.role
-      })
-      .select()
-      .single();
-
-    if (data) {
-      setActiveShift(data);
-      setIsShiftFinished(false);
-    } else if (error) {
-      console.error("Error starting shift:", error.message);
-    }
-  };
-
-  const handleEndShift = async () => {
-    if (!activeShift) return;
-
-    const { data, error } = await supabase
-      .from('shifts')
-      .update({ ended_at: new Date().toISOString() })
-      .eq('id', activeShift.id)
-      .select()
-      .single();
-
-    if (data) {
-      setActiveShift(null);
-      setSelectedLocationId(null);
-      setIsShiftFinished(true);
-    } else if (error) {
-      console.error("Error ending shift:", error.message);
-    }
-  };
-
-  const formattedTime = currentTime.toLocaleTimeString('en-GB', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-  });
-
-  const shiftStatusMessage = activeShift
-    ? `Shift running at ${getLocationName(activeShift.location_id)}. Started at ${new Date(activeShift.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.`
-    : isShiftFinished
-      ? 'Shift finished successfully.'
-      : 'You have not started your shift yet.';
-
-  if (isLoading || isAuthChecking) {
+  if (isLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
@@ -232,44 +48,35 @@ export default function App() {
   }
 
   return (
-    <div className="App min-h-screen bg-gray-50 font-sans">
-      <Dashboard user={user} onLogout={handleLogout} />
-      <main className="p-6 px-3 pb-32 max-w-7xl mx-auto">
-        <div className="mb-6 px-0 lg:px-3 space-y-4">
-          <div className="flex gap-4 md:gap-0 justify-between items-center">
-            <h1 className="text-2xl sm:text-3xl md:hidden font-bold text-gray-900">Planuj Směny</h1>
-            <div className="flex md:px-4 md:w-auto">
-              <span className="text-xl sm:text-2xl font-mono font-bold text-gray-700">{formattedTime}</span>
-            </div>
-            <CheckIn
-              user={user}
-              shiftStatusMessage={shiftStatusMessage}
-              selectedLocationId={selectedLocationId}
-              isShiftRunning={!!activeShift}
-              handleStartShift={handleStartShift}
-              handleEndShift={handleEndShift}
-            />
-          </div>
+    <div className="App min-h-screen bg-gray-50 font-sans md:flex md:flex-row">
+      <Dashboard onLocationSelect={handleLocationSelect} />
+      <main className="p-3 pb-32 max-w-7xl w-full md:w-2/3 lg:w-3/4">
+        <p className="mb-6 hidden text-center text-xl font-bold md:block">
+          <Clock seconds={true} />
+        </p>
+
+        <ActiveShift />
+
+        <CheckIn />
+
+        <div className="md:hidden">
+          <LocationSelection
+            locations={locations}
+            selectedLocationId={selectedLocationId}
+            onLocationSelect={handleLocationSelect}
+          />
         </div>
 
-        <LocationSelection
-          locations={locations}
-          selectedLocationId={selectedLocationId}
-          onLocationSelect={handleLocationSelect}
-        />
-        <div className="space-y-6">
+        <div className="space-y-4">
           {locations.map((location) => {
-            const userFullName = `${user.first_name} ${user.last_name || ''}`
+            const userFullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
 
             const colleaguesInLocation: ShiftDisplayData[] = allActiveShifts
               .filter((s) => s.location_id === location.id && s.user_id !== user.id)
               .map((s) => ({
                 id: s.id,
-                start: new Date(s.started_at).toLocaleTimeString('en-GB', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }),
-                name: `${s.profiles?.first_name || 'Employee'} ${s.profiles?.last_name || ''}`,
+                start: s.started_at ? new Date(s.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '--:--',
+                name: `${s.profiles?.first_name || 'Employee'} ${s.profiles?.last_name || ''}`.trim(),
                 role: s.role,
                 end: null
               }));
@@ -278,10 +85,7 @@ export default function App() {
               ? {
                 name: userFullName,
                 role: user.role,
-                start: new Date(activeShift.started_at).toLocaleTimeString('en-GB', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }),
+                start: new Date(activeShift.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
                 end: null,
                 isChangeLocation: false,
               }

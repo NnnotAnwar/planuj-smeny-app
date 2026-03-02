@@ -17,6 +17,7 @@ dist-ssr
 schema.sql
 .DS_Store
 old_migrations
+.prettierrc
 
 # Editor directories and files
 .vscode/*

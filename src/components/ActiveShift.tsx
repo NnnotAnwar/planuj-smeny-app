@@ -1,0 +1,94 @@
+import LiveClockIcon from './LiveClockIcon';
+import { useAuthContext } from '../context/AuthContext';
+import { useShiftContext } from '../context/ShiftContext';
+
+export default function ActiveShift() {
+    const { user } = useAuthContext();
+    const { activeShift, handleEndShift, locations } = useShiftContext();
+
+    if (!user) return null;
+
+    const startTime = activeShift
+        ? new Date(activeShift.started_at).toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+        })
+        : '';
+
+    const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+    const userRole = user.role;
+    const locationName = locations.find(l => l.id === activeShift?.location_id)?.name || 'Unknown Location';
+
+    // 1. STATE: NO ACTIVE SHIFT
+    if (!activeShift) {
+        return (
+            <div className="mb-6 flex justify-center">
+                <div className="flex items-center gap-1.5 rounded-full bg-gray-200/50 px-3 py-1 text-sm font-medium text-gray-500">
+                    <LiveClockIcon className="h-4 w-4 text-gray-400" isActive={false} />
+                    No Active Shift
+                </div>
+            </div>
+        );
+    }
+
+    // 2. STATE: ACTIVE SHIFT
+    return (
+        <>
+            {/* --- MOBILE VIEW: Small Top Badge --- */}
+            <div className="mb-6 flex justify-center md:hidden">
+                <div className="flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
+                    <LiveClockIcon className="h-4 w-4" isActive={true} />
+                    Active Shift: {startTime}
+                </div>
+            </div>
+
+            {/* --- DESKTOP/IPAD VIEW: Big Status Card --- */}
+            <div className="relative mb-8 hidden flex-col items-start justify-between gap-5 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm md:flex md:flex-row md:items-center md:p-6">
+                <div className="absolute bottom-0 left-0 top-0 w-1.5 bg-emerald-500"></div>
+                <div className="flex items-center gap-4 pl-2">
+                    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
+                        <LiveClockIcon className="h-6 w-6" isActive={true} />
+                    </div>
+                    <div>
+                        <div className="mb-1 flex items-center gap-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+                                Active Shift
+                            </span>
+                        </div>
+                        <h3 className="text-lg font-bold leading-tight text-gray-900">
+                            {userName} <span className="ml-1 text-sm font-normal text-gray-500">({userRole})</span>
+                        </h3>
+                        <p className="mt-0.5 text-sm text-gray-500">
+                            {locationName} • Started at {startTime}
+                        </p>
+                    </div>
+                </div>
+                <div className="w-auto">
+                    <button
+                        onClick={handleEndShift}
+                        className="flex items-center justify-center gap-2 rounded-xl bg-red-500 px-8 py-3 font-medium text-white shadow-sm shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                            <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
+                        </svg>
+                        End Shift
+                    </button>
+                </div>
+            </div>
+
+            {/* --- MOBILE VIEW: Sticky Bottom "End Shift" Button --- */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white p-4 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:hidden">
+                <button
+                    onClick={handleEndShift}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-8 py-4 text-lg font-bold text-white shadow-sm transition-all hover:bg-red-600 active:scale-95"
+                >
+                    {/* Square Stop Icon */}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+                        <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
+                    </svg>
+                    End Shift
+                </button>
+            </div>
+        </>
+    );
+}
