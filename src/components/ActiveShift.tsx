@@ -23,8 +23,8 @@ export default function ActiveShift() {
     if (!activeShift) {
         return (
             <div className="mb-6 flex justify-center">
-                <div className="flex items-center gap-1.5 rounded-full bg-gray-200/50 px-3 py-1 text-sm font-medium text-gray-500">
-                    <LiveClockIcon className="h-4 w-4 text-gray-400" isActive={false} />
+                <div className="flex items-center gap-1.5 rounded-full bg-gray-200/50 dark:bg-gray-800/50 px-3 py-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <LiveClockIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" isActive={false} />
                     No Active Shift
                 </div>
             </div>
@@ -36,29 +36,29 @@ export default function ActiveShift() {
         <>
             {/* --- MOBILE VIEW: Small Top Badge --- */}
             <div className="mb-6 flex justify-center md:hidden">
-                <div className="flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
+                <div className="flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 text-sm font-medium text-emerald-700 dark:text-emerald-400">
                     <LiveClockIcon className="h-4 w-4" isActive={true} />
                     Active Shift: {startTime}
                 </div>
             </div>
 
             {/* --- DESKTOP/IPAD VIEW: Big Status Card --- */}
-            <div className="relative mb-8 hidden flex-col items-start justify-between gap-5 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm md:flex md:flex-row md:items-center md:p-6">
-                <div className="absolute bottom-0 left-0 top-0 w-1.5 bg-emerald-500"></div>
+            <div className="relative mb-8 hidden flex-col items-start justify-between gap-5 overflow-hidden rounded-2xl border border-gray-200 dark:border-white/5 bg-white/40 dark:bg-white/5 backdrop-blur-md p-5 shadow-sm md:flex md:flex-row md:items-center md:p-6 transition-all duration-300">
+                <div className="absolute bottom-0 left-0 top-0 w-1.5 bg-linear-to-b from-emerald-500 to-teal-600"></div>
                 <div className="flex items-center gap-4 pl-2">
-                    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
+                    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-emerald-500/10 to-teal-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20">
                         <LiveClockIcon className="h-6 w-6" isActive={true} />
                     </div>
                     <div>
                         <div className="mb-1 flex items-center gap-2">
-                            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+                            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                                 Active Shift
                             </span>
                         </div>
-                        <h3 className="text-lg font-bold leading-tight text-gray-900">
-                            {userName} <span className="ml-1 text-sm font-normal text-gray-500">({userRole})</span>
+                        <h3 className="text-lg font-bold leading-tight text-gray-900 dark:text-white">
+                            {userName} <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({userRole})</span>
                         </h3>
-                        <p className="mt-0.5 text-sm text-gray-500">
+                        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
                             {locationName} • Started at {startTime}
                         </p>
                     </div>
@@ -66,7 +66,7 @@ export default function ActiveShift() {
                 <div className="w-auto">
                     <button
                         onClick={handleEndShift}
-                        className="flex items-center justify-center gap-2 rounded-xl bg-red-500 px-8 py-3 font-medium text-white shadow-sm shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95"
+                        className="flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-red-500 to-rose-600 px-8 py-3 font-medium text-white shadow-sm shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95 cursor-pointer"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
                             <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
@@ -77,10 +77,10 @@ export default function ActiveShift() {
             </div>
 
             {/* --- MOBILE VIEW: Sticky Bottom "End Shift" Button --- */}
-            <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white p-4 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:hidden">
+            <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 dark:border-white/10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl md:hidden transition-all duration-300">
                 <button
                     onClick={handleEndShift}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 px-8 py-4 text-lg font-bold text-white shadow-sm transition-all hover:bg-red-600 active:scale-95"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500 px-8 py-4 text-lg font-bold text-white shadow-lg shadow-red-500/30 transition-all hover:bg-red-600 active:scale-[0.98] cursor-pointer"
                 >
                     {/* Square Stop Icon */}
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">

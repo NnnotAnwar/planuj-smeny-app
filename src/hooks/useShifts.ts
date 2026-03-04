@@ -12,6 +12,8 @@ export function useShifts(user: User | null) {
   const [allActiveShifts, setAllActiveShifts] = useState<Shift[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStarting, setIsStarting] = useState(false);
+  const [isEnding, setIsEnding] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
 
   /**
@@ -50,12 +52,15 @@ export function useShifts(user: User | null) {
    * Handles the logic for starting a new shift.
    */
   const handleStartShift = async () => {
-    if (!selectedLocationId || !user) return;
+    if (!selectedLocationId || !user || isStarting) return;
     try {
+      setIsStarting(true);
       const data = await shiftService.startShift(user, selectedLocationId);
       setActiveShift(data);
     } catch (err) {
       console.error('Error handleStartShift:', err);
+    } finally {
+      setIsStarting(false);
     }
   };
 
@@ -63,13 +68,16 @@ export function useShifts(user: User | null) {
    * Handles the logic for ending the currently active shift.
    */
   const handleEndShift = async () => {
-    if (!activeShift) return;
+    if (!activeShift || isEnding) return;
     try {
+      setIsEnding(true);
       await shiftService.endShift(activeShift.id);
       setActiveShift(null);
       setSelectedLocationId(null);
     } catch (err) {
       console.error('Error handleEndShift:', err);
+    } finally {
+      setIsEnding(false);
     }
   };
 
@@ -80,6 +88,8 @@ export function useShifts(user: User | null) {
     setAllActiveShifts,
     locations,
     isLoading,
+    isStarting,
+    isEnding,
     selectedLocationId,
     setSelectedLocationId,
     handleStartShift,

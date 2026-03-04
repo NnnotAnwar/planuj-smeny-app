@@ -1,1 +1,51 @@
 @import "tailwindcss";
+
+@theme {
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  --color-emerald-950: #022c22;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html, body, #root {
+  min-height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Fallback for webkit (iOS/iPadOS) */
+@supports (-webkit-touch-callout: none) {
+  html, body, #root {
+    min-height: -webkit-fill-available;
+  }
+}
+
+html.dark {
+  background-color: #020617; /* slate-950 */
+}
+
+body {
+  @apply antialiased bg-linear-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 transition-colors duration-500 bg-fixed;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

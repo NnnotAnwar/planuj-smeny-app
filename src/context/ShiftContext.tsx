@@ -11,6 +11,8 @@ interface ShiftContextType {
   setAllActiveShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
   locations: Location[];
   isLoading: boolean;
+  isStarting: boolean;
+  isEnding: boolean;
   selectedLocationId: string | null;
   setSelectedLocationId: (id: string | null) => void;
   handleStartShift: () => Promise<void>;
