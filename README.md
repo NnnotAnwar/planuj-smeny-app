@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# Planuj Směny App — Employee Portal 🚀
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern web application for managing employee work shifts. It allows tracking shift starts and ends, monitoring colleagues currently on duty, and switching between locations in real-time.
 
-Currently, two official plugins are available:
+## 🌟 Key Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Authentication**: Sign in using either Email or Username (integrated with Supabase Auth).
+- **Shift Management**: Quick start and end shift actions with a single button.
+- **Real-time Monitoring**: Instant updates of colleagues currently on shift without page reloads.
+- **Multi-location Support**: Support for multiple venues (halls/restaurants) within a single organization.
+- **Role-based Styling**: Visual differentiation of employees by roles (Manager, Supervisor, Waiter, etc.).
+- **Responsive Design**: Full support for mobile, tablet, and desktop devices with optimized controls (Sticky buttons).
 
-## React Compiler
+## 🛠 Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool**: [Vite 7](https://vitejs.dev/)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) (using the new Oxide engine)
+- **Backend**: [Supabase](https://supabase.com/) (PostgreSQL, Realtime, Auth, RLS)
+- **Routing**: [React Router 7](https://reactrouter.com/)
 
-## Expanding the ESLint configuration
+## 📂 Project Structure
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+src/
+├── components/       # UI components (ActiveShift, Dashboard, Clock, etc.)
+├── context/          # Global state (AuthContext, ShiftContext)
+├── hooks/            # Custom hooks (useAuth, useShifts, useRealtime)
+├── services/         # API interaction layer with Supabase
+├── routes/           # Application pages (LoginPage, AdminPage)
+├── types/            # TypeScript definitions
+└── supabaseClient.ts # Supabase client initialization
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## ⚙️ Backend Setup (Supabase)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+The project utilizes the following tables in the `public` schema:
+- `organizations`: Companies and their settings.
+- `profiles`: Employee data (names, roles, organization links).
+- `locations`: Work points within an organization.
+- `shifts`: History and current state of shifts.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**Security (RLS)**: Data access is strictly isolated — employees can only see colleagues and locations belonging to their own organization.
+
+## 🚦 Getting Started
+
+### 1. Clone and Install Dependencies
+```bash
+yarn
 ```
+
+### 2. Environment Configuration
+Create a `.env.local` file in the root directory and add your Supabase project keys:
+```env
+VITE_SUPABASE_URL=your_project_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+```
+
+### 3. Run in Development Mode
+```bash
+yarn dev
+```
+
+### 4. Build for Production
+```bash
+yarn build
+```
+
+## 🏗 Application Architecture
+
+The application is built on the principle of **separation of concerns**:
+1. **Services**: Encapsulate direct database queries.
+2. **Hooks**: Handle business logic and manage local state.
+3. **Context**: Provides authentication and shift data to the entire component tree.
+4. **Realtime**: Leverages Supabase Channels for instant state synchronization across multiple user devices.
+
+---
+Developed with a focus on performance and user experience.
