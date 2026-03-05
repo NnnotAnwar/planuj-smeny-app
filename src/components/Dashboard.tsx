@@ -61,7 +61,7 @@ export default function Dashboard({ onLocationSelect }: DashboardProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 h-auto md:min-h-screen w-full md:w-1/3 lg:w-1/4 bg-white/40 dark:bg-gray-900/80 backdrop-blur-xl shadow-sm border-b md:border-b-0 md:border-r border-emerald-500/10 dark:border-white/5 transition-all duration-300">
+      <header className="sticky top-0 z-50 h-auto md:h-screen md:min-h-screen w-full md:w-1/3 lg:w-1/4 bg-white/40 dark:bg-gray-900/80 backdrop-blur-xl shadow-sm border-b md:border-b-0 md:border-r border-emerald-500/10 dark:border-white/5 transition-all duration-300">
         <div className="flex flex-col h-full max-w-7xl mx-auto px-4 py-1.5 md:gap-2 md:py-4 pt-[calc(0.375rem+env(safe-area-inset-top,0px))]">
           <div className="shrink-0 flex justify-between items-center h-10 md:h-12 relative">
             <div className="flex items-center gap-3 z-10">
@@ -103,7 +103,7 @@ export default function Dashboard({ onLocationSelect }: DashboardProps) {
           <div className="flex-1 overflow-y-auto scrollbar-hide py-2 hidden md:flex md:flex-col gap-4">
             <nav className="flex flex-col gap-0.5">
               {navItems.map((item) => (
-                <button key={item.name} className={`flex items-center gap-3 w-full rounded-xl transition-all duration-200 cursor-pointer ${item.name === 'Dashboard' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold' : 'hover:bg-emerald-500/5 text-gray-500 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-gray-200'}`}>
+                <button key={item.name} className={`flex items-center p-2 gap-3 w-full rounded-xl transition-all duration-200 cursor-pointer ${item.name === 'Dashboard' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold' : 'hover:bg-emerald-500/5 text-gray-500 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-gray-200'}`}>
                   <svg className={`w-4 h-4 ${item.name === 'Dashboard' ? 'text-emerald-600' : 'text-gray-400 dark:text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon} /></svg>
                   <span className="text-sm">{item.name}</span>
                 </button>

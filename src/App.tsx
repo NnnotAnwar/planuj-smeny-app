@@ -59,7 +59,7 @@ export default function App() {
   return (
     <div className="App min-h-dvh w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
       <Dashboard onLocationSelect={handleLocationSelect} />
-      <main className="flex-1 p-3 pb-32 md:p-6 md:pb-8 max-w-7xl transition-all duration-500 ease-in-out">
+      <main className="flex-1 p-3 pb-32 md:p-6 md:pb-6 max-w-7xl transition-all duration-500 ease-in-out">
 
         {/* Desktop Header Bar (Hidden on Mobile) */}
         <div className="hidden md:flex items-center justify-center relative mb-8 pt-2">
@@ -117,22 +117,20 @@ export default function App() {
         </div>
       </main>
 
-      {isLocationPopupOpen && pendingLocation && (
-        <AnimatePresence>
-          {isLocationPopupOpen && pendingLocation && (
-            <LocationPopup
-              isChangedLocation={{
-                selectedLocationId,
-                pendingLocationId: pendingLocation.id,
-              }}
-              location={pendingLocation}
-              setIsLocationPopupOpen={setIsLocationPopupOpen}
-              setSelectedLocationId={setSelectedLocationId}
-              handleChangeLocation={() => { }}
-            />
-          )}
-        </AnimatePresence>
-      )}
+      <AnimatePresence>
+        {isLocationPopupOpen && pendingLocation && (
+          <LocationPopup
+            isChangedLocation={{
+              selectedLocationId,
+              pendingLocationId: pendingLocation.id,
+            }}
+            location={pendingLocation}
+            setIsLocationPopupOpen={setIsLocationPopupOpen}
+            setSelectedLocationId={setSelectedLocationId}
+            handleChangeLocation={() => { }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

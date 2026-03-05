@@ -14,11 +14,11 @@ export default function LocationSelection({
   onLocationSelect,
 }: LocationSelectionProps) {
   const [showAll, setShowAll] = useState(false);
-  
+
   const limit = 6;
   const shouldTruncate = locations.length > limit && !showAll;
-  
-  const displayedLocations = shouldTruncate 
+
+  const displayedLocations = shouldTruncate
     ? locations.slice(0, limit - 1)
     : locations;
 
@@ -27,7 +27,7 @@ export default function LocationSelection({
 
   return (
     <div className="w-full">
-      <motion.div 
+      <motion.div
         layout
         className="grid grid-cols-2 md:grid-cols-1 gap-1.5 md:gap-1"
       >
@@ -43,7 +43,7 @@ export default function LocationSelection({
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2 }}
               >
-                <LocationButton 
+                <LocationButton
                   location={location}
                   isActive={isActive}
                   onClick={() => onLocationSelect(location.id)}
@@ -60,7 +60,7 @@ export default function LocationSelection({
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
             >
-              <LocationButton 
+              <LocationButton
                 location={activeLocation}
                 isActive={true}
                 onClick={() => onLocationSelect(activeLocation.id)}
@@ -88,15 +88,13 @@ function LocationButton({ location, isActive, onClick }: { location: Location, i
   return (
     <button
       onClick={onClick}
-      className={`group flex items-center gap-2 p-2 w-full rounded-lg transition-all duration-200 cursor-pointer border ${
-        isActive
-          ? 'bg-emerald-500 text-white border-emerald-400 shadow-sm shadow-emerald-500/20'
-          : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/5 text-gray-700 dark:text-gray-300'
-      }`}
+      className={`group flex items-center gap-4 md:m-px p-2 w-full rounded-lg transition-all duration-200 cursor-pointer border ${isActive
+        ? 'bg-emerald-500 text-white border-emerald-400 shadow-sm shadow-emerald-500/20'
+        : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/5 text-gray-700 dark:text-gray-300'
+        }`}
     >
-      <div className={`shrink-0 w-5 h-5 rounded-md flex items-center justify-center ${
-        isActive ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
-      }`}>
+      <div className={`shrink-0 w-5 h-5 rounded-md flex items-center justify-center ${isActive ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+        }`}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
