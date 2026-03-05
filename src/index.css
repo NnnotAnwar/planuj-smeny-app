@@ -41,11 +41,10 @@ body {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Специальный фикс для iOS, чтобы контент не лип к верху */
-@supports (padding: env(safe-area-inset-top)) {
+@supports (-webkit-touch-callout: none) {
   .App {
-    padding-top: env(safe-area-inset-top, 20px);
-  }
+      padding-top: env(safe-area-inset-top, 20px);                                                                                                                        
+    }                                                                                                                                                                     
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
