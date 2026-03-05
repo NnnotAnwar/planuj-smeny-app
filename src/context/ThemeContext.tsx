@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor } from '@capacitor/core';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -20,7 +22,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const root = window.document.documentElement;
     
-    const applyTheme = (t: Theme) => {
+    const applyTheme = async (t: Theme) => {
       let resolved: 'light' | 'dark' = 'light';
       
       if (t === 'system') {
@@ -33,8 +35,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       
       if (resolved === 'dark') {
         root.classList.add('dark');
+        if (Capacitor.isNativePlatform()) {
+          try {
+            await StatusBar.setStyle({ style: Style.Dark });
+            if (Capacitor.getPlatform() === 'android') {
+              await StatusBar.setBackgroundColor({ color: '#020617' }); // slate-950
+            }
+          } catch (e) { console.warn('StatusBar not available', e); }
+        }
       } else {
         root.classList.remove('dark');
+        if (Capacitor.isNativePlatform()) {
+          try {
+            await StatusBar.setStyle({ style: Style.Light });
+            if (Capacitor.getPlatform() === 'android') {
+              await StatusBar.setBackgroundColor({ color: '#f9fafb' }); // gray-50
+            }
+          } catch (e) { console.warn('StatusBar not available', e); }
+        }
       }
       
       localStorage.setItem('theme', t);

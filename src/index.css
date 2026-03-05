@@ -35,8 +35,11 @@ html.dark {
 }
 
 body {
-  @apply antialiased bg-linear-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 transition-colors duration-500 bg-fixed;
-  padding-bottom: env(safe-area-inset-bottom);
+  @apply antialiased bg-linear-to-br from-white via-emerald-50/30 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 transition-colors duration-500 bg-fixed;
+  /* Убираем padding-top отсюда, так как он задан в Dashboard */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

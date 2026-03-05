@@ -18,12 +18,12 @@ export function useShifts(user: User | null) {
 
   /**
    * Fetches initial shift and location data based on user's organization.
+   * Can be called manually to refresh all data from DB.
    */
-  const initData = useCallback(async () => {
+  const refreshData = useCallback(async () => {
     if (!user?.id || !user?.organization_id) return;
 
     try {
-      setIsLoading(true);
       const [currentShift, locs, activeShiftsData] = await Promise.all([
         shiftService.getActiveShift(user.id),
         locationService.getLocations(user.organization_id),
@@ -33,20 +33,28 @@ export function useShifts(user: User | null) {
       if (currentShift) {
         setActiveShift(currentShift);
         setSelectedLocationId(currentShift.location_id);
+      } else {
+        // If current shift was ended on another device
+        setActiveShift(null);
+        setSelectedLocationId(null);
       }
 
       setLocations(locs);
       setAllActiveShifts(activeShiftsData);
     } catch (err) {
-      console.error('Error initData:', err);
-    } finally {
-      setIsLoading(false);
+      console.error('Error refreshData:', err);
     }
   }, [user?.id, user?.organization_id]);
 
+  // Initial load
   useEffect(() => {
-    initData();
-  }, [initData]);
+    const init = async () => {
+      setIsLoading(true);
+      await refreshData();
+      setIsLoading(false);
+    };
+    init();
+  }, [refreshData]);
 
   /**
    * Handles the logic for starting a new shift.
@@ -93,6 +101,7 @@ export function useShifts(user: User | null) {
     selectedLocationId,
     setSelectedLocationId,
     handleStartShift,
-    handleEndShift
+    handleEndShift,
+    refreshData
   };
 }

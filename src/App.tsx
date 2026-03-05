@@ -50,14 +50,14 @@ export default function App() {
 
   if (isLoading || !user) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center">
+      <div className="min-h-dvh flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="App min-h-screen w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
+    <div className="App min-h-dvh w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
       <Dashboard onLocationSelect={handleLocationSelect} />
       <main className="flex-1 p-3 pb-32 md:p-6 md:pb-8 max-w-7xl transition-all duration-500 ease-in-out">
 

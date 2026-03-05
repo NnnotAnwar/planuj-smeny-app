@@ -1,28 +1,43 @@
 import { useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { type Shift, type User } from '../types/types';
+import { App } from '@capacitor/app';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 
 interface RealtimeParams {
   user: User | null;
   setActiveShift: (shift: Shift | null) => void;
   setSelectedLocationId: (id: string | null) => void;
   setAllActiveShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
+  refreshData: () => Promise<void>;
 }
 
 /**
  * Hook to handle real-time database synchronization via Supabase Channels.
- * Ensures shifts are updated across multiple devices/tabs instantly.
+ * Also handles app lifecycle events to refresh data when returning from background.
  */
 export function useRealtime({
   user,
   setActiveShift,
   setSelectedLocationId,
-  setAllActiveShifts
+  setAllActiveShifts,
+  refreshData
 }: RealtimeParams) {
   useEffect(() => {
     if (!user?.organization_id || !user?.id) return;
 
-    // Create a channel for shifts within the user's organization
+    // 1. Listen for App Lifecycle events (Mobile Only)
+    let listener: PluginListenerHandle | null = null;
+    if (Capacitor.isNativePlatform()) {
+      App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) {
+          // App returned to foreground - force full refresh from DB
+          refreshData();
+        }
+      }).then(l => listener = l);
+    }
+
+    // 2. Setup Realtime Subscription
     const channel = supabase
       .channel('realtime_shifts')
       .on(
@@ -35,7 +50,6 @@ export function useRealtime({
         },
         async (payload) => {
           if (payload.eventType === 'INSERT') {
-            // Handle new shift created (could be by current user on another device or a colleague)
             if (payload.new.user_id === user.id) {
               const { data: myNewShift } = await supabase
                 .from('shifts')
@@ -47,23 +61,25 @@ export function useRealtime({
                 setSelectedLocationId(myNewShift.location_id);
               }
             } else {
-              // Colleague started a shift
               const { data: newShift } = await supabase
                 .from('shifts')
                 .select('*, profiles(username, first_name, last_name)')
                 .eq('id', payload.new.id)
                 .single();
-              if (newShift) setAllActiveShifts((prev) => [...prev, newShift]);
+              if (newShift) {
+                setAllActiveShifts((prev) => {
+                  // Prevent duplication
+                  if (prev.some(s => s.id === newShift.id)) return prev;
+                  return [...prev, newShift];
+                });
+              }
             }
           } else if (payload.eventType === 'UPDATE') {
-            // Handle shift ended
             if (payload.new.ended_at) {
               if (payload.new.user_id === user.id) {
-                // Current user ended shift on another device
                 setActiveShift(null);
                 setSelectedLocationId(null);
               } else {
-                // Colleague ended their shift
                 setAllActiveShifts((prev) => prev.filter((s) => s.id !== payload.new.id));
               }
             }
@@ -74,6 +90,7 @@ export function useRealtime({
 
     return () => {
       supabase.removeChannel(channel);
+      if (listener) listener.remove();
     };
-  }, [user?.organization_id, user?.id, setActiveShift, setSelectedLocationId, setAllActiveShifts]);
+  }, [user?.organization_id, user?.id, setActiveShift, setSelectedLocationId, setAllActiveShifts, refreshData]);
 }

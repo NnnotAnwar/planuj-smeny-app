@@ -17,6 +17,7 @@ interface ShiftContextType {
   setSelectedLocationId: (id: string | null) => void;
   handleStartShift: () => Promise<void>;
   handleEndShift: () => Promise<void>;
+  refreshData: () => Promise<void>;
 }
 
 const ShiftContext = createContext<ShiftContextType | undefined>(undefined);
@@ -34,7 +35,8 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
     user,
     setActiveShift: shiftData.setActiveShift,
     setSelectedLocationId: shiftData.setSelectedLocationId,
-    setAllActiveShifts: shiftData.setAllActiveShifts
+    setAllActiveShifts: shiftData.setAllActiveShifts,
+    refreshData: shiftData.refreshData
   });
 
   return (
