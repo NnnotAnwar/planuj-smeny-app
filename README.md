@@ -1,78 +1,49 @@
-# Planuj Směny App — Employee Portal 🚀
+# Planuj Směny App
 
-A modern web application for managing employee work shifts. It allows tracking shift starts and ends, monitoring colleagues currently on duty, and switching between locations in real-time.
+A modern, cross-platform shift management application built for employees and managers. This app provides real-time updates on active shifts, colleague presence, and location-based check-ins.
 
-## 🌟 Key Features
+> **⚠️ Project Status: Under Active Development**  
+> This application is currently in its prototype/beta phase. Features and UI are subject to frequent updates.  
+> *Last updated: March 5, 2026*
 
-- **Authentication**: Sign in using either Email or Username (integrated with Supabase Auth).
-- **Shift Management**: Quick start and end shift actions with a single button.
-- **Real-time Monitoring**: Instant updates of colleagues currently on shift without page reloads.
-- **Multi-location Support**: Support for multiple venues (halls/restaurants) within a single organization.
-- **Role-based Styling**: Visual differentiation of employees by roles (Manager, Supervisor, Waiter, etc.).
-- **Responsive Design**: Full support for mobile, tablet, and desktop devices with optimized controls (Sticky buttons).
+## 🚀 Key Features
+
+- **Real-time Sync**: Instant updates when colleagues start or end their shifts via Supabase Realtime.
+- **Cross-Platform**: Works as a high-performance web app and as native Android/iOS applications (via Capacitor).
+- **Dark Mode Support**: Seamlessly switch between Light, Dark, and System themes with native Status Bar integration.
+- **Mobile-First Design**: Full-screen animated menus, glassmorphism UI, and horizontal location selection grid.
+- **Haptic Feedback**: Tactile vibrations on native devices for important actions like starting or ending a shift.
+- **Location Management**: Search and filter through 20+ workplace locations with ease.
 
 ## 🛠 Tech Stack
 
-- **Frontend**: [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool**: [Vite 7](https://vitejs.dev/)
-- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) (using the new Oxide engine)
-- **Backend**: [Supabase](https://supabase.com/) (PostgreSQL, Realtime, Auth, RLS)
-- **Routing**: [React Router 7](https://reactrouter.com/)
+- **Frontend**: React 19 (TypeScript), Vite
+- **Styling**: Tailwind CSS v4 (Glassmorphism, Background Gradients)
+- **Animations**: Framer Motion
+- **Backend/Database**: Supabase (PostgreSQL, Realtime, Auth)
+- **Native Wrapper**: Capacitor (Android & iOS)
 
-## 📂 Project Structure
+## 📱 Mobile Native Integration
 
-```text
-src/
-├── components/       # UI components (ActiveShift, Dashboard, Clock, etc.)
-├── context/          # Global state (AuthContext, ShiftContext)
-├── hooks/            # Custom hooks (useAuth, useShifts, useRealtime)
-├── services/         # API interaction layer with Supabase
-├── routes/           # Application pages (LoginPage, AdminPage)
-├── types/            # TypeScript definitions
-└── supabaseClient.ts # Supabase client initialization
-```
+The app is wrapped using **Capacitor**, providing:
+- Full-screen display with Safe Area support.
+- Native Status Bar theme synchronization.
+- Haptic feedback (Impact Heavy) on interaction.
+- App lifecycle listeners to prevent data duplication on resume.
 
-## ⚙️ Backend Setup (Supabase)
+## 📦 Getting Started
 
-The project utilizes the following tables in the `public` schema:
-- `organizations`: Companies and their settings.
-- `profiles`: Employee data (names, roles, organization links).
-- `locations`: Work points within an organization.
-- `shifts`: History and current state of shifts.
+### Development
+1. Clone the repository.
+2. Install dependencies: `yarn install`.
+3. Start the dev server: `yarn dev`.
 
-**Security (RLS)**: Data access is strictly isolated — employees can only see colleagues and locations belonging to their own organization.
-
-## 🚦 Getting Started
-
-### 1. Clone and Install Dependencies
-```bash
-yarn
-```
-
-### 2. Environment Configuration
-Create a `.env.local` file in the root directory and add your Supabase project keys:
-```env
-VITE_SUPABASE_URL=your_project_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
-```
-
-### 3. Run in Development Mode
-```bash
-yarn dev
-```
-
-### 4. Build for Production
-```bash
-yarn build
-```
-
-## 🏗 Application Architecture
-
-The application is built on the principle of **separation of concerns**:
-1. **Services**: Encapsulate direct database queries.
-2. **Hooks**: Handle business logic and manage local state.
-3. **Context**: Provides authentication and shift data to the entire component tree.
-4. **Realtime**: Leverages Supabase Channels for instant state synchronization across multiple user devices.
+### Build for Native
+1. Build the web project: `yarn build`.
+2. Sync with native platforms: `npx cap sync`.
+3. Open in IDE:
+   - Android: `npx cap open android`
+   - iOS: `npx cap open ios`
 
 ---
-Developed with a focus on performance and user experience.
+*Created by Anuar Kairulla*
