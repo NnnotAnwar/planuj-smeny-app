@@ -57,9 +57,9 @@ export default function App() {
   }
 
   return (
-    <div className="App min-h-screen w-full font-sans md:flex md:flex-row transition-colors duration-500">
+    <div className="App min-h-screen w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
       <Dashboard onLocationSelect={handleLocationSelect} />
-      <main className="flex-1 p-3 pb-32 md:p-6 md:pb-8 max-w-7xl">
+      <main className="flex-1 p-3 pb-32 md:p-6 md:pb-8 max-w-7xl transition-all duration-500 ease-in-out">
 
         {/* Desktop Header Bar (Hidden on Mobile) */}
         <div className="hidden md:flex items-center justify-center relative mb-8 pt-2">

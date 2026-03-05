@@ -63,15 +63,15 @@ export default function ActiveShift() {
                         </p>
                     </div>
                 </div>
-                <div className="w-auto">
+                <div className="w-full md:w-auto shrink-0">
                     <button
                         onClick={handleEndShift}
-                        className="flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-red-500 to-rose-600 px-8 py-3 font-medium text-white shadow-sm shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95 cursor-pointer"
+                        className="flex w-full md:w-auto items-center justify-center gap-2 rounded-xl bg-linear-to-r from-red-500 to-rose-600 px-6 md:px-8 py-3.5 font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer whitespace-nowrap"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
                             <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
                         </svg>
-                        End Shift
+                        <span>End Shift</span>
                     </button>
                 </div>
             </div>
