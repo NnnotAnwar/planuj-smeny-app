@@ -18,64 +18,72 @@ function getRoleBadgeColor(role: string): string {
   return ROLE_COLORS[role] || 'bg-red-100 text-red-700';
 }
 
-const containerVariants: Variants = {
-  hidden: { opacity: 1 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
 
 const itemVariants: Variants = {
-  hidden: { 
-    height: 0, 
+  hidden: {
     opacity: 0,
+    x: -20,
+    scale: 0.95,
+    height: 0,
     marginTop: 0,
-    overflow: 'hidden'
   },
-  show: { 
-    height: 'auto', 
+  show: {
     opacity: 1,
+    x: 0,
+    scale: 1,
+    height: 'auto',
     marginTop: 8,
     transition: {
-      height: { duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] },
-      opacity: { duration: 0.3, delay: 0.1 }
+      type: "spring",
+      stiffness: 300,
+      damping: 25,
+      height: { duration: 0.3 }
     }
   },
-  exit: { 
-    height: 0, 
+  exit: {
     opacity: 0,
+    x: 20,
+    scale: 0.95,
+    height: 0,
     marginTop: 0,
-    transition: { 
-      height: { duration: 0.3 },
-      opacity: { duration: 0.2 }
-    } 
+    transition: {
+      opacity: { duration: 0.2 },
+      x: { duration: 0.3 },
+      height: { duration: 0.3 }
+    }
   },
 };
 
 export default function ShiftCards({ locationName, shifts, userShift }: ShiftCardsProps) {
-  if (shifts.length === 0 && !userShift) return null;
+  const hasContent = shifts.length > 0 || userShift;
 
   return (
-    <div className="rounded-xl bg-gray-100/50 dark:bg-white/5 backdrop-blur-sm p-0 md:p-4 mb-4 border border-white/20 dark:border-white/5 transition-all">
+    <motion.div
+      layout
+      initial={false}
+      animate={{
+        opacity: hasContent ? 1 : 0,
+        height: hasContent ? 'auto' : 0,
+        marginBottom: hasContent ? 16 : 0,
+        display: hasContent ? 'block' : 'none'
+      }}
+      className="rounded-xl bg-gray-100/50 dark:bg-white/5 backdrop-blur-sm p-0 md:p-4 border border-white/20 dark:border-white/5 transition-all overflow-hidden"
+    >
       <h3 className="mb-2 flex items-center justify-between rounded-lg bg-gray-800 dark:bg-gray-800/90 px-3 py-1.5 text-sm font-semibold text-white border border-gray-700 dark:border-gray-600">
         <span>{locationName}</span>
       </h3>
 
-
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="flex flex-col gap-2" 
+      <motion.div
+        layout
+        className="flex flex-col gap-2"
       >
-        <AnimatePresence initial={false}>
+        <AnimatePresence mode="popLayout" initial={false}>
           {userShift && (
-            <motion.div 
-              key="user-active-shift" 
-              variants={itemVariants} 
+            <motion.div
+              key="user-active-shift"
+              variants={itemVariants}
+              initial="hidden"
+              animate="show"
               exit="exit"
               layout
             >
@@ -84,9 +92,11 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
           )}
 
           {shifts.map((shift) => (
-            <motion.div 
-              key={shift.id || `${shift.name}-${shift.start}`} 
-              variants={itemVariants} 
+            <motion.div
+              key={shift.id || `${shift.name}-${shift.start}`}
+              variants={itemVariants}
+              initial="hidden"
+              animate="show"
               exit="exit"
               layout
             >
@@ -99,20 +109,21 @@ export default function ShiftCards({ locationName, shifts, userShift }: ShiftCar
           ))}
         </AnimatePresence>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 
+
 function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['userShift']> }) {
   const isEmerald = !userShift.isChangeLocation;
-  const bg = isEmerald 
-    ? 'bg-linear-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/30 dark:to-teal-900/30' 
+  const bg = isEmerald
+    ? 'bg-linear-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/30 dark:to-teal-900/30'
     : 'bg-linear-to-r from-yellow-50/80 to-amber-50/80 dark:from-yellow-900/30 dark:to-amber-900/30';
   const box = isEmerald
     ? 'bg-emerald-500 text-white shadow-sm'
     : 'bg-yellow-500 text-white shadow-sm';
-  const label = isEmerald 
-    ? 'text-emerald-700 dark:text-emerald-300' 
+  const label = isEmerald
+    ? 'text-emerald-700 dark:text-emerald-300'
     : 'text-yellow-700 dark:text-yellow-300';
 
   return (
