@@ -91,8 +91,10 @@ export default function Dashboard({ onLocationSelect }: DashboardProps) {
           </div>
 
           {user && (
-            <div className="hidden md:flex items-center gap-3 px-1 py-3 border-b border-emerald-500/10 dark:border-white/5 mb-1">
-              <div className="w-10 h-10 rounded-full bg-linear-to-br from-emerald-400 to-emerald-600 border-2 border-white dark:border-white/10 shadow-md flex items-center justify-center text-white text-xs font-black shrink-0">{getInitials(user.first_name + ' ' + user.last_name)}</div>
+            <div className="hidden md:flex items-center gap-3 p-3 mb-3 bg-white/50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-xl shadow-emerald-500/5 transition-all">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 shadow-md flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-black shrink-0">
+                {getInitials(user.first_name + ' ' + user.last_name)}
+              </div>
               <div className="overflow-hidden">
                 <p className="text-sm font-bold text-gray-800 dark:text-white truncate">Dobrý den, {user.first_name}!</p>
                 <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none mt-0.5">{user.role}</p>
