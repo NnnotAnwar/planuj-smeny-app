@@ -43,7 +43,7 @@ body {
 
 @supports (-webkit-touch-callout: none) {
   .App {
-      padding-top: env(safe-area-inset-top, 20px);                                                                                                                        
+      padding-top: env(safe-area-inset-top, 12px);                                                                                                                        
     }                                                                                                                                                                     
 }
 
