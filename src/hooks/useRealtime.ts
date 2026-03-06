@@ -9,6 +9,7 @@ interface RealtimeParams {
   setActiveShift: (shift: Shift | null) => void;
   setSelectedLocationId: (id: string | null) => void;
   setAllActiveShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
+  setUserShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
   refreshData: () => Promise<void>;
 }
 
@@ -21,6 +22,7 @@ export function useRealtime({
   setActiveShift,
   setSelectedLocationId,
   setAllActiveShifts,
+  setUserShifts,
   refreshData
 }: RealtimeParams) {
   useEffect(() => {
@@ -77,6 +79,13 @@ export function useRealtime({
           } else if (payload.eventType === 'UPDATE') {
             if (payload.new.ended_at) {
               if (payload.new.user_id === user.id) {
+                const { data: myShifts } = await supabase
+                  .from('shifts')
+                  .select('*')
+                  .eq("user_id", user.id)
+                if (myShifts) {
+                  setUserShifts([...myShifts])
+                }
                 setActiveShift(null);
                 setSelectedLocationId(null);
               } else {
@@ -92,5 +101,5 @@ export function useRealtime({
       supabase.removeChannel(channel);
       if (listener) listener.remove();
     };
-  }, [user?.organization_id, user?.id, setActiveShift, setSelectedLocationId, setAllActiveShifts, refreshData]);
+  }, [user?.organization_id, user?.id, setActiveShift, setUserShifts, setSelectedLocationId, setAllActiveShifts, refreshData]);
 }

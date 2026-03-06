@@ -1,5 +1,6 @@
 import { supabase } from '../../supabaseClient';
 import { type User } from '../types/types';
+import { ProfileSchema } from '../types/schemas';
 
 /**
  * Service handling all authentication-related operations with Supabase.
@@ -28,13 +29,16 @@ export const authService = {
     if (error) throw error;
     if (!data) return null;
 
+    // Validate data with Zod
+    const validated = ProfileSchema.parse(data);
+
     return {
-      id: data.id,
-      username: data.username,
-      first_name: data.first_name,
-      last_name: data.last_name,
-      role: data.role,
-      organization_id: data.organization_id
+      id: validated.id,
+      username: validated.username,
+      first_name: validated.first_name ?? null,
+      last_name: validated.last_name ?? null,
+      role: validated.role,
+      organization_id: validated.organization_id
     };
   },
 

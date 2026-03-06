@@ -52,7 +52,6 @@ export default function LocationSelection({
             );
           })}
 
-          {/* Принудительный показ активной локации, если она скрыта */}
           {shouldTruncate && activeLocation && !isActiveVisible && (
             <motion.div
               key={activeLocation.id}

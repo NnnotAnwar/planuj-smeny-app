@@ -21,18 +21,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const root = window.document.documentElement;
-    
+
     const applyTheme = async (t: Theme) => {
-      let resolved: 'light' | 'dark' = 'light';
-      
+      let resolved: 'light' | 'dark' = 'dark';
+
       if (t === 'system') {
         resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       } else {
         resolved = t;
       }
-      
+
       setResolvedTheme(resolved);
-      
+
       if (resolved === 'dark') {
         root.classList.add('dark');
         if (Capacitor.isNativePlatform()) {
@@ -54,7 +54,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           } catch (e) { console.warn('StatusBar not available', e); }
         }
       }
-      
+
       localStorage.setItem('theme', t);
     };
 

@@ -1,5 +1,7 @@
 import { supabase } from '../../supabaseClient';
 import { type Location } from '../types/types';
+import { LocationSchema } from '../types/schemas';
+import { z } from 'zod';
 
 /**
  * Service for location-related data fetching.
@@ -17,6 +19,9 @@ export const locationService = {
       .eq('organization_id', organizationId);
     
     if (error) throw error;
-    return (data || []).map(l => ({ id: l.id, name: l.name, shifts: [] }));
+    if (!data) return [];
+
+    const validated = z.array(LocationSchema).parse(data);
+    return validated.map(l => ({ id: l.id, name: l.name, shifts: [] }));
   }
 };

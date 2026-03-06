@@ -7,6 +7,7 @@ import './index.css';
 import { AuthProvider } from './context/AuthContext.tsx';
 import { ShiftProvider } from './context/ShiftContext.tsx';
 import { ThemeProvider } from './context/ThemeContext.tsx';
+import { OverviewPage } from './routes/OverviewPage.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -17,6 +18,7 @@ createRoot(document.getElementById('root')!).render(
             <Routes>
               <Route path="/" element={<App />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/overview" element={<OverviewPage />} />
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

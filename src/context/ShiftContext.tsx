@@ -6,15 +6,17 @@ import { type Shift, type Location } from '../types/types';
 
 interface ShiftContextType {
   activeShift: Shift | null;
-  setActiveShift: (shift: Shift | null) => void;
+  setActiveShift: React.Dispatch<React.SetStateAction<Shift | null>>;
   allActiveShifts: Shift[];
   setAllActiveShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
+  userShifts: Shift[];
+  setUserShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
   locations: Location[];
   isLoading: boolean;
   isStarting: boolean;
   isEnding: boolean;
   selectedLocationId: string | null;
-  setSelectedLocationId: (id: string | null) => void;
+  setSelectedLocationId: React.Dispatch<React.SetStateAction<string | null>>;
   handleStartShift: () => Promise<void>;
   handleEndShift: () => Promise<void>;
   refreshData: () => Promise<void>;
@@ -36,6 +38,7 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
     setActiveShift: shiftData.setActiveShift,
     setSelectedLocationId: shiftData.setSelectedLocationId,
     setAllActiveShifts: shiftData.setAllActiveShifts,
+    setUserShifts: shiftData.setUserShifts,
     refreshData: shiftData.refreshData
   });
 

@@ -8,16 +8,16 @@ export type Shift = {
   role: string;
   profiles?: {
     username: string;
-    first_name: string;
-    last_name: string;
+    first_name: string | null;
+    last_name: string | null;
   };
 };
 
 export type User = {
-  id?: string;
+  id: string;
   username: string;
-  first_name?: string;
-  last_name?: string;
+  first_name: string | null;
+  last_name: string | null;
   role: string;
   organization_id: string;
 };
@@ -32,8 +32,8 @@ export type ShiftDisplayData = {
 };
 
 export type Location = {
-  id: string | null;
+  id: string;
   name: string;
-  shifts: Shift[];
+  shifts?: Shift[];
   organization_id?: string;
 };

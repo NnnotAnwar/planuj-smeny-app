@@ -35,7 +35,7 @@ html.dark {
 }
 
 body {
-  @apply antialiased bg-linear-to-br from-white via-emerald-50/30 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 transition-colors duration-500 bg-fixed;
+  @apply antialiased bg-linear-to-br from-slate-100 via-gray-50 to-zinc-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 transition-colors duration-500 bg-fixed;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
@@ -56,4 +56,19 @@ body {
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+@theme {
+  --animate-shimmer: shimmer 2.5s infinite;
+  --animate-pulse-scale: pulse-scale 2s infinite ease-in-out;
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%) skewX(-15deg); }
+    100% { transform: translateX(200%) skewX(-15deg); }
+  }
+
+  @keyframes pulse-scale {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
 }

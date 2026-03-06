@@ -2,23 +2,36 @@ import { useState, useEffect } from 'react';
 
 interface LiveClockIconProps {
     className?: string;
-    isActive?: boolean; // New prop to control animation
+    isActive?: boolean;
 }
 
 export default function LiveClockIcon({ className = 'h-6 w-6', isActive = true }: LiveClockIconProps) {
-    const [time, setTime] = useState(() => new Date());
+    const [degrees, setDegrees] = useState(() => new Date().getSeconds() * 6);
 
     useEffect(() => {
-        // If not active, don't run the timer
         if (!isActive) return;
 
-        const timer = setInterval(() => setTime(new Date()), 1000);
+        const timer = setInterval(() => {
+            const currentSeconds = new Date().getSeconds();
+
+            setDegrees((prevDegrees) => {
+                const currentMod = prevDegrees % 360;
+                const targetMod = currentSeconds * 6;
+
+                let diff = targetMod - currentMod;
+
+                if (diff < 0) {
+                    diff += 360;
+                }
+
+                return prevDegrees + diff;
+            });
+        }, 1000);
+
         return () => clearInterval(timer);
     }, [isActive]);
 
-    // If active, get real seconds. If inactive, stick to 0 (points at 12 o'clock)
-    const seconds = isActive ? time.getSeconds() : 0;
-    const secondDeg = seconds * 6;
+    const finalDegrees = isActive ? degrees : 0;
 
     return (
         <svg
@@ -36,7 +49,7 @@ export default function LiveClockIcon({ className = 'h-6 w-6', isActive = true }
             <path
                 d="M12 12v-5"
                 style={{
-                    transform: `rotate(${secondDeg}deg)`,
+                    transform: `rotate(${finalDegrees}deg)`,
                     transformOrigin: '12px 12px',
                     transition: isActive ? 'transform 0.1s linear' : 'none',
                 }}

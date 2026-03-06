@@ -15,6 +15,7 @@ export function useShifts(user: User | null) {
   const [isStarting, setIsStarting] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
+  const [userShifts, setUserShifts] = useState<Shift[]>([])
 
   /**
    * Fetches initial shift and location data based on user's organization.
@@ -24,12 +25,12 @@ export function useShifts(user: User | null) {
     if (!user?.id || !user?.organization_id) return;
 
     try {
-      const [currentShift, locs, activeShiftsData] = await Promise.all([
+      const [currentShift, locs, activeShiftsData, userShiftsData] = await Promise.all([
         shiftService.getActiveShift(user.id),
         locationService.getLocations(user.organization_id),
-        shiftService.getAllActiveShifts(user.organization_id)
+        shiftService.getAllActiveShifts(user.organization_id),
+        shiftService.getAllUserShifts(user.id)
       ]);
-
       if (currentShift) {
         setActiveShift(currentShift);
         setSelectedLocationId(currentShift.location_id);
@@ -41,6 +42,7 @@ export function useShifts(user: User | null) {
 
       setLocations(locs);
       setAllActiveShifts(activeShiftsData);
+      setUserShifts(userShiftsData)
     } catch (err) {
       console.error('Error refreshData:', err);
     }
@@ -94,6 +96,8 @@ export function useShifts(user: User | null) {
     setActiveShift,
     allActiveShifts,
     setAllActiveShifts,
+    userShifts,
+    setUserShifts,
     locations,
     isLoading,
     isStarting,

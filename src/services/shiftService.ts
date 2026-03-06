@@ -1,5 +1,7 @@
 import { supabase } from '../../supabaseClient';
 import { type Shift, type User } from '../types/types';
+import { ShiftSchema } from '../types/schemas';
+import { z } from 'zod';
 
 /**
  * Service for managing shift operations (CRUD).
@@ -17,9 +19,11 @@ export const shiftService = {
       .eq('user_id', userId)
       .is('ended_at', null)
       .maybeSingle();
-    
+
     if (error) throw error;
-    return data;
+    if (!data) return null;
+
+    return ShiftSchema.parse(data);
   },
 
   /**
@@ -33,9 +37,23 @@ export const shiftService = {
       .select('*, profiles(username, first_name, last_name)')
       .eq('organization_id', organizationId)
       .is('ended_at', null);
-    
+
     if (error) throw error;
-    return data || [];
+    if (!data) return [];
+
+    return z.array(ShiftSchema).parse(data);
+  },
+
+  async getAllUserShifts(userId: string): Promise<Shift[]> {
+    const { data, error } = await supabase
+      .from('shifts')
+      .select("*")
+      .eq("user_id", userId);
+
+    if (error) throw error;
+    if (!data) return [];
+
+    return z.array(ShiftSchema).parse(data);
   },
 
   /**
@@ -58,7 +76,7 @@ export const shiftService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return ShiftSchema.parse(data);
   },
 
   /**
@@ -75,6 +93,6 @@ export const shiftService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return ShiftSchema.parse(data);
   }
 };

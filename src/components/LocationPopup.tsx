@@ -1,3 +1,4 @@
+import React from 'react';
 import { type Location } from '../types/types';
 import { motion, type Variants } from 'framer-motion';
 
@@ -9,7 +10,7 @@ export interface LocationPopupProps {
     };
     location: Location | null;
     setIsLocationPopupOpen: (open: boolean) => void;
-    setSelectedLocationId: (id: string) => void;
+    setSelectedLocationId: React.Dispatch<React.SetStateAction<string | null>>;
     handleChangeLocation: (change: boolean) => void;
 }
 

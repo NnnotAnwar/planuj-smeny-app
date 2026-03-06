@@ -1,16 +1,16 @@
-import { useState } from 'react';
 import './App.css';
 import Dashboard from './components/Dashboard';
 import ShiftCards from './components/ShiftCards';
 import LocationPopup from './components/LocationPopup';
 import LocationSelection from './components/LocationSelection';
 import CheckIn from './components/CheckIn';
-import { type Location, type ShiftDisplayData } from './types/types';
+import { type ShiftDisplayData } from './types/types';
 import ActiveShift from './components/ActiveShift';
 import Clock from './components/Clock';
 import { useAuthContext } from './context/AuthContext';
 import { useShiftContext } from './context/ShiftContext';
 import { AnimatePresence } from 'framer-motion';
+import { useLocationManagement } from './hooks/useLocationManagement';
 
 export default function App() {
   const { user, isAuthChecking, isLoading: isAuthLoading } = useAuthContext();
@@ -24,27 +24,17 @@ export default function App() {
     setSelectedLocationId,
   } = useShiftContext();
 
-  const [isLocationPopupOpen, setIsLocationPopupOpen] = useState(false);
-  const [pendingLocation, setPendingLocation] = useState<Location | null>(null);
-
-  const handleLocationSelect = (locationId: string | null) => {
-    // 1. Если кликаем по той же локации
-    if (locationId === selectedLocationId) {
-      if (activeShift) {
-        setIsLocationPopupOpen(true); // "Вы уже здесь"
-      } else {
-        setSelectedLocationId(null); // Снимаем выбор без попапа
-      }
-      return;
-    }
-
-    // 2. Если выбираем новую локацию (всегда через попап)
-    const selected = locations.find((loc) => loc.id === locationId);
-    if (!selected) return;
-
-    setPendingLocation(selected);
-    setIsLocationPopupOpen(true);
-  };
+  const {
+    isLocationPopupOpen,
+    setIsLocationPopupOpen,
+    pendingLocation,
+    handleLocationSelect,
+  } = useLocationManagement({
+    locations,
+    activeShift,
+    selectedLocationId,
+    setSelectedLocationId,
+  });
 
   const isLoading = isAuthLoading || isShiftsLoading || isAuthChecking;
 
