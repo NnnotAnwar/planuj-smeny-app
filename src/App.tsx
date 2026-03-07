@@ -1,16 +1,25 @@
 import './App.css';
 import Dashboard from './components/Dashboard';
-import ShiftCards from './components/ShiftCards';
 import LocationPopup from './components/LocationPopup';
-import LocationSelection from './components/LocationSelection';
-import CheckIn from './components/CheckIn';
-import { type ShiftDisplayData } from './types/types';
-import ActiveShift from './components/ActiveShift';
-import Clock from './components/Clock';
 import { useAuthContext } from './context/AuthContext';
 import { useShiftContext } from './context/ShiftContext';
 import { AnimatePresence } from 'framer-motion';
 import { useLocationManagement } from './hooks/useLocationManagement';
+import { Outlet } from 'react-router-dom';
+import { type Location, type Shift, type User } from './types/types';
+
+export interface AppOutletContext {
+  user: User;
+  activeShift: Shift | null;
+  allActiveShifts: Shift[];
+  locations: Location[];
+  selectedLocationId: string | null;
+  setSelectedLocationId: (id: string | null) => void;
+  handleLocationSelect: (locationId: string | null) => void;
+  isLocationPopupOpen: boolean;
+  setIsLocationPopupOpen: (open: boolean) => void;
+  pendingLocation: Location | null;
+}
 
 export default function App() {
   const { user, isAuthChecking, isLoading: isAuthLoading } = useAuthContext();
@@ -46,66 +55,26 @@ export default function App() {
     );
   }
 
+  const contextValue: AppOutletContext = {
+    user,
+    activeShift,
+    allActiveShifts,
+    locations,
+    selectedLocationId,
+    setSelectedLocationId,
+    handleLocationSelect,
+    isLocationPopupOpen,
+    setIsLocationPopupOpen,
+    pendingLocation,
+  };
+
   return (
     <div className="App min-h-screen w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
       <Dashboard onLocationSelect={handleLocationSelect} />
 
       <main className="flex-1 p-3 pb-32 md:p-6 md:pb-6 max-w-7xl transition-all duration-500 ease-in-out">
-
-        {/* Desktop Header Bar (Hidden on Mobile) */}
-        <div className="hidden md:flex items-center justify-center relative mb-8 pt-2">
-          <div className="text-2xl font-black dark:text-white tracking-tight">
-            <Clock seconds={true} />
-          </div>
-        </div>
-
-        <ActiveShift />
-
-        <CheckIn />
-
-        <div className="md:hidden mb-6 -mx-3 px-3">
-          <LocationSelection
-            locations={locations}
-            selectedLocationId={selectedLocationId}
-            onLocationSelect={handleLocationSelect}
-          />
-        </div>
-
-        <div className="space-y-4">
-          {locations.map((location) => {
-            const userFullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
-
-            const colleaguesInLocation: ShiftDisplayData[] = allActiveShifts
-              .filter((s) => s.location_id === location.id && s.user_id !== user.id)
-              .map((s) => ({
-                id: s.id,
-                start: s.started_at ? new Date(s.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '--:--',
-                name: `${s.profiles?.first_name || 'Employee'} ${s.profiles?.last_name || ''}`.trim(),
-                role: s.role,
-                end: null
-              }));
-
-            const currentUserShiftData: ShiftDisplayData | undefined = (activeShift && location.id === selectedLocationId)
-              ? {
-                name: userFullName,
-                role: user.role,
-                start: new Date(activeShift.started_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-                end: null,
-                isChangeLocation: false,
-              }
-              : undefined;
-
-            return (
-              <section key={location.id}>
-                <ShiftCards
-                  locationName={location.name}
-                  shifts={colleaguesInLocation}
-                  userShift={currentUserShiftData}
-                />
-              </section>
-            );
-          })}
-        </div>
+        {/* We pass the context down to all routes like HomePage, OverviewPage, etc. */}
+        <Outlet context={contextValue} />
       </main>
 
       <AnimatePresence>

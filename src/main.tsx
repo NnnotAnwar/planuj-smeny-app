@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import App from './App.tsx';
+import AppLayout from './routes/AppLayout.tsx';
 import LoginPage from './routes/LoginPage.tsx'
 import './index.css';
 import { AuthProvider } from './context/AuthContext.tsx';
@@ -16,9 +17,12 @@ createRoot(document.getElementById('root')!).render(
         <ThemeProvider>
           <ShiftProvider>
             <Routes>
-              <Route path="/" element={<App />} />
+              <Route path="/" element={<App />} >
+                <Route index element={<AppLayout />} />
+                <Route path="/overview" element={<OverviewPage />} />
+              </Route>
+
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/overview" element={<OverviewPage />} />
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
