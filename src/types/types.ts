@@ -10,7 +10,7 @@ export type Shift = {
     username: string;
     first_name: string | null;
     last_name: string | null;
-  };
+  } | null;
 };
 
 export type User = {

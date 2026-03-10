@@ -175,7 +175,7 @@ export default function Dashboard({ onLocationSelect }: DashboardProps) {
 
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <motion.div initial="closed" animate="open" exit="closed" variants={menuVariants} className="fixed inset-0 z-[100] md:hidden bg-linear-to-br from-white via-emerald-50 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 flex flex-col transition-colors duration-500 pt-[env(safe-area-inset-top,0px)]">
+          <motion.div initial="closed" animate="open" exit="closed" variants={menuVariants} className="fixed inset-0 z-100 md:hidden bg-linear-to-br from-white via-emerald-50 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 flex flex-col transition-colors duration-500 pt-[env(safe-area-inset-top,0px)]">
             {/* Header: Logo Left, Theme + Cross Right */}
             <div className="flex justify-between items-center px-4 py-3 h-13 shrink-0 border-b border-gray-200 dark:border-white/5">
               <div className="w-8 h-8 md:w-9 md:h-9 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/30 transition-all">

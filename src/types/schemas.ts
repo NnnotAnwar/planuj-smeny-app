@@ -20,8 +20,8 @@ export const ShiftSchema = z.object({
   profiles: z.object({
     username: z.string(),
     first_name: z.string().nullable(),
-    last_name: z.string().nullable(),
-  }).optional(),
+    last_name: z.string().nullable()
+  }).optional().nullable()
 });
 
 export const LocationSchema = z.object({
