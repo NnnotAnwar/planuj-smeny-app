@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 
 export function OverviewPage() {
     const { userShifts } = useShiftContext();
+    const { locations } = useShiftContext()
 
     const [selectedMonth, setSelectedMonth] = useState(() => {
         const now = new Date();
@@ -112,7 +113,7 @@ export function OverviewPage() {
                             {totalDuration}
                         </span>
                     </div>
-                    
+
                     <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-100 dark:border-emerald-500/20">
                         <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
                         {filteredShifts.length} {filteredShifts.length === 1 ? 'Shift' : 'Shifts'}
@@ -137,17 +138,18 @@ export function OverviewPage() {
                             const durationMs = end.getTime() - start.getTime();
                             const durationH = Math.floor(durationMs / 3600000);
                             const durationM = Math.floor((durationMs % 3600000) / 60000);
+                            const locationName = locations.find((loc) => loc.id === shift.location_id)?.name;
 
                             return (
-                                <motion.div 
+                                <motion.div
                                     initial={{ opacity: 0, y: 5 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    key={shift.id} 
+                                    key={shift.id}
                                     className="flex items-center gap-3 p-2 bg-white dark:bg-gray-800/30 rounded-[1.5rem] border border-gray-100 dark:border-gray-800 shadow-sm transition-all group"
                                 >
                                     {/* Compact Recessed Date Badge */}
-                                    <div className="relative w-11 h-11 shrink-0 rounded-[1rem] bg-emerald-50 dark:bg-[#062c22] border border-emerald-100/50 dark:border-emerald-900/50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_4px_8px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center">
-                                        <span className="text-emerald-600 dark:text-emerald-400 text-base font-black leading-none">
+                                    <div className="relative w-11 h-11 shrink-0 rounded-2xl bg-emerald-50 dark:bg-[#062c22] border border-emerald-100/50 dark:border-emerald-900/50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_4px_8px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center">
+                                        <span className="text-emerald-600 dark:text-emerald-400 text-md font-black leading-none">
                                             {start.getDate()}
                                         </span>
                                         <span className="text-emerald-600/60 dark:text-emerald-400/60 text-[8px] font-black uppercase tracking-tighter leading-none mt-0.5">
@@ -156,20 +158,17 @@ export function OverviewPage() {
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-xs text-gray-900 dark:text-white truncate">
-                                            {start.toLocaleDateString('en-GB', { weekday: 'short' })} Shift
+                                        <p className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                                            {locationName}
                                         </p>
-                                        <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-tight">
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-tight">
                                             {start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} – {end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </div>
 
                                     <div className="text-right pr-1">
-                                        <p className="text-xs font-black text-gray-900 dark:text-white tabular-nums">
+                                        <p className="text-sm font-black text-gray-900 dark:text-white tabular-nums">
                                             {durationH > 0 ? `${durationH}h ${durationM}m` : `${durationM}m`}
-                                        </p>
-                                        <p className="text-[8px] text-emerald-600 dark:text-emerald-400 font-black uppercase tracking-widest leading-none mt-0.5">
-                                            Done
                                         </p>
                                     </div>
                                 </motion.div>
