@@ -14,7 +14,6 @@ dist-ssr
 *.local
 .env
 .env*
-schema.sql
 .DS_Store
 old_migrations
 .prettierrc
