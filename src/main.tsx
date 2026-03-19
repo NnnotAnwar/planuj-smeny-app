@@ -1,34 +1,24 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
-import AppLayout from './routes/AppLayout.tsx';
-import LoginPage from './routes/LoginPage.tsx'
 import './index.css';
-import { AuthProvider } from './context/AuthContext.tsx';
-import { ShiftProvider } from './context/ShiftContext.tsx';
-import { ThemeProvider } from './context/ThemeContext.tsx';
-import { OverviewPage } from './routes/OverviewPage.tsx';
+import './App.css';
+
+/**
+ * --- ENTRY POINT (main.tsx) ---
+ * This file is the absolute starting point of the application.
+ * It mounts the React app into the HTML 'root' element.
+ */
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    {/* 
+      BrowserRouter: Handles URL management (navigation).
+      App: Our main component defined in App.tsx.
+    */}
     <BrowserRouter>
-      <AuthProvider>
-        <ThemeProvider>
-          <ShiftProvider>
-            <Routes>
-              <Route path="/" element={<App />} >
-                <Route index element={<AppLayout />} />
-                <Route path="/overview" element={<OverviewPage />} />
-              </Route>
-
-              <Route path="/login" element={<LoginPage />} />
-
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </ShiftProvider>
-        </ThemeProvider>
-      </AuthProvider>
+      <App />
     </BrowserRouter>
-  </StrictMode >,
+  </StrictMode>,
 );
