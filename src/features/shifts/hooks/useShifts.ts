@@ -73,6 +73,8 @@ export function useShifts(user: User | null) {
       setIsStarting(true);
       const data = await shiftService.startShift(user, selectedLocationId);
       setActiveShift(data);
+      // Optimistically update lists
+      setAllActiveShifts(prev => [...prev, { ...data, profiles: { username: user.username, first_name: user.first_name, last_name: user.last_name } } as Shift]);
     } catch (err) {
       console.error('Error starting shift:', err);
     } finally {
@@ -87,9 +89,13 @@ export function useShifts(user: User | null) {
     if (!activeShift || isEnding) return;
     try {
       setIsEnding(true);
-      await shiftService.endShift(activeShift.id);
+      const endedShift = await shiftService.endShift(activeShift.id);
       setActiveShift(null);
       setSelectedLocationId(null);
+      // Remove from active list immediately
+      setAllActiveShifts(prev => prev.filter(s => s.id !== activeShift.id));
+      // Add to user history
+      setUserShifts(prev => [endedShift, ...prev]);
     } catch (err) {
       console.error('Error ending shift:', err);
     } finally {

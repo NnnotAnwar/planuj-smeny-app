@@ -52,78 +52,75 @@ export function useRealtime({
           filter: `organization_id=eq.${user.organization_id}` // Only for my organization.
         },
         async (payload) => {
-          // PAYLOAD: Contains info about what changed.
-          
+          // Optimization: Use payload data directly when possible
+          const updatedShiftRaw = payload.new as Shift;
+
           if (payload.eventType === 'INSERT') {
             // New shift started!
-            if (payload.new.user_id === user.id) {
-                // If it's MY shift, update my active shift.
-                const { data: myNewShift } = await supabase
+            if (updatedShiftRaw.user_id === user.id) {
+              // If it's MY shift, update my active shift.
+              // Since it's a new shift, we might still want to fetch it once 
+              // to ensure we have any default database values or joined data.
+              const { data: myNewShift } = await supabase
                 .from('shifts')
                 .select('*')
-                .eq('id', payload.new.id)
+                .eq('id', updatedShiftRaw.id)
                 .single();
               if (myNewShift) {
                 setActiveShift(myNewShift);
                 setSelectedLocationId(myNewShift.location_id);
               }
             } else {
-              // If it's someone ELSE'S shift, add it to the global list.
-              const { data: newShift } = await supabase
+              // Someone else started a shift. We NEED their profile for the UI.
+              const { data: newShiftWithProfile } = await supabase
                 .from('shifts')
                 .select('*, profiles(username, first_name, last_name)')
-                .eq('id', payload.new.id)
+                .eq('id', updatedShiftRaw.id)
                 .single();
-              if (newShift) {
+              if (newShiftWithProfile) {
                 setAllActiveShifts((prev) => {
-                  if (prev.some(s => s.id === newShift.id)) return prev;
-                  return [...prev, newShift];
+                  if (prev.some(s => s.id === newShiftWithProfile.id)) return prev;
+                  return [...prev, newShiftWithProfile];
                 });
               }
             }
           } else if (payload.eventType === 'UPDATE') {
             // Shift was updated (could be ended OR location changed).
             
-            if (payload.new.ended_at) {
+            if (updatedShiftRaw.ended_at) {
               // 1. SHIFT ENDED
-              if (payload.new.user_id === user.id) {
+              if (updatedShiftRaw.user_id === user.id) {
                 setActiveShift(null);
                 setSelectedLocationId(null);
-                refreshData();
-              } else {
-                setAllActiveShifts((prev) => prev.filter((s) => s.id !== payload.new.id));
               }
+              setAllActiveShifts((prev) => prev.filter((s) => s.id !== updatedShiftRaw.id));
+              // Also update history lists without full refresh
+              refreshData(); 
             } else {
               // 2. SHIFT UPDATED (Location change)
-              if (payload.new.user_id === user.id) {
+              if (updatedShiftRaw.user_id === user.id) {
                 // My shift updated (from another device/confirming change)
-                const { data: myNewShift } = await supabase
-                  .from('shifts')
-                  .select('*')
-                  .eq('id', payload.new.id)
-                  .single();
-                if (myNewShift) {
-                  setActiveShift(myNewShift);
-                  setSelectedLocationId(myNewShift.location_id);
-                }
+                setActiveShift(prev => prev ? { ...prev, ...updatedShiftRaw } : updatedShiftRaw);
+                setSelectedLocationId(updatedShiftRaw.location_id);
               } else {
                 // Someone else moved! Update their shift in the list.
-                const { data: updatedShift } = await supabase
-                  .from('shifts')
-                  .select('*, profiles(username, first_name, last_name)')
-                  .eq('id', payload.new.id)
-                  .single();
-                if (updatedShift) {
-                  setAllActiveShifts((prev) => {
-                    const exists = prev.some(s => s.id === updatedShift.id);
-                    if (exists) {
-                      return prev.map(s => s.id === updatedShift.id ? updatedShift : s);
+                // If we already have the profile, we don't need to re-fetch it!
+                setAllActiveShifts((prev) => {
+                  return prev.map(s => {
+                    if (s.id === updatedShiftRaw.id) {
+                      // Preserve the profiles object while updating shift data
+                      return { ...s, ...updatedShiftRaw };
                     }
-                    return [...prev, updatedShift];
+                    return s;
                   });
-                }
+                });
               }
             }
+          } else if (payload.eventType === 'DELETE') {
+            if (payload.old.id === user.id) {
+              setActiveShift(null);
+            }
+            setAllActiveShifts(prev => prev.filter(s => s.id !== payload.old.id));
           }
         }
       )
