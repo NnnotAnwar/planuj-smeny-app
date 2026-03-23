@@ -29,18 +29,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const { data: { session }, error } = await authService.getSession();
+        const { data: { session }, error: sessionError } = await authService.getSession();
 
         // If no session or error, go to the login page.
-        if (error || !session) {
+        if (sessionError || !session) {
           navigate('/login', { replace: true });
           return;
         }
 
         // Fetch user profile based on the ID from the session.
-        const profile = await authService.getUserProfile(session.user.id);
-        if (profile) {
-          setUser(profile);
+        try {
+          const profile = await authService.getUserProfile(session.user.id);
+          if (profile) {
+            setUser(profile);
+          } else {
+            // Profile not found in DB - this should not happen but we handle it.
+            console.warn('Profile not found, signing out.');
+            await authService.signOut();
+            navigate('/login', { replace: true });
+          }
+        } catch (profileErr) {
+          console.error('Failed to load profile:', profileErr);
+          // If we have a session but profile fetch fails (e.g., network error),
+          // we don't clear the session but we should show an error or try again.
+          // For now, let's keep the user at the loading state or redirect.
+          await authService.signOut();
+          navigate('/login', { replace: true });
         }
       } catch (err) {
         console.error('Error initAuth:', err);
