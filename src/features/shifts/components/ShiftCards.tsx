@@ -94,10 +94,6 @@ function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['
     ? 'text-yellow-700 dark:text-yellow-400'
     : 'text-emerald-700 dark:text-emerald-400';
 
-  const moveLabelColor = isChange
-    ? 'text-amber-600 dark:text-amber-500'
-    : 'text-emerald-600 dark:text-emerald-500';
-
   return (
     <div className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center transition-all border backdrop-blur-sm ${bg}`}>
       <div className={`flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 ${box}`}>

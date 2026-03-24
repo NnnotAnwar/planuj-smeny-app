@@ -100,7 +100,7 @@ export function useRealtime({
               // 2. SHIFT UPDATED (Location change)
               if (updatedShiftRaw.user_id === user.id) {
                 // My shift updated (from another device/confirming change)
-                setActiveShift(prev => prev ? { ...prev, ...updatedShiftRaw } : updatedShiftRaw);
+                setActiveShift(updatedShiftRaw);
                 setSelectedLocationId(updatedShiftRaw.location_id);
               } else {
                 // Someone else moved! Update their shift in the list.
