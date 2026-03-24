@@ -80,41 +80,37 @@ export function ShiftCards({ locationName, shifts, userShift }: ShiftCardsProps)
  */
 function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['userShift']> }) {
   const isChange = !!userShift.isChangeLocation;
-  const bg = !isChange 
-    ? 'bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30' 
-    : 'bg-linear-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/30 dark:to-amber-900/30';
-  const box = !isChange
-    ? 'bg-emerald-500 text-white shadow-md'
-    : 'bg-yellow-500 text-white shadow-md';
-  const label = !isChange 
-    ? 'text-emerald-700 dark:text-emerald-300' 
-    : 'text-yellow-700 dark:text-yellow-300';
+  
+  // Emerald/Green if standard, Yellow/Amber if location changed.
+  const bg = isChange
+    ? 'bg-linear-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/30 dark:to-amber-900/30 border-yellow-200 dark:border-yellow-500/20'
+    : 'bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border-emerald-200 dark:border-emerald-500/20';
+    
+  const box = isChange
+    ? 'bg-yellow-500 text-white shadow-md'
+    : 'bg-emerald-500 text-white shadow-md';
+    
+  const label = isChange
+    ? 'text-yellow-700 dark:text-yellow-400'
+    : 'text-emerald-700 dark:text-emerald-400';
+
+  const moveLabelColor = isChange
+    ? 'text-amber-600 dark:text-amber-500'
+    : 'text-emerald-600 dark:text-emerald-500';
 
   return (
-    <div className={`flex flex-row gap-4 rounded-lg p-1.5 shadow-sm md:items-center transition-all border border-white dark:border-white/5 backdrop-blur-sm ${bg}`}>
-      <div className={`flex items-center justify-between rounded-lg px-2 py-1 ${box}`}>
-        <div className="text-center">
-          <span className="text-sm font-bold">{userShift.start ?? '--:--'}</span>
-        </div>
+    <div className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center transition-all border backdrop-blur-sm ${bg}`}>
+      <div className={`flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 ${box}`}>
+        <span className="text-sm font-bold tracking-tight">{userShift.start ?? '--:--'}</span>
       </div>
-      <div className="flex w-full items-center">
-        <div className="flex flex-1 items-center gap-3">
-          <div>
-            <p className={`text-[10px] font-bold ${label}`}>Your shift</p>
-            <div className="flex items-center gap-2">
-              <p className="truncate text-sm font-bold text-gray-800 dark:text-white">{userShift.name}</p>
-              {userShift.previousLocationName && (
-                <div className={`flex items-center gap-1 text-[10px] font-bold rounded-md px-1.5 ${isChange ? 'text-amber-800 dark:text-amber-200 bg-amber-200/50 dark:bg-amber-800/50' : 'text-gray-600 dark:text-gray-300 bg-gray-200/50 dark:bg-gray-800/50'}`}>
-                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                  </svg>
-                  <span>from {userShift.previousLocationName}</span>
-                </div>
-              )}
-            </div>
-          </div>
+      
+      <div className="flex flex-1 items-center justify-between min-w-0">
+        <div className="flex flex-col min-w-0">
+          <p className={`text-[9px] font-black uppercase tracking-widest mb-0.5 ${label}`}>Your shift</p>
+          <p className="truncate text-sm font-bold text-gray-900 dark:text-white leading-tight">{userShift.name}</p>
         </div>
-        <div className={`rounded-full px-2.5 py-1 text-xs font-semibold shadow-xs ${getRoleBadgeColor(userShift.role)}`}>
+        
+        <div className={`shrink-0 ml-2 rounded-full px-2.5 py-1 text-[10px] md:text-xs font-bold shadow-xs ${getRoleBadgeColor(userShift.role)}`}>
           {userShift.role}
         </div>
       </div>
@@ -128,45 +124,34 @@ function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['
 function AssignedShiftCard({ shift }: { shift: ShiftDisplayData }) {
   const isChange = !!shift.isChangeLocation;
   
-  const bg = isChange 
-    ? 'bg-linear-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-200/50 dark:border-amber-500/10' 
-    : 'bg-white/80 dark:bg-white/5 border-white dark:border-white/5';
-    
-  const box = isChange
-    ? 'bg-linear-to-br from-amber-400 to-amber-500 shadow-amber-500/20'
-    : 'bg-linear-to-br from-gray-400 to-gray-500 dark:from-gray-700 dark:to-gray-800';
-
-  const nameLabel = isChange
-    ? 'text-amber-900 dark:text-amber-100'
-    : 'text-gray-800 dark:text-white';
+  // Colleagues are ALWAYS standard (white/gray) to avoid confusion with the user.
+  const bg = 'bg-white/80 dark:bg-white/5 border-white dark:border-white/5';
+  const box = 'bg-linear-to-br from-gray-400 to-gray-500 dark:from-gray-700 dark:to-gray-800';
+  const nameLabel = 'text-gray-800 dark:text-white';
 
   return (
-    <div className={`flex flex-row gap-4 rounded-lg p-1.5 shadow-sm md:items-center backdrop-blur-sm transition-all border ${bg}`}>
-      <div className={`flex items-center justify-between rounded-lg px-2 py-1 text-white shadow-xs ${box}`}>
-        <div className="text-center">
-          <span className="text-sm font-bold">{shift.start ?? '--:--'}</span>
-        </div>
+    <div className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center backdrop-blur-sm transition-all border ${bg}`}>
+      <div className={`flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 text-white shadow-xs ${box}`}>
+        <span className="text-sm font-bold tracking-tight">{shift.start ?? '--:--'}</span>
       </div>
-      <div className="flex w-full items-center">
-        <div className="flex flex-1 items-center gap-3">
-          <div className="flex flex-col">
-            {isChange && (
-              <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight mb-0.5">Moved</span>
-            )}
-            <div className="flex items-center gap-2">
-              <p className={`truncate text-sm font-bold ${nameLabel}`}>{shift.name}</p>
-              {shift.previousLocationName && (
-                <div className={`flex items-center gap-1 text-[10px] font-bold rounded-md px-1.5 ${isChange ? 'text-amber-800 dark:text-amber-200 bg-amber-200/50 dark:bg-amber-900/40' : 'text-gray-500 bg-gray-100 dark:bg-gray-800/80'}`}>
-                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                  </svg>
-                  <span>from {shift.previousLocationName}</span>
-                </div>
-              )}
+
+      <div className="flex flex-1 items-center justify-between min-w-0">
+        <div className="flex flex-col min-w-0">
+          {shift.previousLocationName && (
+            <div className="flex items-center flex-wrap gap-1 text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-0.5">
+              <svg className="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M11 17l-5-5 5-5" />
+              </svg>
+              <span>{shift.previousLocationName}</span>
             </div>
-          </div>
+          )}
+          {!shift.previousLocationName && isChange && (
+            <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-0.5">Moved</span>
+          )}
+          <p className={`truncate text-sm font-bold leading-tight ${nameLabel}`}>{shift.name}</p>
         </div>
-        <div className={`rounded-full px-2.5 py-1 text-xs font-semibold shadow-xs ${getRoleBadgeColor(shift.role)}`}>
+
+        <div className={`shrink-0 ml-2 rounded-full px-2.5 py-1 text-[10px] md:text-xs font-bold shadow-xs ${getRoleBadgeColor(shift.role)}`}>
           {shift.role}
         </div>
       </div>
