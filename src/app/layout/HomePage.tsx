@@ -60,7 +60,8 @@ export function HomePage() {
                 name: `${s.profiles?.first_name || 'Employee'} ${s.profiles?.last_name || ''}`.trim(),
                 role: s.role,
                 end: null,
-                previousLocationName: prevLoc?.name
+                previousLocationName: prevLoc?.name,
+                isChangeLocation: !!s.previous_location_id
               };
             });
 
@@ -74,7 +75,7 @@ export function HomePage() {
               start: formatTime(activeShift.started_at),
               end: null,
               previousLocationName: prevLoc?.name,
-              isChangeLocation: activeShift.isChangeLocation
+              isChangeLocation: !!activeShift.previous_location_id
             };
           }
 
