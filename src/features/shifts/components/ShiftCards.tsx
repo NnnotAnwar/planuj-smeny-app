@@ -16,8 +16,8 @@ interface ShiftCardsProps {
 const ROLE_COLORS: Record<string, string> = {
   Manager: 'bg-purple-600 text-white',
   Supervisor: 'bg-emerald-500 text-white',
-  Waiter: 'bg-lime-400 text-black',
-  Waitress: 'bg-lime-400 text-black',
+  Employee: 'bg-lime-400 text-black',
+  Superadmin: 'bg-red-900 text-white',
 };
 
 function getRoleBadgeColor(role: string): string {
@@ -35,10 +35,10 @@ export function ShiftCards({ locationName, shifts, userShift }: ShiftCardsProps)
   const hasContent = shifts.length > 0 || userShift;
 
   return (
-    <motion.div 
+    <motion.div
       layout
       initial={false}
-      animate={{ 
+      animate={{
         opacity: hasContent ? 1 : 0,
         height: hasContent ? 'auto' : 0,
         marginBottom: hasContent ? 16 : 0,
@@ -80,16 +80,16 @@ export function ShiftCards({ locationName, shifts, userShift }: ShiftCardsProps)
  */
 function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['userShift']> }) {
   const isChange = !!userShift.isChangeLocation;
-  
+
   // Emerald/Green if standard, Yellow/Amber if location changed.
   const bg = isChange
     ? 'bg-linear-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/30 dark:to-amber-900/30 border-yellow-200 dark:border-yellow-500/20'
     : 'bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border-emerald-200 dark:border-emerald-500/20';
-    
+
   const box = isChange
     ? 'bg-yellow-500 text-white shadow-md'
     : 'bg-emerald-500 text-white shadow-md';
-    
+
   const label = isChange
     ? 'text-yellow-700 dark:text-yellow-400'
     : 'text-emerald-700 dark:text-emerald-400';
@@ -99,13 +99,13 @@ function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['
       <div className={`flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 ${box}`}>
         <span className="text-sm font-bold tracking-tight">{userShift.start ?? '--:--'}</span>
       </div>
-      
+
       <div className="flex flex-1 items-center justify-between min-w-0">
         <div className="flex flex-col min-w-0">
           <p className={`text-[9px] font-black uppercase tracking-widest mb-0.5 ${label}`}>Your shift</p>
           <p className="truncate text-sm font-bold text-gray-900 dark:text-white leading-tight">{userShift.name}</p>
         </div>
-        
+
         <div className={`shrink-0 ml-2 rounded-full px-2.5 py-1 text-[10px] md:text-xs font-bold shadow-xs ${getRoleBadgeColor(userShift.role)}`}>
           {userShift.role}
         </div>
@@ -119,7 +119,7 @@ function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['
  */
 function AssignedShiftCard({ shift }: { shift: ShiftDisplayData }) {
   const isChange = !!shift.isChangeLocation;
-  
+
   // Colleagues are ALWAYS standard (white/gray) to avoid confusion with the user.
   const bg = 'bg-white/80 dark:bg-white/5 border-white dark:border-white/5';
   const box = 'bg-linear-to-br from-gray-400 to-gray-500 dark:from-gray-700 dark:to-gray-800';

@@ -48,7 +48,7 @@ export function HomePage() {
       <div className="space-y-4">
         {locations.map((location) => {
           const userFullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
-
+          const role = user.role.name
           // Find colleagues working in this specific location.
           const colleagues: ShiftDisplayData[] = allActiveShifts
             .filter((s) => s.location_id === location.id && s.user_id !== user.id)
@@ -71,7 +71,7 @@ export function HomePage() {
             const prevLoc = activeShift.previous_location_id ? locations.find(l => l.id === activeShift.previous_location_id) : null;
             userCard = {
               name: userFullName,
-              role: user.role,
+              role: role,
               start: formatTime(activeShift.started_at),
               end: null,
               previousLocationName: prevLoc?.name,

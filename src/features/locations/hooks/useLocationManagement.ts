@@ -17,6 +17,7 @@ interface UseLocationManagementProps {
   setSelectedLocationId: (id: string | null) => void;
 }
 
+
 export function useLocationManagement({
   locations,
   activeShift,

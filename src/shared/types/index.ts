@@ -15,7 +15,10 @@ export const ProfileSchema = z.object({
   username: z.string(), // Display username
   first_name: z.string().nullable(), // Optional first name
   last_name: z.string().nullable(), // Optional last name
-  role: z.string(), // User's job role (e.g., Manager, Waiter)
+  role: z.object({
+    name: z.string(),
+    is_admin: z.boolean(),
+  }),
   organization_id: z.string(), // The company this user belongs to
 });
 
@@ -50,6 +53,30 @@ export const LocationSchema = z.object({
 });
 
 /**
+ * OrganizationSchema: Defines a organizations that is connected to app
+ */
+export const OrganizationSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string().optional(),
+  locations: z.array(z.object(
+    {
+      id: z.string(),
+      name: z.string()
+    }
+  )),
+  profiles: z.array(z.object({
+    id: z.string(),
+    role: z.string(),
+    email: z.email(),
+    username: z.string(),
+    first_name: z.string().nullable(),
+    last_name: z.string().nullable()
+  }))
+})
+
+
+/**
  * --- TYPES FOR TYPESCRIPT ---
  * These are generated automatically from the schemas above.
  * We use these throughout the app to get auto-completion and error checking.
@@ -57,6 +84,7 @@ export const LocationSchema = z.object({
 export type Profile = z.infer<typeof ProfileSchema>;
 export type Shift = z.infer<typeof ShiftSchema>;
 export type Location = z.infer<typeof LocationSchema>;
+export type Organization = z.infer<typeof OrganizationSchema>;
 
 /**
  * --- COMPONENT TYPES ---

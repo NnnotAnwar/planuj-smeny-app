@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import { SquaresFourIcon, ChartBarIcon, ClockIcon, GearIcon } from "@phosphor-icons/react";
+import { SquaresFourIcon, ChartBarIcon, ClockIcon, GearIcon, ShieldCheckIcon } from "@phosphor-icons/react";
 
 import { Clock } from '@shared/components/Clock';
 import { useAuthContext } from '@features/auth/AuthContext';
@@ -34,13 +34,6 @@ const menuVariants: Variants = {
   }
 };
 
-const navItems = [
-  { name: 'Dashboard', icon: SquaresFourIcon, route: '/' },
-  { name: 'Overview', icon: ChartBarIcon, route: '/overview' },
-  { name: 'My Shifts', icon: ClockIcon },
-  { name: 'Settings', icon: GearIcon }
-];
-
 function getInitials(firstName?: string | null, lastName?: string | null): string {
   const f = firstName?.[0] || '';
   const l = lastName?.[0] || '';
@@ -51,6 +44,15 @@ function getInitials(firstName?: string | null, lastName?: string | null): strin
 export function Dashboard({ onLocationSelect }: DashboardProps) {
   const { user, logout } = useAuthContext();
   const { locations, selectedLocationId } = useShiftContext();
+
+  const navItems = [
+    { name: 'Dashboard', icon: SquaresFourIcon, route: '/' },
+    { name: 'Overview', icon: ChartBarIcon, route: '/overview' },
+    { name: 'My Shifts', icon: ClockIcon, route: '/my-shifts' },
+    ...(user?.role.is_admin ? [{ name: 'Admin Panel', icon: ShieldCheckIcon, route: '/admin' }] : []),
+    { name: 'Settings', icon: GearIcon, route: '/settings' }
+  ];
+
   const { setTheme, resolvedTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,7 +70,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 h-auto md:h-screen md:min-h-screen w-full md:w-1/3 lg:w-1/4 bg-white/40 dark:bg-gray-900/80 backdrop-blur-xl shadow-sm border-b md:border-b-0 md:border-r border-emerald-500/10 dark:border-white/5 transition-all duration-300">
+      <header className="sticky top-0 z-50 md:min-h-screen w-full md:w-1/3 lg:w-1/4 bg-white/40 dark:bg-gray-900/80 backdrop-blur-xl shadow-sm border-b md:border-b-0 md:border-r border-emerald-500/10 dark:border-white/5 transition-all duration-300">
         <div className="flex flex-col h-full max-w-7xl mx-auto px-4 py-1.5 md:gap-2 md:py-4 pt-[calc(0.375rem+env(safe-area-inset-top,0px))]">
           <div className="shrink-0 flex justify-between items-center h-10 md:h-12 relative">
             <div className="flex items-center gap-3 z-10">
@@ -104,7 +106,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
               </div>
               <div className="overflow-hidden">
                 <p className="text-sm font-bold text-gray-800 dark:text-white truncate">Dobrý den, {user.first_name || user.username}!</p>
-                <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none mt-0.5">{user.role}</p>
+                <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none mt-0.5">{user.role.name}</p>
               </div>
             </div>
           )}
@@ -157,8 +159,12 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
                       <svg className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
                   </div>
-                  <div className="px-1">
-                    <LocationSelection locations={filteredLocations} selectedLocationId={selectedLocationId} onLocationSelect={onLocationSelect} />
+                  <div className="px-1 overflow-y-auto max-h-[35vh] emerald-scrollbar pb-4 overscroll-contain">
+                    <LocationSelection
+                      locations={filteredLocations}
+                      selectedLocationId={selectedLocationId}
+                      onLocationSelect={onLocationSelect}
+                    />
                   </div>
                 </motion.div>
               )}
@@ -203,7 +209,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <p className="text-xl font-bold text-gray-900 dark:text-white truncate">Dobrý den, {user.first_name || user.username}!</p>
-                    <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] mt-1">{user.role}</p>
+                    <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] mt-1">{user.role.name}</p>
                   </div>
                 </div>
               )}

@@ -15,7 +15,7 @@ export function useShifts(user: User | null) {
   const [allActiveShifts, setAllActiveShifts] = useState<Shift[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [userShifts, setUserShifts] = useState<Shift[]>([]);
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
@@ -33,8 +33,8 @@ export function useShifts(user: User | null) {
       // Parallel fetch: Do multiple requests at once for speed.
       const [currentShift, locs, activeShiftsData, userShiftsData] = await Promise.all([
         shiftService.getActiveShift(user.id),
-        locationService.getLocations(user.organization_id),
-        shiftService.getAllActiveShifts(user.organization_id),
+        locationService.getLocations(user.organization_id, user.role.name === 'Superadmin'),
+        shiftService.getAllActiveShifts(user.organization_id, user.role.name === 'Superadmin'),
         shiftService.getAllUserShifts(user.id)
       ]);
 
@@ -52,7 +52,7 @@ export function useShifts(user: User | null) {
     } catch (err) {
       console.error('Error refreshing shift data:', err);
     }
-  }, [user?.id, user?.organization_id]);
+  }, [user?.id, user?.role, user?.organization_id]);
 
   // Load everything on startup.
   useEffect(() => {
@@ -113,11 +113,11 @@ export function useShifts(user: User | null) {
       setIsChangingLocation(true);
       // We pass the current location as the 'previous' one before it gets updated.
       const updatedShift = await shiftService.changeShiftLocation(
-        activeShift.id, 
-        newLocationId, 
+        activeShift.id,
+        newLocationId,
         activeShift.location_id
       );
-      
+
       // We manually add the flag to the local state so the UI highlights the move immediately.
       setActiveShift({ ...updatedShift, isChangeLocation: true } as Shift);
       setSelectedLocationId(newLocationId);

@@ -10,6 +10,9 @@ import { AppShell } from './app/layout/AppShell';
 import { HomePage } from './app/layout/HomePage';
 import { LoginPage } from './features/auth/LoginPage';
 import { OverviewPage } from './features/overview/OverviewPage';
+import { AdminPage } from './features/admin/AdminPage';
+
+import { RoleGuard } from './features/auth/RoleGuards';
 
 /**
  * --- MAIN APP COMPONENT ---
@@ -33,6 +36,11 @@ export default function App() {
             <Route path="/" element={<AppShell />}>
               <Route index element={<HomePage />} />
               <Route path="overview" element={<OverviewPage />} />
+              <Route path="my-shifts" element={<div className='dark:text-white'>My-Shifts</div>} />
+              <Route element={<RoleGuard />}>
+                <Route path="admin" element={<AdminPage />} />
+              </Route>
+              <Route path="settings" element={<div>Company Settings</div>} />
             </Route>
 
             {/* 3. FALLBACK: Redirect any unknown URL to Home. */}

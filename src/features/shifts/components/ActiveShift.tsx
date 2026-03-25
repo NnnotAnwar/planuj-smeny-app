@@ -93,7 +93,7 @@ export function ActiveShift() {
                             )}
                         </div>
                         <h3 className="text-lg font-bold leading-tight text-gray-800 dark:text-white">
-                            {userName} <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({user.role})</span>
+                            {userName} <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({user.role.name})</span>
                         </h3>
                         <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400 font-medium">
                             {locationName} • Started at {startTime}

@@ -1,6 +1,5 @@
 import { supabase } from '@shared/api/supabaseClient';
-import { type Shift, type User } from '@shared/types';
-import { ShiftSchema } from '@shared/types';
+import { type Shift, type User, ShiftSchema } from '@shared/types';
 import { z } from 'zod';
 
 /**
@@ -30,12 +29,18 @@ export const shiftService = {
    * Retrieves all active shifts in the whole organization.
    * Useful to see who else is working right now.
    */
-  async getAllActiveShifts(organizationId: string): Promise<Shift[]> {
-    const { data, error } = await supabase
+  async getAllActiveShifts(organizationId: string, isSuperAdmin: boolean): Promise<Shift[]> {
+
+    let query = supabase
       .from('shifts')
-      .select('*, profiles(username, first_name, last_name)')
-      .eq('organization_id', organizationId)
+      .select('*, profiles(username, first_name, last_name, role)')
       .is('ended_at', null);
+
+    if (!isSuperAdmin) {
+      query = query.eq('organization_id', organizationId);
+    }
+
+    const { data, error } = await query
 
     if (error) throw error;
     if (!data) return [];
@@ -69,7 +74,7 @@ export const shiftService = {
         location_id: locationId,
         organization_id: user.organization_id,
         started_at: new Date().toISOString(),
-        role: user.role
+        role: user.role.name
       })
       .select()
       .single();
@@ -102,9 +107,9 @@ export const shiftService = {
   async changeShiftLocation(shiftId: string, locationId: string, previousLocationId: string | null): Promise<Shift> {
     const { data, error } = await supabase
       .from('shifts')
-      .update({ 
+      .update({
         location_id: locationId,
-        previous_location_id: previousLocationId 
+        previous_location_id: previousLocationId
       })
       .eq('id', shiftId)
       .select()
