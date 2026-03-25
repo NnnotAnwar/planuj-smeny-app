@@ -57,12 +57,17 @@ export function useShifts(user: User | null) {
   // Load everything on startup.
   useEffect(() => {
     const init = async () => {
-      setIsLoading(true);
+      // Only show loading if we don't have any locations yet (initial load).
+      // This prevents the UI from "flickering" or showing spinners during background refreshes.
+      if (locations.length === 0) {
+        setIsLoading(true);
+      }
+      
       await refreshData();
       setIsLoading(false);
     };
     init();
-  }, [refreshData]);
+  }, [refreshData, locations.length]);
 
   /**
    * ACTION: START SHIFT

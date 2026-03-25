@@ -1,5 +1,6 @@
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { type ShiftDisplayData } from '@shared/types';
+import { getRoleBadgeColor } from '@/shared/utils/roleColors';
 
 /**
  * --- SHIFT CARDS COMPONENT ---
@@ -11,17 +12,6 @@ interface ShiftCardsProps {
   locationName: string;
   shifts: ShiftDisplayData[]; // Other workers.
   userShift?: ShiftDisplayData; // Your own shift.
-}
-
-const ROLE_COLORS: Record<string, string> = {
-  Manager: 'bg-purple-600 text-white',
-  Supervisor: 'bg-emerald-500 text-white',
-  Employee: 'bg-lime-400 text-black',
-  Superadmin: 'bg-red-900 text-white',
-};
-
-function getRoleBadgeColor(role: string): string {
-  return ROLE_COLORS[role] || 'bg-red-100 text-red-700';
 }
 
 // 2. ANIMATION: Define how cards should slide in and out.

@@ -24,7 +24,7 @@ export const authService = {
   async getUserProfile(userId: string): Promise<User | null> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, first_name, last_name, role(name, is_admin), organization_id')
+      .select('id, username, first_name, last_name, role(name, is_admin), email, organization_id')
       .eq('id', userId)
       .single();
 
@@ -41,6 +41,7 @@ export const authService = {
         name: validated.role.name,
         is_admin: validated.role.is_admin
       },
+      email: validated.email,
       last_name: validated.last_name ?? null,
       organization_id: validated.organization_id
     };

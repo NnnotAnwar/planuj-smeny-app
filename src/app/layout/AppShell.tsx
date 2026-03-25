@@ -40,13 +40,15 @@ export function AppShell() {
     locations, activeShift, selectedLocationId, setSelectedLocationId,
   });
 
-  const isLoading = isAuthLoading || isShiftsLoading || isAuthChecking;
-
-  // 1. GLOBAL LOADING: Show a spinner while the app is starting.
-  if (isLoading || !user) {
+  // 1. GLOBAL LOADING: Only show a full-page spinner during initial auth check or if no user is present.
+  // We avoid unmounting the whole AppShell when shifts are refreshing in the background (flicker fix).
+  if (isAuthChecking || (isAuthLoading && !user) || !user) {
     return (
-      <div className="min-h-dvh flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-dvh flex items-center justify-center bg-white dark:bg-gray-950 transition-colors duration-500">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin shadow-lg shadow-emerald-500/20"></div>
+          <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm animate-pulse">Loading experience...</p>
+        </div>
       </div>
     );
   }
@@ -64,7 +66,7 @@ export function AppShell() {
       <Dashboard onLocationSelect={handleLocationSelect} />
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 p-3 pb-32 md:p-6 md:pb-6 max-w-7xl transition-all">
+      <main className="flex-1 p-3 pb-40 md:p-6 md:pb-6 max-w-7xl transition-all">
         <Outlet context={contextValue} />
       </main>
 

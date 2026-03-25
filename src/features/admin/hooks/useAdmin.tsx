@@ -1,30 +1,26 @@
 import { adminService } from "../adminService";
 import { useEffect, useState } from "react";
 import { useAuthContext } from "@/features/auth/AuthContext";
-import type { Organization, Location } from "@/shared/types";
-import { locationService } from "@/features/locations/locationService";
+import type { Organization } from "@/shared/types";
 
 export function useAdmin() {
     const { user } = useAuthContext()
     const isSuperAdmin = user?.role.name === 'Superadmin'
-    const [organizations, setOrganizations] = useState<Organization[] | null>(null);
-    const [locations, setLocations] = useState<Location[] | null>(null)
+    const [adminData, setAdminData] = useState<Organization[] | null>(null);
 
     useEffect(() => {
         if (!user) return
         const getData = async () => {
             try {
-                const orgs = await adminService.getOrganizations(isSuperAdmin)
-                const locs = await locationService.getLocations(user.organization_id, isSuperAdmin)
-                setOrganizations(orgs)
-                setLocations(locs)
+                const data = await adminService.getAdminData(isSuperAdmin, user)
+                setAdminData(data)
             }
             catch (err) {
                 console.error(err)
             }
         }
         getData()
-    }, [isSuperAdmin])
+    }, [isSuperAdmin, user])
 
     const handleCreateOrg = async (orgName: string, slug: string) => {
         if (user?.role.name !== "Superadmin") return
@@ -40,7 +36,6 @@ export function useAdmin() {
 
     return {
         handleCreateOrg,
-        organizations,
-        locations
+        adminData,
     }
 }

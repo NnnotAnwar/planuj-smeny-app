@@ -86,17 +86,31 @@ ALTER FUNCTION "public"."get_my_org_id"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   default_org_id uuid;
+  v_username text;
 BEGIN
+  -- Get the default organization ID.
   SELECT id INTO default_org_id FROM public.organizations WHERE slug = 'default-org';
+  
+  IF default_org_id IS NULL THEN
+    RAISE EXCEPTION 'Default organization "default-org" not found. Please seed your database.';
+  END IF;
+
+  -- Fallback logic for username: metadata -> email prefix -> 'user_' + random
+  v_username := COALESCE(
+    new.raw_user_meta_data->>'username', 
+    split_part(new.email, '@', 1),
+    'user_' || substr(md5(random()::text), 1, 8)
+  );
 
   INSERT INTO public.profiles (id, username, role, email, organization_id)
   VALUES (
     new.id, 
-    new.raw_user_meta_data->>'username', 
-    COALESCE(new.raw_user_meta_data->>'role', 'Waiter'),
+    v_username, 
+    'Waiter',
     new.email,
     default_org_id 
   );
@@ -156,7 +170,7 @@ CREATE TABLE IF NOT EXISTS "public"."shifts" (
     "started_at" timestamp with time zone,
     "ended_at" timestamp with time zone,
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "organization_id" "uuid",
+    "organization_id" "uuid" NOT NULL,
     "role" "text" NOT NULL,
     "previous_location_id" "uuid"
 );
@@ -194,6 +208,18 @@ ALTER TABLE ONLY "public"."shifts"
 
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "unique_username" UNIQUE ("username");
+
+
+
+CREATE INDEX "idx_profiles_organization_id" ON "public"."profiles" USING "btree" ("organization_id");
+
+
+
+CREATE INDEX "idx_shifts_organization_id" ON "public"."shifts" USING "btree" ("organization_id");
+
+
+
+CREATE INDEX "idx_shifts_user_id" ON "public"."shifts" USING "btree" ("user_id");
 
 
 
@@ -263,6 +289,10 @@ CREATE POLICY "Shifts are updatable by own user" ON "public"."shifts" FOR UPDATE
 CREATE POLICY "Shifts are viewable by organization" ON "public"."shifts" FOR SELECT TO "authenticated" USING (("organization_id" = ( SELECT "profiles"."organization_id"
    FROM "public"."profiles"
   WHERE ("profiles"."id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "id")) WITH CHECK (("auth"."uid"() = "id"));
 
 
 
@@ -448,9 +478,9 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_email_by_username"("u_name" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_email_by_username"("u_name" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_email_by_username"("u_name" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."get_email_by_username"("u_name" "text") TO "anon";
 
 
 
@@ -564,5 +594,8 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 
+
+
+drop extension if exists "pg_net";
 
 

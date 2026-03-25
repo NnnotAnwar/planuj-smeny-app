@@ -15,6 +15,7 @@ export const ProfileSchema = z.object({
   username: z.string(), // Display username
   first_name: z.string().nullable(), // Optional first name
   last_name: z.string().nullable(), // Optional last name
+  email: z.email(),
   role: z.object({
     name: z.string(),
     is_admin: z.boolean(),
@@ -50,6 +51,7 @@ export const LocationSchema = z.object({
   id: z.string(), // Unique location ID
   name: z.string(), // Name of the restaurant/office
   organization_id: z.string().optional(),
+  organizationName: z.string().optional()
 });
 
 /**
@@ -62,16 +64,21 @@ export const OrganizationSchema = z.object({
   locations: z.array(z.object(
     {
       id: z.string(),
-      name: z.string()
+      name: z.string(),
+      organization_id: z.string()
     }
   )),
   profiles: z.array(z.object({
     id: z.string(),
-    role: z.string(),
+    role: z.object({
+      name: z.string(),
+      is_admin: z.boolean()
+    }),
     email: z.email(),
     username: z.string(),
     first_name: z.string().nullable(),
-    last_name: z.string().nullable()
+    last_name: z.string().nullable(),
+    organization_id: z.string()
   }))
 })
 

@@ -1,5 +1,5 @@
 import { supabase } from "@/shared/api/supabaseClient";
-import { type Shift, type Organization, OrganizationSchema, ShiftSchema } from '@shared/types';
+import { type Shift, type Organization, OrganizationSchema, ShiftSchema, type User } from '@shared/types';
 import { z } from 'zod';
 
 export const adminService = {
@@ -17,17 +17,23 @@ export const adminService = {
         return OrganizationSchema.parse(data)
     },
 
-    async getOrganizations(isSuperAdmin: boolean): Promise<Organization[] | null> {
-        if (isSuperAdmin) {
-            const { data, error } = await supabase
+    async getAdminData(isSuperAdmin: boolean, user: User): Promise<Organization[] | null> {
+
+        const query = !isSuperAdmin
+            ? supabase
                 .from('organizations')
-                .select('*, locations(id, name), profiles(id, role, email, username, first_name, last_name)')
-            if (error) throw error;
-            if (!data) return null;
-            return z.array(OrganizationSchema).parse(data);
-        } else {
-            return null
-        }
+                .select('*, locations(id, name, organization_id), profiles(id, role(name, is_admin), email, username, first_name, last_name, organization_id)')
+                .eq('id', user.organization_id)
+            : supabase
+                .from('organizations')
+                .select('*, locations(id, name, organization_id), profiles(id, role(name, is_admin), email, username, first_name, last_name, organization_id)')
+
+        const { data, error } = await query
+
+        if (error) throw error;
+        if (!data) return null;
+        return z.array(OrganizationSchema).parse(data);
+
     },
 
     async getAllActiveShifts(organizationId: string, isSuperAdmin: boolean): Promise<Shift[]> {

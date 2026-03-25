@@ -10,14 +10,14 @@
  */
 export function formatTime(isoString: string | null | undefined): string {
   if (!isoString) return '--:--';
-  
+
   try {
     return new Date(isoString).toLocaleTimeString('en-GB', {
       hour: '2-digit',
       minute: '2-digit',
     });
   } catch (err) {
-    console.error('Invalid date format:', isoString);
+    console.error('Invalid date format:', err, isoString);
     return '--:--';
   }
 }
@@ -28,13 +28,14 @@ export function formatTime(isoString: string | null | undefined): string {
  */
 export function formatDateShort(isoString: string | null | undefined): string {
   if (!isoString) return '';
-  
+
   try {
     return new Date(isoString).toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'short',
     });
   } catch (err) {
+    console.error(err)
     return '';
   }
 }
