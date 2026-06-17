@@ -1,17 +1,18 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthContext } from './AuthContext';
-
+import { canViewAdminPanel } from '@features/admin/permissions';
 
 export function RoleGuard() {
     const { user, isLoading, isAuthChecking } = useAuthContext();
 
     // 1. Wait until we actually know who the user is
     if (isLoading || isAuthChecking) {
-        return <div className="flex h-screen items-center justify-center">Loading...</div>;
+        return <div className="flex min-h-dvh items-center justify-center">Loading...</div>;
     }
 
-    // 2. If no user is logged in, or their role is NOT in the allowed list, kick them out
-    if (!user || !user.role.is_admin) {
+    // 2. Gate on the role hierarchy (Manager+). is_admin is legacy and was
+    //    inconsistent with the rank-based model used everywhere else.
+    if (!user || !canViewAdminPanel(user)) {
         return <Navigate to="/" replace />;
     }
 

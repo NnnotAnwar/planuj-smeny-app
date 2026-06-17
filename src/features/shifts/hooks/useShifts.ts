@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { shiftService } from '../shiftService';
 import { locationService } from '@features/locations/locationService';
 import { type Shift, type Location, type User } from '@shared/types';
@@ -54,20 +54,27 @@ export function useShifts(user: User | null) {
     }
   }, [user?.id, user?.role, user?.organization_id]);
 
-  // Load everything on startup.
+  // Load everything on startup (and whenever the identified user changes, since
+  // refreshData is keyed on user id/org/role). We deliberately DON'T depend on
+  // locations.length — that caused a second full fetch right after the first
+  // load populated locations (0 -> N re-triggered the effect). The spinner only
+  // shows on the very first load to avoid flicker during background refreshes.
+  const hasLoadedOnce = useRef(false);
   useEffect(() => {
+    let cancelled = false;
     const init = async () => {
-      // Only show loading if we don't have any locations yet (initial load).
-      // This prevents the UI from "flickering" or showing spinners during background refreshes.
-      if (locations.length === 0) {
-        setIsLoading(true);
-      }
-      
+      if (!hasLoadedOnce.current) setIsLoading(true);
       await refreshData();
-      setIsLoading(false);
+      if (!cancelled) {
+        hasLoadedOnce.current = true;
+        setIsLoading(false);
+      }
     };
     init();
-  }, [refreshData, locations.length]);
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshData]);
 
   /**
    * ACTION: START SHIFT
