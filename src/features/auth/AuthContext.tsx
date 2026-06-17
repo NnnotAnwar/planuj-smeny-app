@@ -73,10 +73,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
 
     // Listen for global auth changes (like signing out on another device).
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
+    // Only react to an explicit SIGNED_OUT — an empty INITIAL_SESSION must NOT
+    // bounce to /login (that would break the /accept-invite flow, where the
+    // session only appears after verifyOtp runs).
+    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
         setUser(null);
-        navigate('/login', { replace: true });
+        if (window.location.pathname !== '/accept-invite') {
+          navigate('/login', { replace: true });
+        }
       }
     });
 
