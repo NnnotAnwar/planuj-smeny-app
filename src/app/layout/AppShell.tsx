@@ -33,7 +33,7 @@ export interface AppOutletContext {
 
 export function AppShell() {
   const { user, isAuthChecking, isLoading: isAuthLoading } = useAuthContext();
-  const { activeShift, allActiveShifts, locations, isLoading: isShiftsLoading, selectedLocationId, setSelectedLocationId } = useShiftContext();
+  const { activeShift, allActiveShifts, locations, selectedLocationId, setSelectedLocationId } = useShiftContext();
 
   // Location switch/confirm logic hook.
   const { isLocationPopupOpen, setIsLocationPopupOpen, pendingLocation, handleLocationSelect } = useLocationManagement({

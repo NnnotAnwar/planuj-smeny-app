@@ -20,7 +20,7 @@ if (!supabasePublisherKey) {
 // Ensure the URL is valid.
 try {
     new URL(supabaseUrl);
-} catch (e) {
+} catch {
     throw new Error(`INVALID: VITE_SUPABASE_URL "${supabaseUrl}" is not a valid URL.`);
 }
 
