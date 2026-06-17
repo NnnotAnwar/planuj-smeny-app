@@ -21,6 +21,9 @@ export function useShifts(user: User | null) {
   const [isEnding, setIsEnding] = useState(false);
   const [isChangingLocation, setIsChangingLocation] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
+  // Surfaced to the UI (toast in AppShell) so failed actions aren't silent.
+  const [actionError, setActionError] = useState<string | null>(null);
+  const clearActionError = useCallback(() => setActionError(null), []);
 
   /**
    * REFRESH DATA: Fetches everything from the database.
@@ -83,12 +86,14 @@ export function useShifts(user: User | null) {
     if (!selectedLocationId || !user || isStarting) return;
     try {
       setIsStarting(true);
+      setActionError(null);
       const data = await shiftService.startShift(user, selectedLocationId);
       setActiveShift(data);
       // Optimistically update lists
       setAllActiveShifts(prev => [...prev, { ...data, profiles: { username: user.username, first_name: user.first_name, last_name: user.last_name } } as Shift]);
     } catch (err) {
       console.error('Error starting shift:', err);
+      setActionError(err instanceof Error ? err.message : 'Could not start your shift. Please try again.');
     } finally {
       setIsStarting(false);
     }
@@ -101,6 +106,7 @@ export function useShifts(user: User | null) {
     if (!activeShift || isEnding) return;
     try {
       setIsEnding(true);
+      setActionError(null);
       const endedShift = await shiftService.endShift(activeShift.id);
       setActiveShift(null);
       setSelectedLocationId(null);
@@ -110,6 +116,7 @@ export function useShifts(user: User | null) {
       setUserShifts(prev => [endedShift, ...prev]);
     } catch (err) {
       console.error('Error ending shift:', err);
+      setActionError(err instanceof Error ? err.message : 'Could not end your shift. Please try again.');
     } finally {
       setIsEnding(false);
     }
@@ -123,6 +130,7 @@ export function useShifts(user: User | null) {
     if (!activeShift || isChangingLocation) return;
     try {
       setIsChangingLocation(true);
+      setActionError(null);
       // We pass the current location as the 'previous' one before it gets updated.
       const updatedShift = await shiftService.changeShiftLocation(
         activeShift.id,
@@ -135,6 +143,7 @@ export function useShifts(user: User | null) {
       setSelectedLocationId(newLocationId);
     } catch (err) {
       console.error('Error changing shift location:', err);
+      setActionError(err instanceof Error ? err.message : 'Could not change location. Please try again.');
     } finally {
       setIsChangingLocation(false);
     }
@@ -157,6 +166,8 @@ export function useShifts(user: User | null) {
     handleStartShift,
     handleEndShift,
     handleChangeLocation,
-    refreshData
+    refreshData,
+    actionError,
+    clearActionError
   };
 }

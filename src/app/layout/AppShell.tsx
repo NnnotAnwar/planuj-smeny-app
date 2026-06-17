@@ -1,5 +1,7 @@
-import { AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Outlet } from 'react-router-dom';
+import { WarningCircleIcon, XIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -33,7 +35,14 @@ export interface AppOutletContext {
 
 export function AppShell() {
   const { user, isAuthChecking, isLoading: isAuthLoading } = useAuthContext();
-  const { activeShift, allActiveShifts, locations, selectedLocationId, setSelectedLocationId } = useShiftContext();
+  const { activeShift, allActiveShifts, locations, selectedLocationId, setSelectedLocationId, actionError, clearActionError } = useShiftContext();
+
+  // Auto-dismiss the shift-action error toast after a few seconds.
+  useEffect(() => {
+    if (!actionError) return;
+    const t = setTimeout(clearActionError, 5000);
+    return () => clearTimeout(t);
+  }, [actionError, clearActionError]);
 
   // Location switch/confirm logic hook.
   const { isLocationPopupOpen, setIsLocationPopupOpen, pendingLocation, handleLocationSelect } = useLocationManagement({
@@ -69,6 +78,27 @@ export function AppShell() {
       <main className="flex-1 p-3 pb-40 md:p-6 md:pb-6 max-w-7xl transition-all">
         <Outlet context={contextValue} />
       </main>
+
+      {/* ACTION ERROR TOAST — surfaces failed shift actions (start/end/move). */}
+      <AnimatePresence>
+        {actionError && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            role="alert"
+            className="fixed left-1/2 -translate-x-1/2 z-[200] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 w-[calc(100%-2rem)] max-w-md"
+          >
+            <div className="flex items-start gap-3 bg-red-500 text-white rounded-2xl px-4 py-3 shadow-2xl shadow-red-500/30">
+              <WarningCircleIcon weight="fill" className="w-5 h-5 shrink-0 mt-0.5" />
+              <p className="flex-1 text-sm font-bold leading-snug">{actionError}</p>
+              <button onClick={clearActionError} aria-label="Dismiss" className="shrink-0 -m-1 p-1 hover:bg-white/20 rounded-lg transition-colors">
+                <XIcon weight="bold" className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* GLOBAL OVERLAYS */}
       <AnimatePresence>
