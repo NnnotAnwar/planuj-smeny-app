@@ -28,6 +28,8 @@ interface ShiftContextType {
   handleEndShift: () => Promise<void>;
   handleChangeLocation: (newLocationId: string) => Promise<void>;
   refreshData: () => Promise<void>;
+  actionError: string | null;
+  clearActionError: () => void;
 }
 
 const ShiftContext = createContext<ShiftContextType | undefined>(undefined);
