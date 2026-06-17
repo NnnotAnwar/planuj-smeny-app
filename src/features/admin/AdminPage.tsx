@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     BuildingsIcon,
@@ -6,32 +6,24 @@ import {
     UsersIcon,
     PlusIcon,
     PaperPlaneTiltIcon,
-    PencilSimpleIcon,
-    TrashIcon,
     MagnifyingGlassIcon,
-    type Icon,
 } from '@phosphor-icons/react';
-import type { Organization, Profile, User } from '@/shared/types';
-import { getRoleBadgeColor } from '@/shared/utils/roleColors';
-import { getFullInitials } from '@/shared/utils/getInitials';
+import type { Organization, Profile } from '@/shared/types';
 
 import { useAuthContext } from '@/features/auth/AuthContext';
 import { AdminProvider, useAdminContext } from './AdminContext';
-import { canManageEmployees, canManageLocations, canManageMember, RANK } from './permissions';
+import { canManageEmployees, canManageLocations } from './permissions';
 import { ConfirmDialog } from './components/Modal';
 import { OrganizationForm } from './components/OrganizationForm';
 import { LocationForm, type LocationEditTarget } from './components/LocationForm';
 import { EmployeeForm } from './components/EmployeeForm';
 import { InviteEmployeeForm } from './components/InviteEmployeeForm';
+import { StatCard, ErrorState } from './components/AdminStateViews';
+import { OrganizationsList } from './components/OrganizationsList';
+import { LocationsList, type LocationRow } from './components/LocationsList';
+import { EmployeesList } from './components/EmployeesList';
 
 type TabType = 'employees' | 'locations' | 'organizations';
-
-interface LocationRow {
-    id: string;
-    name: string;
-    organization_id: string;
-    organizationName: string;
-}
 
 type ModalState =
     | { kind: 'org-form'; org?: Organization }
@@ -49,7 +41,8 @@ const ADD_LABEL: Record<TabType, string> = {
 
 /**
  * --- ADMIN PAGE ---
- * Entry point: provides admin state to the panel below it.
+ * Entry point: provides admin state to the panel below it. The presentational
+ * pieces (lists, stat cards, state views, action buttons) live in ./components.
  */
 export function AdminPage() {
     return (
@@ -295,278 +288,6 @@ function AdminPanel() {
                     />
                 )}
             </AnimatePresence>
-        </div>
-    );
-}
-
-// ==========================================
-// STATE HELPERS
-// ==========================================
-
-const STAT_ACCENTS: Record<string, string> = {
-    emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
-    blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-    violet: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
-};
-
-function StatCard({ icon: StatIcon, label, value, accent }: { icon: Icon; label: string; value: number; accent: string }) {
-    return (
-        <div className="flex items-center gap-3 p-3 sm:p-4 bg-white dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${STAT_ACCENTS[accent]}`}>
-                <StatIcon className="w-5 h-5" weight="bold" />
-            </div>
-            <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white leading-none">{value}</p>
-                <p className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{label}</p>
-            </div>
-        </div>
-    );
-}
-
-function LoadingState({ label }: { label: string }) {
-    return (
-        <div className="py-20 text-center text-gray-400 text-xs font-bold uppercase tracking-widest animate-pulse">
-            Loading {label}…
-        </div>
-    );
-}
-
-function EmptyState({ label }: { label: string }) {
-    return (
-        <div className="py-20 text-center text-gray-400 text-xs font-bold uppercase tracking-widest">No {label} found</div>
-    );
-}
-
-function ErrorState({ message }: { message: string }) {
-    return (
-        <div className="py-16 text-center space-y-1">
-            <p className="text-red-500 text-xs font-black uppercase tracking-widest">Something went wrong</p>
-            <p className="text-gray-400 text-xs font-medium">{message}</p>
-        </div>
-    );
-}
-
-// ==========================================
-// SUB-COMPONENTS
-// ==========================================
-
-function AdminBadgeWithTooltip() {
-    const [isVisible, setIsVisible] = useState(false);
-
-    useEffect(() => {
-        if (isVisible) {
-            const timer = setTimeout(() => setIsVisible(false), 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [isVisible]);
-
-    return (
-        <div className="relative flex items-center shrink-0">
-            <button
-                onMouseEnter={() => setIsVisible(true)}
-                onMouseLeave={() => setIsVisible(false)}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setIsVisible(!isVisible);
-                }}
-                className="shrink-0 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded bg-amber-400/10 border border-amber-500/20 flex items-center justify-center cursor-help transition-colors hover:bg-amber-500/20"
-            >
-                <span className="text-[8px] sm:text-[10px] font-black text-amber-600 dark:text-amber-400 leading-none">A</span>
-            </button>
-
-            <AnimatePresence>
-                {isVisible && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8, y: 5 }}
-                        animate={{ opacity: 1, scale: 1, y: -2 }}
-                        exit={{ opacity: 0, scale: 0.8, y: 5 }}
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[8px] font-black uppercase tracking-widest rounded-md shadow-xl z-50 whitespace-nowrap pointer-events-none"
-                    >
-                        Administrator
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-gray-900 dark:border-t-white" />
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-function OrganizationsList({
-    items,
-    isLoading,
-    onEdit,
-    onDelete,
-}: {
-    items: Organization[];
-    isLoading: boolean;
-    onEdit: (org: Organization) => void;
-    onDelete: (org: Organization) => void;
-}) {
-    if (isLoading) return <LoadingState label="organizations" />;
-    if (items.length === 0) return <EmptyState label="organizations" />;
-
-    return (
-        <div className="grid gap-2">
-            {items.map((org) => (
-                <div
-                    key={org.id}
-                    className="flex items-center gap-3 p-2 bg-white dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm"
-                >
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center shrink-0">
-                        <BuildingsIcon className="w-5 h-5" weight="bold" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-sm dark:text-white truncate">{org.name}</h3>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{org.slug}</p>
-                    </div>
-                    <div className="flex items-center gap-6 pr-2">
-                        <div className="hidden sm:flex gap-4">
-                            <div className="text-center">
-                                <p className="text-xs font-black dark:text-white">{org.locations.length}</p>
-                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Locs</p>
-                            </div>
-                            <div className="text-center">
-                                <p className="text-xs font-black dark:text-white">{org.profiles.length}</p>
-                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Users</p>
-                            </div>
-                        </div>
-                        <ActionButtons onEdit={() => onEdit(org)} onDelete={() => onDelete(org)} />
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function LocationsList({
-    items,
-    isLoading,
-    canManage,
-    onEdit,
-    onDelete,
-}: {
-    items: LocationRow[];
-    isLoading: boolean;
-    canManage: boolean;
-    onEdit: (loc: LocationRow) => void;
-    onDelete: (loc: LocationRow) => void;
-}) {
-    if (isLoading) return <LoadingState label="locations" />;
-    if (items.length === 0) return <EmptyState label="locations" />;
-
-    return (
-        <div className="grid gap-2">
-            {items.map((loc) => (
-                <div
-                    key={loc.id}
-                    className="flex items-center gap-3 p-2 bg-white dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm"
-                >
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center shrink-0">
-                        <MapPinIcon className="w-5 h-5" weight="bold" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-sm dark:text-white truncate">{loc.name}</h3>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{loc.organizationName}</p>
-                    </div>
-                    <div className="flex items-center gap-4 pr-2">
-                        <span className="hidden sm:inline-block px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 text-[8px] font-black rounded uppercase tracking-widest">
-                            {loc.id.slice(0, 8)}
-                        </span>
-                        {canManage && <ActionButtons onEdit={() => onEdit(loc)} onDelete={() => onDelete(loc)} />}
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function EmployeesList({
-    items,
-    isLoading,
-    currentUser,
-    onEdit,
-    onDelete,
-}: {
-    items: Profile[];
-    isLoading: boolean;
-    currentUser: User | null;
-    onEdit: (emp: Profile) => void;
-    onDelete: (emp: Profile) => void;
-}) {
-    if (isLoading) return <LoadingState label="employees" />;
-    if (items.length === 0) return <EmptyState label="employees" />;
-
-    return (
-        <div className="grid gap-2">
-            {items.map((employee) => {
-                const isSelf = employee.id === currentUser?.id;
-                const manageable = currentUser ? canManageMember(currentUser, employee) : false;
-                return (
-                    <div
-                        key={employee.id}
-                        className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 bg-white dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm"
-                    >
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-[10px] font-black shrink-0">
-                            {getFullInitials(employee.first_name, employee.last_name)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                                <h3 className="font-bold text-xs sm:text-sm dark:text-white truncate leading-tight">
-                                    {employee.first_name} {employee.last_name}
-                                </h3>
-                                {employee.role.rank >= RANK.ADMIN && <AdminBadgeWithTooltip />}
-                                {isSelf && (
-                                    <span className="shrink-0 px-1.5 py-0.5 text-[7px] sm:text-[8px] font-black rounded uppercase tracking-widest bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
-                                        You
-                                    </span>
-                                )}
-                            </div>
-                            <p className="text-[9px] sm:text-[10px] text-emerald-600 dark:text-emerald-400 font-bold truncate leading-tight">
-                                @{employee.username}
-                            </p>
-                            <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-tight truncate">
-                                {employee.email}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                            <span
-                                className={`px-1.5 py-0.5 sm:px-2 sm:py-1 text-[7px] sm:text-[8px] font-black rounded-md uppercase tracking-widest ${getRoleBadgeColor(
-                                    employee.role.name,
-                                )}`}
-                            >
-                                {employee.role.name}
-                            </span>
-                            {/* Only members ranked below you can be edited or removed (never yourself). */}
-                            {manageable && (
-                                <ActionButtons onEdit={() => onEdit(employee)} onDelete={() => onDelete(employee)} />
-                            )}
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
-}
-
-function ActionButtons({ onEdit, onDelete }: { onEdit: () => void; onDelete?: () => void }) {
-    return (
-        <div className="flex items-center gap-0.5">
-            <button
-                onClick={onEdit}
-                className="p-1.5 sm:p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
-                aria-label="Edit"
-            >
-                <PencilSimpleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" weight="bold" />
-            </button>
-            {onDelete && (
-                <button
-                    onClick={onDelete}
-                    className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                    aria-label="Delete"
-                >
-                    <TrashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" weight="bold" />
-                </button>
-            )}
         </div>
     );
 }

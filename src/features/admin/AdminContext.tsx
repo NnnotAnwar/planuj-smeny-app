@@ -1,20 +1,17 @@
-import {
-    createContext,
-    useContext,
-    useState,
-    useEffect,
-    useCallback,
-    type ReactNode,
-} from 'react';
+import { createContext, useContext, useCallback, type ReactNode } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, type EmployeeUpdate, type EmployeeInvite } from './adminService';
 import { useAuthContext } from '@/features/auth/AuthContext';
 import type { Organization, Role } from '@/shared/types';
 
 /**
  * --- ADMIN CONTEXT ---
- * Holds the full organization tree + roles for the Admin Panel and exposes
- * every CRUD action. Mutations run against Supabase and then re-fetch the tree
- * so the UI always reflects the database (no drifting optimistic state).
+ * Backed by React Query: the org tree + roles are cached server state (useQuery),
+ * and every mutation invalidates the tree so the UI re-syncs. This removes the
+ * hand-rolled "fetch-all + manual refreshData + isLoading/error" plumbing the
+ * context used to carry, and gives caching, dedupe and retries for free.
+ *
+ * The public API is unchanged, so the panel/forms below don't need to change.
  */
 
 interface AdminContextType {
@@ -43,121 +40,114 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
+const TREE_KEY = ['admin', 'tree'] as const;
+const ROLES_KEY = ['admin', 'roles'] as const;
+
 export function AdminProvider({ children }: { children: ReactNode }) {
     const { user } = useAuthContext();
     const isSuperAdmin = user?.role.name === 'Superadmin';
+    const queryClient = useQueryClient();
 
-    const [adminData, setAdminData] = useState<Organization[] | null>(null);
-    const [roles, setRoles] = useState<Role[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const treeQuery = useQuery({
+        queryKey: [...TREE_KEY, user?.id],
+        queryFn: () => adminService.getAdminData(isSuperAdmin, user!),
+        enabled: !!user,
+    });
 
-    const refreshData = useCallback(async () => {
-        if (!user) return;
-        try {
-            setError(null);
-            const data = await adminService.getAdminData(isSuperAdmin, user);
-            setAdminData(data);
-        } catch (err) {
-            console.error('Failed to load admin data:', err);
-            setError(err instanceof Error ? err.message : 'Failed to load admin data.');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [isSuperAdmin, user]);
+    const rolesQuery = useQuery({
+        queryKey: ROLES_KEY,
+        queryFn: () => adminService.getRoles(),
+        enabled: !!user,
+        staleTime: 5 * 60 * 1000, // roles rarely change
+    });
 
-    useEffect(() => {
-        if (!user) return;
-        refreshData();
-        adminService.getRoles().then(setRoles).catch((err) => console.error('Failed to load roles:', err));
-    }, [user, refreshData]);
+    const invalidateTree = useCallback(
+        () => queryClient.invalidateQueries({ queryKey: TREE_KEY }),
+        [queryClient],
+    );
+
+    // A mutation that runs a service call then re-syncs the tree. We keep the
+    // imperative async signatures the existing forms already call/await.
+    const mutation = useMutation({
+        mutationFn: (action: () => Promise<void>) => action(),
+        onSuccess: invalidateTree,
+    });
+    const run = useCallback((action: () => Promise<void>) => mutation.mutateAsync(action), [mutation]);
 
     // Organizations -------------------------------------------------
     const createOrganization = useCallback(
-        async (name: string, slug: string) => {
-            if (!isSuperAdmin) throw new Error('Only a Superadmin can manage organizations.');
-            await adminService.createOrganization(name, slug);
-            await refreshData();
-        },
-        [isSuperAdmin, refreshData],
+        (name: string, slug: string) =>
+            run(async () => {
+                if (!isSuperAdmin) throw new Error('Only a Superadmin can manage organizations.');
+                await adminService.createOrganization(name, slug);
+            }),
+        [isSuperAdmin, run],
     );
 
     const updateOrganization = useCallback(
-        async (id: string, values: { name: string; slug: string }) => {
-            if (!isSuperAdmin) throw new Error('Only a Superadmin can manage organizations.');
-            await adminService.updateOrganization(id, values);
-            await refreshData();
-        },
-        [isSuperAdmin, refreshData],
+        (id: string, values: { name: string; slug: string }) =>
+            run(async () => {
+                if (!isSuperAdmin) throw new Error('Only a Superadmin can manage organizations.');
+                await adminService.updateOrganization(id, values);
+            }),
+        [isSuperAdmin, run],
     );
 
     const deleteOrganization = useCallback(
-        async (id: string) => {
-            if (!isSuperAdmin) throw new Error('Only a Superadmin can manage organizations.');
-            await adminService.deleteOrganization(id);
-            await refreshData();
-        },
-        [isSuperAdmin, refreshData],
+        (id: string) =>
+            run(async () => {
+                if (!isSuperAdmin) throw new Error('Only a Superadmin can manage organizations.');
+                await adminService.deleteOrganization(id);
+            }),
+        [isSuperAdmin, run],
     );
 
     // Locations -----------------------------------------------------
     const createLocation = useCallback(
-        async (values: { organization_id: string; name: string }) => {
-            await adminService.createLocation(values);
-            await refreshData();
-        },
-        [refreshData],
+        (values: { organization_id: string; name: string }) =>
+            run(() => adminService.createLocation(values)),
+        [run],
     );
-
     const updateLocation = useCallback(
-        async (id: string, name: string) => {
-            await adminService.updateLocation(id, name);
-            await refreshData();
-        },
-        [refreshData],
+        (id: string, name: string) => run(() => adminService.updateLocation(id, name)),
+        [run],
     );
-
     const deleteLocation = useCallback(
-        async (id: string) => {
-            await adminService.deleteLocation(id);
-            await refreshData();
-        },
-        [refreshData],
+        (id: string) => run(() => adminService.deleteLocation(id)),
+        [run],
     );
 
     // Employees -----------------------------------------------------
     const inviteEmployee = useCallback(
-        async (payload: EmployeeInvite) => {
-            await adminService.inviteEmployee(payload);
-            await refreshData();
-        },
-        [refreshData],
+        (payload: EmployeeInvite) => run(() => adminService.inviteEmployee(payload)),
+        [run],
     );
-
     const updateEmployee = useCallback(
-        async (id: string, values: EmployeeUpdate) => {
-            await adminService.updateEmployee(id, values);
-            await refreshData();
-        },
-        [refreshData],
+        (id: string, values: EmployeeUpdate) => run(() => adminService.updateEmployee(id, values)),
+        [run],
     );
-
     const deleteEmployee = useCallback(
-        async (id: string) => {
-            if (id === user?.id) throw new Error('You cannot delete your own account.');
-            await adminService.deleteEmployee(id);
-            await refreshData();
-        },
-        [user?.id, refreshData],
+        (id: string) =>
+            run(async () => {
+                if (id === user?.id) throw new Error('You cannot delete your own account.');
+                await adminService.deleteEmployee(id);
+            }),
+        [user?.id, run],
     );
 
     const value: AdminContextType = {
-        adminData,
-        roles,
-        isLoading,
-        error,
+        adminData: treeQuery.data ?? null,
+        roles: rolesQuery.data ?? [],
+        isLoading: treeQuery.isLoading,
+        error: treeQuery.error
+            ? treeQuery.error instanceof Error
+                ? treeQuery.error.message
+                : 'Failed to load admin data.'
+            : null,
         isSuperAdmin,
-        refreshData,
+        refreshData: async () => {
+            await invalidateTree();
+        },
         createOrganization,
         updateOrganization,
         deleteOrganization,

@@ -1,10 +1,18 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Providers (Global State)
 import { AuthProvider } from './features/auth/AuthContext';
 import { ShiftProvider } from './features/shifts/ShiftContext';
 import { ThemeProvider } from './app/providers/ThemeContext';
+
+// Single shared React Query client (caching, dedupe, retries for server state).
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false },
+  },
+});
 
 // App Shell (eager — it is the persistent frame around every page).
 import { AppShell } from './app/layout/AppShell';
@@ -38,7 +46,8 @@ const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+       <ThemeProvider>
         <AuthProvider>
           <ShiftProvider>
             <Suspense fallback={<PageLoader />}>
@@ -70,7 +79,8 @@ export default function App() {
             </Suspense>
           </ShiftProvider>
         </AuthProvider>
-      </ThemeProvider>
+       </ThemeProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
