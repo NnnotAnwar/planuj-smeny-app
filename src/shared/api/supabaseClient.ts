@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { authStorage } from './authStorage';
 
 /**
  * --- SUPABASE CLIENT ---
@@ -26,6 +27,9 @@ try {
 
 export const supabase = createClient(supabaseUrl, supabasePublisherKey, {
     auth: {
+        // Native: store the session in Preferences (outside the DOM, XSS-safe).
+        // Web: falls back to localStorage inside the adapter.
+        storage: authStorage,
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true

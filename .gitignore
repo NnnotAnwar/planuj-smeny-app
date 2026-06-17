@@ -18,6 +18,10 @@ dist-ssr
 old_migrations
 .prettierrc
 
+# Build artifacts & local tooling (never commit)
+*.tsbuildinfo
+.mcp.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
