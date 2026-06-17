@@ -38,30 +38,23 @@ export function LoginPage() {
     setErrorMsg('');
 
     try {
-      let emailToUse = loginInput.trim();
+      const input = loginInput.trim();
 
-      // IF: The user didn't type an '@', we assume it's a username and try to find their email.
-      if (!emailToUse.includes('@')) {
-        const foundEmail = await authService.getEmailByUsername(emailToUse);
-        if (!foundEmail) {
-          throw new Error('User not found. Please check your username.');
-        }
-        emailToUse = foundEmail;
+      if (input.includes('@')) {
+        // Email + password: Supabase already returns a generic error on failure.
+        const { error } = await authService.signIn(input, password);
+        if (error) throw error;
+      } else {
+        // Username: resolved + verified server-side (no email/username leak).
+        await authService.signInWithUsername(input, password);
       }
 
-      // Perform the actual sign-in.
-      const { data, error } = await authService.signIn(emailToUse, password);
-      if (error) throw error;
-
-      if (data.user) {
-        // Successful login! Redirect to home page.
-        navigate('/', { replace: true });
-      }
+      navigate('/', { replace: true });
     }
-    catch (error: unknown) {
-      // Show error message on screen for the user.
-      setErrorMsg((error instanceof Error ? error.message : "Authorization error") || "Authorization error")
-      console.error(error)
+    catch (error) {
+      // Single generic message — never reveal whether the account exists.
+      console.error(error);
+      setErrorMsg('Invalid email/username or password.');
     }
     finally {
       setIsLoading(false)
