@@ -12,13 +12,17 @@ import type { Profile } from '@/shared/types';
  * form manages the profile + role of users who already exist.
  */
 export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose: () => void }) {
-    const { roles, isSuperAdmin, updateEmployee } = useAdminContext();
+    const { adminData, roles, isSuperAdmin, updateEmployee } = useAdminContext();
 
     const [firstName, setFirstName] = useState(employee.first_name ?? '');
     const [lastName, setLastName] = useState(employee.last_name ?? '');
     const [role, setRole] = useState(employee.role.name);
+    const [organizationId, setOrganizationId] = useState(employee.organization_id);
     const [isBusy, setIsBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Only Superadmins can move a user to another organization.
+    const showOrgSelect = isSuperAdmin && (adminData?.length ?? 0) > 1;
 
     // Regular admins can't promote anyone to Superadmin — but always keep the
     // employee's current role available so the <select> stays valid.
@@ -35,6 +39,7 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
                 first_name: firstName.trim() || null,
                 last_name: lastName.trim() || null,
                 role,
+                ...(isSuperAdmin ? { organization_id: organizationId } : {}),
             });
             onClose();
         } catch (err) {
@@ -65,6 +70,18 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
                         ))}
                     </SelectInput>
                 </Field>
+
+                {showOrgSelect && (
+                    <Field label="Organization">
+                        <SelectInput value={organizationId} onChange={(e) => setOrganizationId(e.target.value)}>
+                            {adminData?.map((org) => (
+                                <option key={org.id} value={org.id}>
+                                    {org.name}
+                                </option>
+                            ))}
+                        </SelectInput>
+                    </Field>
+                )}
 
                 <FormError message={error} />
                 <FormActions onCancel={onClose} isBusy={isBusy} submitLabel="Save" />

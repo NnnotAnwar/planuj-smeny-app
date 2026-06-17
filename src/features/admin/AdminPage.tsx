@@ -5,19 +5,23 @@ import {
     MapPinIcon,
     UsersIcon,
     PlusIcon,
+    PaperPlaneTiltIcon,
     PencilSimpleIcon,
     TrashIcon,
     MagnifyingGlassIcon,
+    type Icon,
 } from '@phosphor-icons/react';
 import type { Organization, Profile } from '@/shared/types';
 import { getRoleBadgeColor } from '@/shared/utils/roleColors';
 import { getFullInitials } from '@/shared/utils/getInitials';
 
+import { useAuthContext } from '@/features/auth/AuthContext';
 import { AdminProvider, useAdminContext } from './AdminContext';
 import { ConfirmDialog } from './components/Modal';
 import { OrganizationForm } from './components/OrganizationForm';
 import { LocationForm, type LocationEditTarget } from './components/LocationForm';
 import { EmployeeForm } from './components/EmployeeForm';
+import { InviteEmployeeForm } from './components/InviteEmployeeForm';
 
 type TabType = 'employees' | 'locations' | 'organizations';
 
@@ -32,8 +36,15 @@ type ModalState =
     | { kind: 'org-form'; org?: Organization }
     | { kind: 'loc-form'; loc?: LocationEditTarget }
     | { kind: 'emp-form'; emp: Profile }
+    | { kind: 'invite-emp' }
     | { kind: 'delete'; entity: TabType; id: string; label: string }
     | null;
+
+const ADD_LABEL: Record<TabType, string> = {
+    organizations: 'Add Organization',
+    locations: 'Add Location',
+    employees: 'Invite Employee',
+};
 
 /**
  * --- ADMIN PAGE ---
@@ -57,6 +68,7 @@ function AdminPanel() {
         deleteLocation,
         deleteEmployee,
     } = useAdminContext();
+    const { user } = useAuthContext();
 
     const [activeTab, setActiveTab] = useState<TabType>('employees');
     const [searchQuery, setSearchQuery] = useState('');
@@ -105,12 +117,10 @@ function AdminPanel() {
         return all.filter((o) => `${o.name} ${o.slug ?? ''}`.toLowerCase().includes(query));
     }, [adminData, query]);
 
-    // Employees can't be created from the client (accounts come from sign-up).
-    const canAdd = safeTab !== 'employees';
-
     const handleAdd = () => {
         if (safeTab === 'organizations') setModal({ kind: 'org-form' });
         else if (safeTab === 'locations') setModal({ kind: 'loc-form' });
+        else setModal({ kind: 'invite-emp' });
     };
 
     const confirmDelete = async () => {
@@ -120,25 +130,48 @@ function AdminPanel() {
         else await deleteEmployee(modal.id);
     };
 
+    const orgCount = adminData?.length ?? 0;
+    const locCount = adminData?.reduce((n, o) => n + o.locations.length, 0) ?? 0;
+    const empCount = adminData?.reduce((n, o) => n + o.profiles.length, 0) ?? 0;
+
     return (
         <div className="space-y-6 px-1 max-w-7xl mx-auto w-full">
             {/* --- HEADER --- */}
-            <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                <div className="space-y-0.5">
-                    <p className="text-emerald-500 font-bold text-[10px] uppercase tracking-widest">System Infrastructure</p>
-                    <h1 className="text-gray-900 dark:text-white font-black text-2xl tracking-tight">Admin Panel</h1>
-                </div>
+            <header className="relative overflow-hidden rounded-3xl border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50 via-white to-white dark:from-emerald-950/40 dark:via-gray-900/40 dark:to-gray-900/40 p-5 sm:p-6">
+                <div className="absolute -right-8 -top-10 w-40 h-40 rounded-full bg-emerald-400/10 blur-2xl" />
+                <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div className="space-y-1">
+                        <p className="text-emerald-500 font-bold text-[10px] uppercase tracking-widest">
+                            System Infrastructure
+                        </p>
+                        <h1 className="text-gray-900 dark:text-white font-black text-2xl sm:text-3xl tracking-tight">
+                            Admin Panel
+                        </h1>
+                        <p className="text-xs font-medium text-gray-400">
+                            {isSuperAdmin ? 'Full system access' : 'Managing your organization'}
+                        </p>
+                    </div>
 
-                {canAdd && (
                     <button
                         onClick={handleAdd}
-                        className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
+                        className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-lg shadow-emerald-500/25"
                     >
-                        <PlusIcon weight="bold" className="w-4 h-4" />
-                        <span>Add New {safeTab === 'organizations' ? 'Organization' : 'Location'}</span>
+                        {safeTab === 'employees' ? (
+                            <PaperPlaneTiltIcon weight="bold" className="w-4 h-4" />
+                        ) : (
+                            <PlusIcon weight="bold" className="w-4 h-4" />
+                        )}
+                        <span>{ADD_LABEL[safeTab]}</span>
                     </button>
-                )}
+                </div>
             </header>
+
+            {/* --- STATS --- */}
+            <div className={`grid gap-3 ${isSuperAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                <StatCard icon={UsersIcon} label="Employees" value={empCount} accent="emerald" />
+                <StatCard icon={MapPinIcon} label="Locations" value={locCount} accent="blue" />
+                {isSuperAdmin && <StatCard icon={BuildingsIcon} label="Organizations" value={orgCount} accent="violet" />}
+            </div>
 
             {/* --- TABS & SEARCH --- */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -220,6 +253,7 @@ function AdminPanel() {
                                 <EmployeesList
                                     items={employees}
                                     isLoading={isLoading}
+                                    currentUserId={user?.id}
                                     onEdit={(emp) => setModal({ kind: 'emp-form', emp })}
                                     onDelete={(emp) =>
                                         setModal({
@@ -241,6 +275,7 @@ function AdminPanel() {
                 {modal?.kind === 'org-form' && <OrganizationForm org={modal.org} onClose={() => setModal(null)} />}
                 {modal?.kind === 'loc-form' && <LocationForm location={modal.loc} onClose={() => setModal(null)} />}
                 {modal?.kind === 'emp-form' && <EmployeeForm employee={modal.emp} onClose={() => setModal(null)} />}
+                {modal?.kind === 'invite-emp' && <InviteEmployeeForm onClose={() => setModal(null)} />}
                 {modal?.kind === 'delete' && (
                     <ConfirmDialog
                         title="Confirm Deletion"
@@ -257,6 +292,26 @@ function AdminPanel() {
 // ==========================================
 // STATE HELPERS
 // ==========================================
+
+const STAT_ACCENTS: Record<string, string> = {
+    emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
+    blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+    violet: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
+};
+
+function StatCard({ icon: StatIcon, label, value, accent }: { icon: Icon; label: string; value: number; accent: string }) {
+    return (
+        <div className="flex items-center gap-3 p-3 sm:p-4 bg-white dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${STAT_ACCENTS[accent]}`}>
+                <StatIcon className="w-5 h-5" weight="bold" />
+            </div>
+            <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white leading-none">{value}</p>
+                <p className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{label}</p>
+            </div>
+        </div>
+    );
+}
 
 function LoadingState({ label }: { label: string }) {
     return (
@@ -416,11 +471,13 @@ function LocationsList({
 function EmployeesList({
     items,
     isLoading,
+    currentUserId,
     onEdit,
     onDelete,
 }: {
     items: Profile[];
     isLoading: boolean;
+    currentUserId?: string;
     onEdit: (emp: Profile) => void;
     onDelete: (emp: Profile) => void;
 }) {
@@ -429,42 +486,54 @@ function EmployeesList({
 
     return (
         <div className="grid gap-2">
-            {items.map((employee) => (
-                <div
-                    key={employee.id}
-                    className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 bg-white dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm"
-                >
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-[10px] font-black shrink-0">
-                        {getFullInitials(employee.first_name, employee.last_name)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                            <h3 className="font-bold text-xs sm:text-sm dark:text-white truncate leading-tight">
-                                {employee.first_name} {employee.last_name}
-                            </h3>
-                            {employee.role.is_admin && <AdminBadgeWithTooltip />}
+            {items.map((employee) => {
+                const isSelf = employee.id === currentUserId;
+                return (
+                    <div
+                        key={employee.id}
+                        className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 bg-white dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm"
+                    >
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-[10px] font-black shrink-0">
+                            {getFullInitials(employee.first_name, employee.last_name)}
                         </div>
-                        <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-tight truncate">
-                            {employee.email}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                                <h3 className="font-bold text-xs sm:text-sm dark:text-white truncate leading-tight">
+                                    {employee.first_name} {employee.last_name}
+                                </h3>
+                                {employee.role.is_admin && <AdminBadgeWithTooltip />}
+                                {isSelf && (
+                                    <span className="shrink-0 px-1.5 py-0.5 text-[7px] sm:text-[8px] font-black rounded uppercase tracking-widest bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
+                                        You
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-tight truncate">
+                                {employee.email}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                            <span
+                                className={`px-1.5 py-0.5 sm:px-2 sm:py-1 text-[7px] sm:text-[8px] font-black rounded-md uppercase tracking-widest ${getRoleBadgeColor(
+                                    employee.role.name,
+                                )}`}
+                            >
+                                {employee.role.name}
+                            </span>
+                            {/* You can edit your own profile, but never delete your own account. */}
+                            <ActionButtons
+                                onEdit={() => onEdit(employee)}
+                                onDelete={isSelf ? undefined : () => onDelete(employee)}
+                            />
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                        <span
-                            className={`px-1.5 py-0.5 sm:px-2 sm:py-1 text-[7px] sm:text-[8px] font-black rounded-md uppercase tracking-widest ${getRoleBadgeColor(
-                                employee.role.name,
-                            )}`}
-                        >
-                            {employee.role.name}
-                        </span>
-                        <ActionButtons onEdit={() => onEdit(employee)} onDelete={() => onDelete(employee)} />
-                    </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 }
 
-function ActionButtons({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function ActionButtons({ onEdit, onDelete }: { onEdit: () => void; onDelete?: () => void }) {
     return (
         <div className="flex items-center gap-0.5">
             <button
@@ -474,13 +543,15 @@ function ActionButtons({ onEdit, onDelete }: { onEdit: () => void; onDelete: () 
             >
                 <PencilSimpleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" weight="bold" />
             </button>
-            <button
-                onClick={onDelete}
-                className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                aria-label="Delete"
-            >
-                <TrashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" weight="bold" />
-            </button>
+            {onDelete && (
+                <button
+                    onClick={onDelete}
+                    className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                    aria-label="Delete"
+                >
+                    <TrashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" weight="bold" />
+                </button>
+            )}
         </div>
     );
 }

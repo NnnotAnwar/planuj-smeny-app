@@ -28,6 +28,15 @@ export interface EmployeeUpdate {
     first_name: string | null;
     last_name: string | null;
     role: string;
+    organization_id?: string;
+}
+
+export interface EmployeeInvite {
+    email: string;
+    organization_id: string;
+    role: string;
+    first_name?: string | null;
+    last_name?: string | null;
 }
 
 export const adminService = {
@@ -127,4 +136,31 @@ export const adminService = {
         const { error } = await supabase.from('profiles').delete().eq('id', id);
         if (error) throw error;
     },
+
+    /**
+     * Invites a new user by email via the `invite-employee` Edge Function.
+     * The function enforces role/organization scoping based on the caller.
+     */
+    async inviteEmployee(payload: EmployeeInvite): Promise<void> {
+        const { error } = await supabase.functions.invoke('invite-employee', { body: payload });
+        if (error) throw await toFunctionError(error);
+    },
 };
+
+/**
+ * Edge Functions return their error body with a non-2xx status, which supabase-js
+ * surfaces as a FunctionsHttpError whose `context` is the raw Response. Pull the
+ * server's `error` message out of it so the UI can show something meaningful.
+ */
+async function toFunctionError(error: unknown): Promise<Error> {
+    const context = (error as { context?: Response }).context;
+    if (context && typeof context.json === 'function') {
+        try {
+            const body = await context.json();
+            if (body?.error) return new Error(body.error);
+        } catch {
+            // fall through to the generic message
+        }
+    }
+    return error instanceof Error ? error : new Error('Failed to send invitation.');
+}
