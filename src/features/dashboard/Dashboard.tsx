@@ -8,6 +8,7 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useTheme } from '@app/providers/ThemeContext';
 import { LocationSelection } from '@features/locations/components/LocationSelection';
+import { canViewAdminPanel } from '@features/admin/permissions';
 
 /**
  * --- DASHBOARD COMPONENT ---
@@ -49,7 +50,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
     { name: 'Dashboard', icon: SquaresFourIcon, route: '/' },
     { name: 'Overview', icon: ChartBarIcon, route: '/overview' },
     { name: 'My Shifts', icon: ClockIcon, route: '/my-shifts' },
-    ...(user?.role.is_admin ? [{ name: 'Admin Panel', icon: ShieldCheckIcon, route: '/admin' }] : []),
+    ...(user && canViewAdminPanel(user) ? [{ name: 'Admin Panel', icon: ShieldCheckIcon, route: '/admin' }] : []),
     { name: 'Settings', icon: GearIcon, route: '/settings' }
   ];
 

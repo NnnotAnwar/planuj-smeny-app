@@ -14,7 +14,7 @@ import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 
 interface RealtimeParams {
   user: User | null;
-  setActiveShift: (shift: Shift | null) => void;
+  setActiveShift: React.Dispatch<React.SetStateAction<Shift | null>>;
   setSelectedLocationId: (id: string | null) => void;
   setAllActiveShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
   setUserShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
@@ -117,10 +117,14 @@ export function useRealtime({
               }
             }
           } else if (payload.eventType === 'DELETE') {
-            if (payload.old.id === user.id) {
-              setActiveShift(null);
-            }
-            setAllActiveShifts(prev => prev.filter(s => s.id !== payload.old.id));
+            // Postgres DELETE payloads carry only the primary key (unless the
+            // table is REPLICA IDENTITY FULL), so match the deleted shift by id
+            // and clear our active shift if it was the one removed. (The old
+            // code compared shift.id to user.id — always false.)
+            const deletedId = payload.old?.id;
+            if (!deletedId) return;
+            setAllActiveShifts((prev) => prev.filter((s) => s.id !== deletedId));
+            setActiveShift((prev) => (prev && prev.id === deletedId ? null : prev));
           }
         }
       )

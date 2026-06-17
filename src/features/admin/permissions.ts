@@ -18,6 +18,16 @@ export function isSuperAdmin(user: Pick<User, 'role'>): boolean {
     return user.role.name === 'Superadmin';
 }
 
+/**
+ * May open the admin panel. Manager and above can VIEW it (read-only for
+ * Manager); write capabilities are gated separately (canManageEmployees /
+ * canManageLocations) and enforced by RLS. Single source of truth for the
+ * /admin route guard and the nav item — replaces the legacy `is_admin` flag.
+ */
+export function canViewAdminPanel(user: Pick<User, 'role'>): boolean {
+    return user.role.rank >= RANK.MANAGER;
+}
+
 /** Admin level or above: may invite and manage lower-ranked members. */
 export function canManageEmployees(user: Pick<User, 'role'>): boolean {
     return user.role.rank >= RANK.ADMIN;
