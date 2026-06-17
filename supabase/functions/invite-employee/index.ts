@@ -118,10 +118,20 @@ Deno.serve(async (req) => {
             ...(target ? { redirectTo: target } : {}),
         });
 
-        if (inviteError) return json({ error: inviteError.message }, 400);
+        if (inviteError) {
+            // AuthError often serialises to "{}", so surface its useful fields.
+            const e = inviteError as { message?: string; status?: number; code?: string; name?: string };
+            const message =
+                e.message && e.message !== '{}'
+                    ? e.message
+                    : `Could not send the invitation (status ${e.status ?? '?'}${e.code ? `, ${e.code}` : ''}). ` +
+                      'This usually means email/SMTP is not configured, or the address is already registered.';
+            return json({ error: message, status: e.status ?? null, code: e.code ?? null, name: e.name ?? null }, 400);
+        }
 
         return json({ success: true, user_id: invited?.user?.id ?? null }, 200);
     } catch (err) {
-        return json({ error: err instanceof Error ? err.message : 'Unexpected error.' }, 500);
+        const message = err instanceof Error ? err.message : JSON.stringify(err);
+        return json({ error: message || 'Unexpected error.' }, 500);
     }
 });
