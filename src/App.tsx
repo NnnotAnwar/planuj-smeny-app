@@ -9,6 +9,8 @@ import { ThemeProvider } from './app/providers/ThemeContext';
 // App Shell (eager — it is the persistent frame around every page).
 import { AppShell } from './app/layout/AppShell';
 import { RoleGuard } from './features/auth/RoleGuards';
+import { ProtectedRoute, PublicRoute } from './app/router/RouteGuards';
+import { ErrorBoundary } from './shared/components/ErrorBoundary';
 import { PageLoader } from './shared/components/PageLoader';
 
 /**
@@ -35,32 +37,40 @@ const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <ShiftProvider>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              {/* 1. PUBLIC ROUTES: Available to everyone. */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/accept-invite" element={<AcceptInvitePage />} />
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <ShiftProvider>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* PUBLIC: invite acceptance manages its own session (no guard). */}
+                <Route path="/accept-invite" element={<AcceptInvitePage />} />
 
-              {/* 2. PROTECTED ROUTES: Only for logged-in users. */}
-              <Route path="/" element={<AppShell />}>
-                <Route index element={<HomePage />} />
-                <Route path="overview" element={<OverviewPage />} />
-                <Route path="my-shifts" element={<MyShiftsPage />} />
-                <Route element={<RoleGuard />}>
-                  <Route path="admin" element={<AdminPage />} />
+                {/* LOGGED-OUT ONLY: redirects to "/" if already authenticated. */}
+                <Route element={<PublicRoute />}>
+                  <Route path="/login" element={<LoginPage />} />
                 </Route>
-                <Route path="settings" element={<SettingsPage />} />
-              </Route>
 
-              {/* 3. FALLBACK: Redirect any unknown URL to Home. */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </ShiftProvider>
-      </AuthProvider>
-    </ThemeProvider>
+                {/* PROTECTED: requires a session; redirects to "/login" otherwise. */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/" element={<AppShell />}>
+                    <Route index element={<HomePage />} />
+                    <Route path="overview" element={<OverviewPage />} />
+                    <Route path="my-shifts" element={<MyShiftsPage />} />
+                    <Route element={<RoleGuard />}>
+                      <Route path="admin" element={<AdminPage />} />
+                    </Route>
+                    <Route path="settings" element={<SettingsPage />} />
+                  </Route>
+                </Route>
+
+                {/* FALLBACK: any unknown URL -> Home (then guards take over). */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </ShiftProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
