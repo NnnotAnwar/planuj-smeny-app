@@ -49,15 +49,24 @@ export const authService = {
   },
 
   /**
-   * If a user logs in with a username, we need to find their email first.
-   * We use a custom DB function (RPC) called 'get_email_by_username'.
+   * Sign in with a username. The username -> email resolution AND the sign-in
+   * happen inside the `username-login` Edge Function so the username/email map
+   * is never exposed to the client (no enumeration / PII leak). On success the
+   * returned tokens are adopted as the local session.
    */
-  async getEmailByUsername(username: string): Promise<string | null> {
-    const { data, error } = await supabase.rpc('get_email_by_username', {
-      u_name: username
+  async signInWithUsername(username: string, password: string): Promise<void> {
+    const { data, error } = await supabase.functions.invoke('username-login', {
+      body: { username, password },
     });
-    if (error) throw error;
-    return data;
+    // Any non-2xx (FunctionsHttpError) or missing tokens => generic failure.
+    if (error || !data?.access_token || !data?.refresh_token) {
+      throw new Error('Invalid username or password.');
+    }
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+    });
+    if (sessionError) throw sessionError;
   },
 
   /**
