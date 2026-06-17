@@ -10,6 +10,7 @@ import {
 } from '@phosphor-icons/react';
 import { useShiftContext } from './ShiftContext';
 import { type Shift } from '@shared/types';
+import { shiftHours, fmtHours, fmtDuration } from './shiftStats';
 
 /**
  * --- MY SHIFTS PAGE ---
@@ -18,26 +19,7 @@ import { type Shift } from '@shared/types';
  * lightweight SVG/CSS — no chart dependency.
  */
 
-const MS_PER_HOUR = 1000 * 60 * 60;
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-/** Hours a shift lasted (open shifts count up to "now"). */
-function shiftHours(s: Shift): number {
-  const start = new Date(s.started_at).getTime();
-  const end = s.ended_at ? new Date(s.ended_at).getTime() : Date.now();
-  return Math.max(0, (end - start) / MS_PER_HOUR);
-}
-
-function fmtHours(h: number): string {
-  return `${Math.round(h * 10) / 10}h`;
-}
-
-function fmtDuration(h: number): string {
-  const totalMin = Math.round(h * 60);
-  const hrs = Math.floor(totalMin / 60);
-  const min = totalMin % 60;
-  return hrs > 0 ? `${hrs}h ${min}m` : `${min}m`;
-}
 
 function fmtDayLabel(d: Date): string {
   const today = new Date();
