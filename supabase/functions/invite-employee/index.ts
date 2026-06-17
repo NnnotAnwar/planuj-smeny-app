@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
         const lastName = body.last_name ? String(body.last_name).trim() : null;
         let organizationId = body.organization_id ? String(body.organization_id) : '';
         const role = body.role ? String(body.role) : 'Employee';
+        const redirectTo = body.redirect_to ? String(body.redirect_to) : '';
 
         if (!email || !email.includes('@')) return json({ error: 'A valid email is required.' }, 400);
 
@@ -104,8 +105,9 @@ Deno.serve(async (req) => {
         }
 
         // 7. Send the invitation. The trigger reads this metadata to provision
-        //    the profile into the right org + role.
-        const siteUrl = Deno.env.get('SITE_URL');
+        //    the profile into the right org + role. The invitee lands on the
+        //    app's /accept-invite page (must be allowlisted in Auth settings).
+        const target = redirectTo || Deno.env.get('SITE_URL') || '';
         const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
             data: {
                 organization_id: organizationId,
@@ -113,7 +115,7 @@ Deno.serve(async (req) => {
                 first_name: firstName,
                 last_name: lastName,
             },
-            ...(siteUrl ? { redirectTo: siteUrl } : {}),
+            ...(target ? { redirectTo: target } : {}),
         });
 
         if (inviteError) return json({ error: inviteError.message }, 400);
