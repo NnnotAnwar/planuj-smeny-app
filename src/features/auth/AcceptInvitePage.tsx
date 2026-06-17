@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BuildingsIcon, IdentificationBadgeIcon, CheckCircleIcon } from '@phosphor-icons/react';
-import { type EmailOtpType } from '@supabase/supabase-js';
 import { supabase } from '@shared/api/supabaseClient';
 import { authService } from './authService';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
@@ -52,50 +51,37 @@ export function AcceptInvitePage() {
         }
     }, []);
 
-    // Two ways to land here:
-    //  1. token_hash flow (preferred): the email link carries ?token_hash&type;
-    //     we verify it on the user's actual click, so email scanners that merely
-    //     GET the page can't burn the one-time token.
-    //  2. Implicit flow: Supabase already put a session in the URL hash.
+    // verifyOtp is called explicitly so the invitee's session replaces any
+    // existing session (e.g. the admin who sent the invite). An onAuthStateChange
+    // listener would fire with the admin session first and set handled=true,
+    // silently discarding the verifyOtp result — so we don't use one here.
     useEffect(() => {
-        let handled = false;
-        const handle = (userId: string) => {
-            if (handled) return;
-            handled = true;
-            loadFromSession(userId);
-        };
+        const params = new URLSearchParams(window.location.search);
+        const tokenHash = params.get('token_hash');
+        const type = params.get('type');
 
-        const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session) handle(session.user.id);
-        });
-
-        (async () => {
-            const params = new URLSearchParams(window.location.search);
-            const tokenHash = params.get('token_hash');
-            const otpType = params.get('type');
-
-            if (tokenHash && otpType) {
+        async function bootstrap() {
+            if (tokenHash && type === 'invite') {
                 const { data, error } = await supabase.auth.verifyOtp({
                     token_hash: tokenHash,
-                    type: otpType as EmailOtpType,
+                    type: 'invite',
                 });
-                if (!error && data.session) handle(data.session.user.id);
-                else setStatus('invalid');
+                if (error || !data.user) { setStatus('invalid'); return; }
+                await loadFromSession(data.user.id);
                 return;
             }
 
+            // Fallback: implicit hash-based flow (no token_hash in the URL).
             const { data: { session } } = await supabase.auth.getSession();
-            if (session) return handle(session.user.id);
+            if (session) { await loadFromSession(session.user.id); return; }
 
-            setTimeout(async () => {
-                if (handled) return;
-                const { data: { session: retry } } = await supabase.auth.getSession();
-                if (retry) handle(retry.user.id);
-                else setStatus('invalid');
-            }, 1500);
-        })();
+            await new Promise<void>(r => setTimeout(r, 1200));
+            const { data: { session: retry } } = await supabase.auth.getSession();
+            if (retry) await loadFromSession(retry.user.id);
+            else setStatus('invalid');
+        }
 
-        return () => sub.subscription.unsubscribe();
+        bootstrap();
     }, [loadFromSession]);
 
     const handleSubmit = async (e: SyntheticEvent) => {
