@@ -8,6 +8,7 @@ import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useLocationManagement } from '@features/locations/hooks/useLocationManagement';
 
 import { Dashboard } from '@features/dashboard/Dashboard';
+import { BottomNav } from './BottomNav';
 import { LocationPopup } from '@features/locations/components/LocationPopup';
 import { type User, type Shift, type Location } from '@shared/types';
 
@@ -70,14 +71,18 @@ export function AppShell() {
   };
 
   return (
-    <div className="App min-h-screen w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
+    <div className="App min-h-dvh w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
       {/* SIDEBAR NAVIGATION */}
       <Dashboard onLocationSelect={handleLocationSelect} />
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 p-3 pb-40 md:p-6 md:pb-6 max-w-7xl transition-all">
+      {/* MAIN CONTENT AREA — bottom padding clears the mobile tab bar (+ the
+          floating check-in button on Home); md+ uses the sidebar instead. */}
+      <main className="flex-1 p-3 pb-32 md:p-6 md:pb-6 max-w-7xl transition-all">
         <Outlet context={contextValue} />
       </main>
+
+      {/* MOBILE BOTTOM TAB BAR */}
+      <BottomNav />
 
       {/* ACTION ERROR TOAST — surfaces failed shift actions (start/end/move). */}
       <AnimatePresence>

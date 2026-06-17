@@ -71,7 +71,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 md:h-screen w-full md:w-1/3 lg:w-1/4 bg-white/40 dark:bg-gray-900/80 backdrop-blur-xl shadow-sm border-b md:border-b-0 md:border-r border-emerald-500/10 dark:border-white/5 transition-all duration-300">
+      <header className="sticky top-0 z-50 md:h-dvh w-full md:w-1/3 lg:w-1/4 bg-white/40 dark:bg-gray-900/80 backdrop-blur-xl shadow-sm border-b md:border-b-0 md:border-r border-emerald-500/10 dark:border-white/5 transition-all duration-300">
         <div className="flex flex-col md:h-full max-w-7xl mx-auto px-4 py-1.5 md:gap-2 md:py-4 pt-[calc(0.375rem+env(safe-area-inset-top,0px))]">
           <div className="shrink-0 flex justify-between items-center h-10 md:h-12 relative">
             <div className="flex items-center gap-3 z-10">
