@@ -1,100 +1,83 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { authService } from './authService';
 import { type User } from '@shared/types';
 import { supabase } from '@shared/api/supabaseClient';
 
 /**
  * --- AUTH CONTEXT ---
- * This file handles the global "state" of who is logged in.
- * Any component in the app can ask "who is the user?" using the useAuthContext() hook.
+ * Single source of truth for "who is logged in". It only exposes STATE — it no
+ * longer navigates. Routing decisions live in the declarative route guards
+ * (ProtectedRoute / PublicRoute), which removes the old races where AuthContext,
+ * LoginPage and the guards all tried to redirect.
  */
 
 interface AuthContextType {
-  user: User | null; // The logged-in user object or null if not logged in.
-  isLoading: boolean; // True while we are fetching the user profile for the first time.
-  isAuthChecking: boolean; // True while we are checking if a session exists (on page load).
-  logout: () => Promise<void>; // Function to sign the user out.
-  refreshUser: () => Promise<void>; // Re-fetch the profile (e.g. after editing it in Settings).
+  user: User | null; // The logged-in user, or null.
+  isLoading: boolean; // True during the first profile load.
+  isAuthChecking: boolean; // True until the initial session check resolves.
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>; // Re-pull the profile (e.g. after editing it).
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
-  // Initial setup: Check if the user is already logged in (Restore session).
   useEffect(() => {
-    const initAuth = async () => {
+    let active = true;
+
+    const loadProfile = async (userId: string) => {
       try {
-        // The invite-acceptance page handles its own session (set from the URL).
-        // Don't bounce the invitee to /login while that page is processing.
-        if (window.location.pathname === '/accept-invite') {
-          return;
-        }
-
-        const { data: { session }, error: sessionError } = await authService.getSession();
-
-        // If no session or error, go to the login page.
-        if (sessionError || !session) {
-          navigate('/login', { replace: true });
-          return;
-        }
-
-        // Fetch user profile based on the ID from the session.
-        try {
-          const profile = await authService.getUserProfile(session.user.id);
-          if (profile) {
-            setUser(profile);
-          } else {
-            // Profile not found in DB - this should not happen but we handle it.
-            console.warn('Profile not found, signing out.');
-            await authService.signOut();
-            navigate('/login', { replace: true });
-          }
-        } catch (profileErr) {
-          console.error('Failed to load profile:', profileErr);
-          // If we have a session but profile fetch fails (e.g., network error),
-          // we don't clear the session but we should show an error or try again.
-          // For now, let's keep the user at the loading state or redirect.
-          await authService.signOut();
-          navigate('/login', { replace: true });
-        }
+        const profile = await authService.getUserProfile(userId);
+        if (active) setUser(profile ?? null);
       } catch (err) {
-        console.error('Error initAuth:', err);
-      } finally {
-        setIsLoading(false);
-        setIsAuthChecking(false);
+        console.error('Failed to load profile:', err);
+        if (active) setUser(null);
       }
     };
 
-    initAuth();
-
-    // Listen for global auth changes (like signing out on another device).
-    // Only react to an explicit SIGNED_OUT — an empty INITIAL_SESSION must NOT
-    // bounce to /login (that would break the /accept-invite flow, where the
-    // session only appears after verifyOtp runs).
-    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        setUser(null);
-        if (window.location.pathname !== '/accept-invite') {
-          navigate('/login', { replace: true });
+    // 1. Initial session restore — flip isAuthChecking only AFTER the profile is
+    //    loaded, so guards never see "session but no user" and bounce wrongly.
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) await loadProfile(session.user.id);
+        else if (active) setUser(null);
+      } finally {
+        if (active) {
+          setIsLoading(false);
+          setIsAuthChecking(false);
         }
       }
+    })();
+
+    // 2. React to later auth changes: login, logout, token refresh, and the
+    //    session the /accept-invite page establishes via verifyOtp. INITIAL_SESSION
+    //    is handled by the restore above, so we skip it here to avoid a double fetch.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION') return;
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null);
+        return;
+      }
+      loadProfile(session.user.id);
     });
 
-    return () => authListener.subscription.unsubscribe();
-  }, [navigate]);
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
-  const logout = async () => {
+  // Sign out; the SIGNED_OUT listener clears the user and the guard redirects.
+  const logout = useCallback(async () => {
     await authService.signOut();
-  };
+  }, []);
 
-  // Re-pull the profile from the DB and update the cached user. Called after the
-  // user edits their own profile (e.g. changes their username in Settings).
+  // Re-fetch the profile and update the cached user (used after Settings edits).
   const refreshUser = useCallback(async () => {
     const { data: { session } } = await authService.getSession();
     if (!session) return;
@@ -104,16 +87,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = { user, isLoading, isAuthChecking, logout, refreshUser };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 /**
  * CUSTOM HOOK: useAuthContext
- * This allows any component to easily access the authentication state.
+ * Lets any component read the authentication state.
  */
 export function useAuthContext() {
   const context = useContext(AuthContext);

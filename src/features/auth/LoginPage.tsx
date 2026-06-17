@@ -1,37 +1,19 @@
-import { useState, useEffect, type SyntheticEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, type SyntheticEvent } from "react";
 import { authService } from './authService'
 
 /**
  * --- LOGIN PAGE ---
- * This is the first screen users see if they aren't logged in.
- * It handles both email and username logins.
+ * Pure sign-in form. Redirecting an already-authenticated user away, and
+ * redirecting in after a successful login, are both handled declaratively by
+ * <PublicRoute> — this component no longer navigates itself.
  */
 
 export function LoginPage() {
-  const navigate = useNavigate()
-
-  // LOCAL STATE: We store the input values and error messages.
   const [loginInput, setLoginInput] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isAuthChecking, setIsAuthChecking] = useState(true)
 
-  // 1. Initial Check: If user already has a valid session, skip login and go to home.
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await authService.getSession();
-      if (session) {
-        navigate('/', { replace: true });
-      } else {
-        setIsAuthChecking(false);
-      }
-    };
-    checkUser()
-  }, [navigate])
-
-  // 2. Form submission handler.
   const handleLogin = async (e: SyntheticEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -41,37 +23,26 @@ export function LoginPage() {
       const input = loginInput.trim();
 
       if (input.includes('@')) {
-        // Email + password: Supabase already returns a generic error on failure.
+        // Email + password — Supabase already returns a generic error on failure.
         const { error } = await authService.signIn(input, password);
         if (error) throw error;
       } else {
-        // Username: resolved + verified server-side (no email/username leak).
+        // Username — resolved + verified server-side (no email/username leak).
         await authService.signInWithUsername(input, password);
       }
 
-      navigate('/', { replace: true });
-    }
-    catch (error) {
+      // Success: keep the spinner up; PublicRoute redirects to "/" once the
+      // session resolves and AuthContext loads the profile.
+    } catch (error) {
       // Single generic message — never reveal whether the account exists.
       console.error(error);
       setErrorMsg('Invalid email/username or password.');
-    }
-    finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   };
 
-  // While we are checking if a session exists (on load), show a simple spinner.
-  if (isAuthChecking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
+    <div className="min-h-dvh flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
       <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800">
 
         <div className="text-center">
@@ -95,6 +66,8 @@ export function LoginPage() {
                 required
                 value={loginInput}
                 onChange={(e) => setLoginInput(e.target.value)}
+                autoCapitalize="none"
+                autoCorrect="off"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-800 dark:text-gray-100 sm:text-sm"
                 placeholder="Username"
               />
