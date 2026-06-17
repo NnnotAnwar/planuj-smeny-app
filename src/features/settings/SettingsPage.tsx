@@ -1,4 +1,4 @@
-import { UserIcon, BellIcon, ShieldCheckIcon, PaletteIcon, CaretRightIcon } from "@phosphor-icons/react";
+import { UserIcon, BellIcon, ShieldCheckIcon, PaletteIcon, CaretRightIcon, type Icon } from "@phosphor-icons/react";
 import { useAuthContext } from "@features/auth/AuthContext";
 import { useTheme } from "@app/providers/ThemeContext";
 
@@ -7,11 +7,23 @@ import { useTheme } from "@app/providers/ThemeContext";
  * Unified style with the rest of the app.
  */
 
+interface SettingItem {
+  name: string;
+  icon: Icon;
+  detail?: string;
+  action?: () => void;
+}
+
+interface SettingSection {
+  title: string;
+  items: SettingItem[];
+}
+
 export default function SettingsPage() {
   const { user } = useAuthContext();
   const { resolvedTheme, setTheme } = useTheme();
 
-  const sections = [
+  const sections: SettingSection[] = [
     {
       title: 'Personal',
       items: [

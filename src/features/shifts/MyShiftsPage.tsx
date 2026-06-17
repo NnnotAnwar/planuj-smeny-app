@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { CalendarIcon, ClockIcon, FunnelIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
+import { CalendarIcon, FunnelIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
 
 /**
  * --- MY SHIFTS PAGE ---
