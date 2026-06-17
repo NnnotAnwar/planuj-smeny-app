@@ -135,10 +135,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     const deleteEmployee = useCallback(
         async (id: string) => {
+            if (id === user?.id) throw new Error('You cannot delete your own account.');
             await adminService.deleteEmployee(id);
             await refreshData();
         },
-        [refreshData],
+        [user?.id, refreshData],
     );
 
     const value: AdminContextType = {
