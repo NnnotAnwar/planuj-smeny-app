@@ -27,5 +27,6 @@
       "@shared/*": ["./src/shared/*"]
     }
   },
-  "include": ["src", "supabaseClient.ts"]
+  "include": ["src", "supabaseClient.ts"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test"]
 }
