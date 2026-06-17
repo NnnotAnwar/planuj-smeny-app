@@ -19,6 +19,7 @@ export const ProfileSchema = z.object({
   role: z.object({
     name: z.string(),
     is_admin: z.boolean(),
+    rank: z.number().default(0), // Position in the role hierarchy (higher = more privileged)
   }),
   organization_id: z.string(), // The company this user belongs to
 });
@@ -72,7 +73,8 @@ export const OrganizationSchema = z.object({
     id: z.string(),
     role: z.object({
       name: z.string(),
-      is_admin: z.boolean()
+      is_admin: z.boolean(),
+      rank: z.number().default(0)
     }),
     email: z.email(),
     username: z.string(),
@@ -92,6 +94,7 @@ export const RoleSchema = z.object({
   color: z.string(),
   description: z.string().nullable(),
   is_admin: z.boolean(),
+  rank: z.number().default(0),
 });
 
 /**
