@@ -22,7 +22,7 @@ import { z } from 'zod';
 
 // Shared select used to hydrate the full organization tree (locations + members).
 const ORG_TREE_SELECT =
-    '*, locations(id, name, organization_id), profiles(id, role(name, is_admin), email, username, first_name, last_name, organization_id)';
+    '*, locations(id, name, organization_id), profiles(id, role(name, is_admin, rank), email, username, first_name, last_name, organization_id)';
 
 export interface EmployeeUpdate {
     first_name: string | null;
@@ -62,8 +62,8 @@ export const adminService = {
     async getRoles(): Promise<Role[]> {
         const { data, error } = await supabase
             .from('roles')
-            .select('name, color, description, is_admin')
-            .order('is_admin', { ascending: false })
+            .select('name, color, description, is_admin, rank')
+            .order('rank', { ascending: false })
             .order('name', { ascending: true });
 
         if (error) throw error;

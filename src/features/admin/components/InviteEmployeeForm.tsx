@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import { Field, TextInput, SelectInput, FormError, FormActions } from './FormControls';
 import { useAdminContext } from '../AdminContext';
 import { useAuthContext } from '@/features/auth/AuthContext';
+import { assignableRoles as getAssignableRoles } from '../permissions';
 
 /**
  * Invite a brand-new user by email.
@@ -16,7 +17,8 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
     const { user } = useAuthContext();
 
     const ownOrgId = user?.organization_id ?? '';
-    const assignableRoles = roles.filter((r) => isSuperAdmin || r.name !== 'Superadmin');
+    // Roles strictly below the inviter's rank (Admin -> up to Manager, etc.).
+    const roleOptions = user ? getAssignableRoles(roles, user) : [];
 
     const [email, setEmail] = useState('');
     const [firstName, setFirstName] = useState('');
@@ -86,7 +88,7 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
 
                 <Field label="Role">
                     <SelectInput value={role} onChange={(e) => setRole(e.target.value)}>
-                        {assignableRoles.map((r) => (
+                        {roleOptions.map((r) => (
                             <option key={r.name} value={r.name}>
                                 {r.name}
                                 {r.description ? ` — ${r.description}` : ''}

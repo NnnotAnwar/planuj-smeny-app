@@ -11,12 +11,13 @@ import {
     MagnifyingGlassIcon,
     type Icon,
 } from '@phosphor-icons/react';
-import type { Organization, Profile } from '@/shared/types';
+import type { Organization, Profile, User } from '@/shared/types';
 import { getRoleBadgeColor } from '@/shared/utils/roleColors';
 import { getFullInitials } from '@/shared/utils/getInitials';
 
 import { useAuthContext } from '@/features/auth/AuthContext';
 import { AdminProvider, useAdminContext } from './AdminContext';
+import { canManageEmployees, canManageLocations, canManageMember, RANK } from './permissions';
 import { ConfirmDialog } from './components/Modal';
 import { OrganizationForm } from './components/OrganizationForm';
 import { LocationForm, type LocationEditTarget } from './components/LocationForm';
@@ -134,6 +135,12 @@ function AdminPanel() {
     const locCount = adminData?.reduce((n, o) => n + o.locations.length, 0) ?? 0;
     const empCount = adminData?.reduce((n, o) => n + o.profiles.length, 0) ?? 0;
 
+    // Capability flags drive what the current user can do (mirrors RLS).
+    const canManageEmp = user ? canManageEmployees(user) : false;
+    const canManageLoc = user ? canManageLocations(user) : false;
+    const canAdd =
+        safeTab === 'employees' ? canManageEmp : safeTab === 'locations' ? canManageLoc : isSuperAdmin;
+
     return (
         <div className="space-y-6 px-1 max-w-7xl mx-auto w-full">
             {/* --- HEADER --- */}
@@ -152,17 +159,19 @@ function AdminPanel() {
                         </p>
                     </div>
 
-                    <button
-                        onClick={handleAdd}
-                        className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-lg shadow-emerald-500/25"
-                    >
-                        {safeTab === 'employees' ? (
-                            <PaperPlaneTiltIcon weight="bold" className="w-4 h-4" />
-                        ) : (
-                            <PlusIcon weight="bold" className="w-4 h-4" />
-                        )}
-                        <span>{ADD_LABEL[safeTab]}</span>
-                    </button>
+                    {canAdd && (
+                        <button
+                            onClick={handleAdd}
+                            className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-lg shadow-emerald-500/25"
+                        >
+                            {safeTab === 'employees' ? (
+                                <PaperPlaneTiltIcon weight="bold" className="w-4 h-4" />
+                            ) : (
+                                <PlusIcon weight="bold" className="w-4 h-4" />
+                            )}
+                            <span>{ADD_LABEL[safeTab]}</span>
+                        </button>
+                    )}
                 </div>
             </header>
 
@@ -243,6 +252,7 @@ function AdminPanel() {
                                 <LocationsList
                                     items={locations}
                                     isLoading={isLoading}
+                                    canManage={canManageLoc}
                                     onEdit={(loc) => setModal({ kind: 'loc-form', loc })}
                                     onDelete={(loc) =>
                                         setModal({ kind: 'delete', entity: 'locations', id: loc.id, label: loc.name })
@@ -253,7 +263,7 @@ function AdminPanel() {
                                 <EmployeesList
                                     items={employees}
                                     isLoading={isLoading}
-                                    currentUserId={user?.id}
+                                    currentUser={user}
                                     onEdit={(emp) => setModal({ kind: 'emp-form', emp })}
                                     onDelete={(emp) =>
                                         setModal({
@@ -431,11 +441,13 @@ function OrganizationsList({
 function LocationsList({
     items,
     isLoading,
+    canManage,
     onEdit,
     onDelete,
 }: {
     items: LocationRow[];
     isLoading: boolean;
+    canManage: boolean;
     onEdit: (loc: LocationRow) => void;
     onDelete: (loc: LocationRow) => void;
 }) {
@@ -460,7 +472,7 @@ function LocationsList({
                         <span className="hidden sm:inline-block px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 text-[8px] font-black rounded uppercase tracking-widest">
                             {loc.id.slice(0, 8)}
                         </span>
-                        <ActionButtons onEdit={() => onEdit(loc)} onDelete={() => onDelete(loc)} />
+                        {canManage && <ActionButtons onEdit={() => onEdit(loc)} onDelete={() => onDelete(loc)} />}
                     </div>
                 </div>
             ))}
@@ -471,13 +483,13 @@ function LocationsList({
 function EmployeesList({
     items,
     isLoading,
-    currentUserId,
+    currentUser,
     onEdit,
     onDelete,
 }: {
     items: Profile[];
     isLoading: boolean;
-    currentUserId?: string;
+    currentUser: User | null;
     onEdit: (emp: Profile) => void;
     onDelete: (emp: Profile) => void;
 }) {
@@ -487,7 +499,8 @@ function EmployeesList({
     return (
         <div className="grid gap-2">
             {items.map((employee) => {
-                const isSelf = employee.id === currentUserId;
+                const isSelf = employee.id === currentUser?.id;
+                const manageable = currentUser ? canManageMember(currentUser, employee) : false;
                 return (
                     <div
                         key={employee.id}
@@ -501,7 +514,7 @@ function EmployeesList({
                                 <h3 className="font-bold text-xs sm:text-sm dark:text-white truncate leading-tight">
                                     {employee.first_name} {employee.last_name}
                                 </h3>
-                                {employee.role.is_admin && <AdminBadgeWithTooltip />}
+                                {employee.role.rank >= RANK.ADMIN && <AdminBadgeWithTooltip />}
                                 {isSelf && (
                                     <span className="shrink-0 px-1.5 py-0.5 text-[7px] sm:text-[8px] font-black rounded uppercase tracking-widest bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
                                         You
@@ -520,11 +533,10 @@ function EmployeesList({
                             >
                                 {employee.role.name}
                             </span>
-                            {/* You can edit your own profile, but never delete your own account. */}
-                            <ActionButtons
-                                onEdit={() => onEdit(employee)}
-                                onDelete={isSelf ? undefined : () => onDelete(employee)}
-                            />
+                            {/* Only members ranked below you can be edited or removed (never yourself). */}
+                            {manageable && (
+                                <ActionButtons onEdit={() => onEdit(employee)} onDelete={() => onDelete(employee)} />
+                            )}
                         </div>
                     </div>
                 );

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Modal } from './Modal';
 import { Field, TextInput, SelectInput, FormError, FormActions } from './FormControls';
 import { useAdminContext } from '../AdminContext';
+import { useAuthContext } from '@/features/auth/AuthContext';
+import { assignableRoles as getAssignableRoles } from '../permissions';
 import type { Profile } from '@/shared/types';
 
 /**
@@ -13,6 +15,7 @@ import type { Profile } from '@/shared/types';
  */
 export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose: () => void }) {
     const { adminData, roles, isSuperAdmin, updateEmployee } = useAdminContext();
+    const { user } = useAuthContext();
 
     const [firstName, setFirstName] = useState(employee.first_name ?? '');
     const [lastName, setLastName] = useState(employee.last_name ?? '');
@@ -24,11 +27,10 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
     // Only Superadmins can move a user to another organization.
     const showOrgSelect = isSuperAdmin && (adminData?.length ?? 0) > 1;
 
-    // Regular admins can't promote anyone to Superadmin — but always keep the
-    // employee's current role available so the <select> stays valid.
-    const assignableRoles = roles.filter(
-        (r) => isSuperAdmin || r.name !== 'Superadmin' || r.name === employee.role.name,
-    );
+    // Roles strictly below the current user's rank (e.g. an Admin can assign up
+    // to Manager). The edited member always ranks below us, so their current
+    // role is already part of this list.
+    const roleOptions = user ? getAssignableRoles(roles, user) : [];
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,7 +64,7 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
 
                 <Field label="Role">
                     <SelectInput value={role} onChange={(e) => setRole(e.target.value)}>
-                        {assignableRoles.map((r) => (
+                        {roleOptions.map((r) => (
                             <option key={r.name} value={r.name}>
                                 {r.name}
                                 {r.description ? ` — ${r.description}` : ''}

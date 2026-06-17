@@ -1,8 +1,10 @@
 const ROLE_COLORS: Record<string, string> = {
-    Manager: 'bg-purple-600 text-white',
-    Supervisor: 'bg-emerald-500 text-white',
-    Employee: 'bg-lime-400 text-white',
     Superadmin: 'bg-red-900 text-white',
+    'Head Admin': 'bg-amber-500 text-white',
+    Admin: 'bg-red-500 text-white',
+    Manager: 'bg-purple-600 text-white',
+    Supervisor: 'bg-blue-500 text-white',
+    Employee: 'bg-lime-400 text-white',
 };
 
 export function getRoleBadgeColor(role: string): string {

@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
             auth: { autoRefreshToken: false, persistSession: false },
         });
 
-        // 3. Load the caller's profile + whether their role is an admin role.
+        // 3. Load the caller's profile + their role rank.
         const { data: callerProfile, error: profileError } = await admin
             .from('profiles')
             .select('organization_id, role')
@@ -66,13 +66,14 @@ Deno.serve(async (req) => {
 
         const { data: callerRole } = await admin
             .from('roles')
-            .select('is_admin')
+            .select('rank')
             .eq('name', callerProfile.role)
             .single();
 
         const isSuperadmin = callerProfile.role === 'Superadmin';
-        const isAdmin = isSuperadmin || Boolean(callerRole?.is_admin);
-        if (!isAdmin) return json({ error: 'You are not allowed to invite users.' }, 403);
+        const callerRank = Number(callerRole?.rank ?? 0);
+        // Inviting requires Admin level or above (rank >= 30). Managers and below cannot.
+        if (callerRank < 30) return json({ error: 'You are not allowed to invite users.' }, 403);
 
         // 4. Parse + validate the request body.
         const body = await req.json().catch(() => ({}));
@@ -84,22 +85,23 @@ Deno.serve(async (req) => {
 
         if (!email || !email.includes('@')) return json({ error: 'A valid email is required.' }, 400);
 
-        // 5. Apply role-based scoping (server is the source of truth).
+        // 5. Apply scoping (server is the source of truth).
         if (!isSuperadmin) {
             organizationId = callerProfile.organization_id; // org admins can only invite into their own org
-            if (role === 'Superadmin') {
-                return json({ error: 'Only a Superadmin can assign the Superadmin role.' }, 403);
-            }
         }
         if (!organizationId) return json({ error: 'An organization is required.' }, 400);
 
-        // 6. Validate role + organization exist.
+        // 6. Validate the organization, and that the role exists and is ranked
+        //    strictly below the caller (you can't invite a peer or superior).
         const [{ data: roleRow }, { data: orgRow }] = await Promise.all([
-            admin.from('roles').select('name').eq('name', role).single(),
+            admin.from('roles').select('name, rank').eq('name', role).single(),
             admin.from('organizations').select('id').eq('id', organizationId).single(),
         ]);
         if (!roleRow) return json({ error: `Unknown role "${role}".` }, 400);
         if (!orgRow) return json({ error: 'Unknown organization.' }, 400);
+        if (Number(roleRow.rank) >= callerRank) {
+            return json({ error: 'You cannot invite someone at or above your own role level.' }, 403);
+        }
 
         // 7. Send the invitation. The trigger reads this metadata to provision
         //    the profile into the right org + role.
