@@ -132,9 +132,17 @@ export const adminService = {
         if (error) throw error;
     },
 
+    /**
+     * Fully removes a member via the `delete-employee` Edge Function, which
+     * deletes the auth.users row (cascades to profiles + shifts) using the
+     * service_role and enforces caller > target rank. Deleting only the profiles
+     * row client-side left an orphaned, still-loggable auth user.
+     */
     async deleteEmployee(id: string): Promise<void> {
-        const { error } = await supabase.from('profiles').delete().eq('id', id);
-        if (error) throw error;
+        const { error } = await supabase.functions.invoke('delete-employee', {
+            body: { user_id: id },
+        });
+        if (error) throw await toFunctionError(error);
     },
 
     /**
