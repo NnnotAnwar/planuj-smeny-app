@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BuildingsIcon, IdentificationBadgeIcon, CheckCircleIcon } from '@phosphor-icons/react';
+import { type EmailOtpType } from '@supabase/supabase-js';
 import { supabase } from '@shared/api/supabaseClient';
 import { authService } from './authService';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
@@ -51,8 +52,11 @@ export function AcceptInvitePage() {
         }
     }, []);
 
-    // The invite token in the URL is processed asynchronously by supabase-js;
-    // listen for the resulting session, with a fallback timeout for bad links.
+    // Two ways to land here:
+    //  1. token_hash flow (preferred): the email link carries ?token_hash&type;
+    //     we verify it on the user's actual click, so email scanners that merely
+    //     GET the page can't burn the one-time token.
+    //  2. Implicit flow: Supabase already put a session in the URL hash.
     useEffect(() => {
         let handled = false;
         const handle = (userId: string) => {
@@ -66,8 +70,23 @@ export function AcceptInvitePage() {
         });
 
         (async () => {
+            const params = new URLSearchParams(window.location.search);
+            const tokenHash = params.get('token_hash');
+            const otpType = params.get('type');
+
+            if (tokenHash && otpType) {
+                const { data, error } = await supabase.auth.verifyOtp({
+                    token_hash: tokenHash,
+                    type: otpType as EmailOtpType,
+                });
+                if (!error && data.session) handle(data.session.user.id);
+                else setStatus('invalid');
+                return;
+            }
+
             const { data: { session } } = await supabase.auth.getSession();
             if (session) return handle(session.user.id);
+
             setTimeout(async () => {
                 if (handled) return;
                 const { data: { session: retry } } = await supabase.auth.getSession();
