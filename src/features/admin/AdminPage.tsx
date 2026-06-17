@@ -521,6 +521,9 @@ function EmployeesList({
                                     </span>
                                 )}
                             </div>
+                            <p className="text-[9px] sm:text-[10px] text-emerald-600 dark:text-emerald-400 font-bold truncate leading-tight">
+                                @{employee.username}
+                            </p>
                             <p className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-tight truncate">
                                 {employee.email}
                             </p>
