@@ -75,5 +75,17 @@ export const authService = {
    */
   async signOut() {
     return await supabase.auth.signOut();
+  },
+
+  /**
+   * Updates the caller's own profile (username is the login identifier).
+   * RLS ("Users can update own profile") restricts this to the user's own row;
+   * the unique_username constraint surfaces as a 23505 error if taken.
+   */
+  async updateProfile(
+    userId: string,
+    fields: { username?: string; first_name?: string | null; last_name?: string | null }
+  ) {
+    return await supabase.from('profiles').update(fields).eq('id', userId);
   }
 };

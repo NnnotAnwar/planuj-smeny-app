@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from './authService';
 import { type User } from '@shared/types';
@@ -15,6 +15,7 @@ interface AuthContextType {
   isLoading: boolean; // True while we are fetching the user profile for the first time.
   isAuthChecking: boolean; // True while we are checking if a session exists (on page load).
   logout: () => Promise<void>; // Function to sign the user out.
+  refreshUser: () => Promise<void>; // Re-fetch the profile (e.g. after editing it in Settings).
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -92,7 +93,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await authService.signOut();
   };
 
-  const value = { user, isLoading, isAuthChecking, logout };
+  // Re-pull the profile from the DB and update the cached user. Called after the
+  // user edits their own profile (e.g. changes their username in Settings).
+  const refreshUser = useCallback(async () => {
+    const { data: { session } } = await authService.getSession();
+    if (!session) return;
+    const profile = await authService.getUserProfile(session.user.id);
+    if (profile) setUser(profile);
+  }, []);
+
+  const value = { user, isLoading, isAuthChecking, logout, refreshUser };
 
   return (
     <AuthContext.Provider value={value}>
