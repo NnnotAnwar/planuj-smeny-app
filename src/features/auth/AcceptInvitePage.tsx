@@ -66,12 +66,20 @@ export function AcceptInvitePage() {
                     token_hash: tokenHash,
                     type: 'invite',
                 });
-                if (error || !data.user) { setStatus('invalid'); return; }
-                await loadFromSession(data.user.id);
-                return;
+                if (!error && data.user) {
+                    // Burn-once: drop the token from the URL so a reload (or a
+                    // double-mount) can't re-submit the now-consumed token and
+                    // bounce the user to "invalid".
+                    window.history.replaceState({}, '', '/accept-invite');
+                    await loadFromSession(data.user.id);
+                    return;
+                }
+                // The token is one-time: a previous load in THIS browser may have
+                // already redeemed it and established the invitee's session. Fall
+                // through to the session check rather than failing outright.
             }
 
-            // Fallback: implicit hash-based flow (no token_hash in the URL).
+            // Implicit hash flow, or recovery of a session redeemed moments ago.
             const { data: { session } } = await supabase.auth.getSession();
             if (session) { await loadFromSession(session.user.id); return; }
 
