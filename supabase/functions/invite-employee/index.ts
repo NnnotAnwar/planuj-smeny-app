@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
         //    strictly below the caller (you can't invite a peer or superior).
         const [{ data: roleRow }, { data: orgRow }] = await Promise.all([
             admin.from('roles').select('name, rank').eq('name', role).single(),
-            admin.from('organizations').select('id').eq('id', organizationId).single(),
+            admin.from('organizations').select('id, name').eq('id', organizationId).single(),
         ]);
         if (!roleRow) return json({ error: `Unknown role "${role}".` }, 400);
         if (!orgRow) return json({ error: 'Unknown organization.' }, 400);
@@ -111,6 +111,7 @@ Deno.serve(async (req) => {
         const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
             data: {
                 organization_id: organizationId,
+                organization_name: orgRow.name, // surfaced in the invite email template
                 role,
                 first_name: firstName,
                 last_name: lastName,
