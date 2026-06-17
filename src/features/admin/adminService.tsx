@@ -142,7 +142,10 @@ export const adminService = {
      * The function enforces role/organization scoping based on the caller.
      */
     async inviteEmployee(payload: EmployeeInvite): Promise<void> {
-        const { error } = await supabase.functions.invoke('invite-employee', { body: payload });
+        const redirect_to = `${window.location.origin}/accept-invite`;
+        const { error } = await supabase.functions.invoke('invite-employee', {
+            body: { ...payload, redirect_to },
+        });
         if (error) throw await toFunctionError(error);
     },
 };

@@ -25,6 +25,9 @@ import { PageLoader } from './shared/components/PageLoader';
 // Lazy page chunks. Named exports are mapped to a `default` for React.lazy.
 const HomePage = lazy(() => import('./app/layout/HomePage').then((m) => ({ default: m.HomePage })));
 const LoginPage = lazy(() => import('./features/auth/LoginPage').then((m) => ({ default: m.LoginPage })));
+const AcceptInvitePage = lazy(() =>
+    import('./features/auth/AcceptInvitePage').then((m) => ({ default: m.AcceptInvitePage })),
+);
 const OverviewPage = lazy(() => import('./features/overview/OverviewPage').then((m) => ({ default: m.OverviewPage })));
 const AdminPage = lazy(() => import('./features/admin/AdminPage').then((m) => ({ default: m.AdminPage })));
 const MyShiftsPage = lazy(() => import('./features/shifts/MyShiftsPage'));
@@ -39,6 +42,7 @@ export default function App() {
             <Routes>
               {/* 1. PUBLIC ROUTES: Available to everyone. */}
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/accept-invite" element={<AcceptInvitePage />} />
 
               {/* 2. PROTECTED ROUTES: Only for logged-in users. */}
               <Route path="/" element={<AppShell />}>

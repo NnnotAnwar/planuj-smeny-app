@@ -29,6 +29,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // The invite-acceptance page handles its own session (set from the URL).
+        // Don't bounce the invitee to /login while that page is processing.
+        if (window.location.pathname === '/accept-invite') {
+          return;
+        }
+
         const { data: { session }, error: sessionError } = await authService.getSession();
 
         // If no session or error, go to the login page.
