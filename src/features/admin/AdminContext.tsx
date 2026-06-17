@@ -6,7 +6,7 @@ import {
     useCallback,
     type ReactNode,
 } from 'react';
-import { adminService, type EmployeeUpdate } from './adminService';
+import { adminService, type EmployeeUpdate, type EmployeeInvite } from './adminService';
 import { useAuthContext } from '@/features/auth/AuthContext';
 import type { Organization, Role } from '@/shared/types';
 
@@ -36,6 +36,7 @@ interface AdminContextType {
     deleteLocation: (id: string) => Promise<void>;
 
     // Employees
+    inviteEmployee: (payload: EmployeeInvite) => Promise<void>;
     updateEmployee: (id: string, values: EmployeeUpdate) => Promise<void>;
     deleteEmployee: (id: string) => Promise<void>;
 }
@@ -125,6 +126,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     );
 
     // Employees -----------------------------------------------------
+    const inviteEmployee = useCallback(
+        async (payload: EmployeeInvite) => {
+            await adminService.inviteEmployee(payload);
+            await refreshData();
+        },
+        [refreshData],
+    );
+
     const updateEmployee = useCallback(
         async (id: string, values: EmployeeUpdate) => {
             await adminService.updateEmployee(id, values);
@@ -155,6 +164,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         createLocation,
         updateLocation,
         deleteLocation,
+        inviteEmployee,
         updateEmployee,
         deleteEmployee,
     };
