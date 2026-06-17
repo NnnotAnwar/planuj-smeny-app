@@ -84,6 +84,17 @@ export const OrganizationSchema = z.object({
 
 
 /**
+ * RoleSchema: Defines a selectable role (from the `roles` table).
+ * Used by the admin panel to assign/change an employee's role.
+ */
+export const RoleSchema = z.object({
+  name: z.string(),
+  color: z.string(),
+  description: z.string().nullable(),
+  is_admin: z.boolean(),
+});
+
+/**
  * --- TYPES FOR TYPESCRIPT ---
  * These are generated automatically from the schemas above.
  * We use these throughout the app to get auto-completion and error checking.
@@ -92,6 +103,7 @@ export type Profile = z.infer<typeof ProfileSchema>;
 export type Shift = z.infer<typeof ShiftSchema>;
 export type Location = z.infer<typeof LocationSchema>;
 export type Organization = z.infer<typeof OrganizationSchema>;
+export type Role = z.infer<typeof RoleSchema>;
 
 /**
  * --- COMPONENT TYPES ---
