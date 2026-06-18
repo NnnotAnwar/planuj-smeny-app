@@ -103,7 +103,7 @@ export function EmployeesList({
             key: 'actions',
             header: '',
             align: 'right',
-            width: 'w-20',
+            width: 'w-20 sm:w-28',
             render: (emp) =>
                 manageable(emp) ? (
                     <div className="flex justify-end">
