@@ -33,7 +33,7 @@ export function OrganizationsList({
         { key: 'org', header: 'Organization', render: (org) => <OrgIdentity org={org} /> },
         { key: 'locs', header: 'Locs', align: 'right', width: 'w-20', hideOnMobile: true, render: (org) => <span className="text-metric-sm dark:text-white">{org.locations.length}</span> },
         { key: 'users', header: 'Users', align: 'right', width: 'w-16 sm:w-20', render: (org) => <span className="text-metric-sm dark:text-white">{org.profiles.length}</span> },
-        { key: 'actions', header: '', align: 'right', width: 'w-20', render: (org) => <div className="flex justify-end"><ActionButtons onEdit={() => onEdit(org)} onDelete={() => onDelete(org)} /></div> },
+        { key: 'actions', header: '', align: 'right', width: 'w-20 sm:w-28', render: (org) => <div className="flex justify-end"><ActionButtons onEdit={() => onEdit(org)} onDelete={() => onDelete(org)} /></div> },
     ];
 
     return (
