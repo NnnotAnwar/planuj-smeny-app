@@ -14,6 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { useShiftContext } from './ShiftContext';
 import { type Shift } from '@shared/types';
+import { DataTable, type Column } from '@shared/components/DataTable';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from './shiftStats';
 
 // PDF Libraries
@@ -205,6 +206,90 @@ export default function OverviewPage() {
   }, [userShifts, selectedMonth]);
 
   const maxWeekday = Math.max(...stats.byWeekday, 0.1);
+
+  // Shift history rendered through the shared DataTable so it matches the admin
+  // tables exactly (one compact monolithic table on every breakpoint).
+  const historyColumns: Column<Shift>[] = [
+    {
+      key: 'date',
+      header: 'Date',
+      className: 'whitespace-nowrap',
+      footer: <span className="text-label text-gray-400">Total</span>,
+      render: (shift) => {
+        const date = new Date(shift.started_at);
+        return (
+          <div className="flex flex-col">
+            <span className="text-small-strong dark:text-white">
+              {date.getDate()} {date.toLocaleDateString(undefined, { month: 'short' })}
+            </span>
+            <span className="text-micro text-gray-400">{WEEKDAYS[(date.getDay() + 6) % 7]}</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'location',
+      header: 'Location & Time',
+      className: 'max-w-[46vw] sm:max-w-none',
+      // On mobile the Gross/Break columns are hidden to fit; surface them here.
+      footer: (
+        <span className="sm:hidden text-caption text-gray-500 dark:text-gray-400 tabular-nums">
+          {fmtHours(stats.totalGross)} · −{fmtHours(stats.totalBreak)}
+        </span>
+      ),
+      render: (shift) => {
+        const gross = shiftGrossHours(shift);
+        const brk = shiftBreakHours(shift);
+        return (
+          <div className="flex flex-col min-w-0">
+            <span className="text-small-strong text-gray-700 dark:text-gray-200 truncate">{locationName(shift.location_id)}</span>
+            <span className="text-caption text-gray-400 tabular-nums">{fmtTimeRange(shift)}</span>
+            <span className="sm:hidden text-caption text-gray-400 tabular-nums">
+              Gross {fmtDuration(gross)}{brk > 0 ? ` · −${fmtDuration(brk)}` : ''}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'gross',
+      header: 'Gross',
+      align: 'right',
+      hideOnMobile: true,
+      className: 'text-xs font-bold tabular-nums text-gray-600 dark:text-gray-300',
+      footer: <span className="text-xs font-black tabular-nums dark:text-white">{fmtHours(stats.totalGross)}</span>,
+      render: (shift) => fmtDuration(shiftGrossHours(shift)),
+    },
+    {
+      key: 'break',
+      header: 'Break',
+      align: 'right',
+      hideOnMobile: true,
+      className: 'text-xs font-bold tabular-nums text-amber-500',
+      footer: <span className="text-xs font-black tabular-nums text-amber-500">-{fmtHours(stats.totalBreak)}</span>,
+      render: (shift) => {
+        const brk = shiftBreakHours(shift);
+        return brk > 0 ? `-${fmtDuration(brk)}` : '—';
+      },
+    },
+    {
+      key: 'net',
+      header: 'Net',
+      align: 'right',
+      footer: <span className="text-xs font-black tabular-nums text-emerald-600 dark:text-emerald-400">{fmtHours(stats.totalHours)}</span>,
+      render: (shift) => {
+        const ongoing = !shift.ended_at;
+        return (
+          <>
+            <span className={`text-xs font-black tabular-nums ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+              {fmtDuration(shiftHours(shift))}
+            </span>
+            {ongoing && <span className="block text-micro text-amber-500">Live</span>}
+          </>
+        );
+      },
+    },
+  ];
 
   const exportToPDF = () => {
     const doc = new jsPDF();
@@ -410,101 +495,7 @@ export default function OverviewPage() {
               Net = Gross − mandatory breaks (−30 min from 6h, −1h from 12h per shift).
             </p>
 
-            {/* DESKTOP TABLE */}
-            <div className="hidden sm:block bg-white dark:bg-gray-900/40 rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
-                    <th className="px-4 py-3 text-label text-gray-400">Date</th>
-                    <th className="px-4 py-3 text-label text-gray-400">Location &amp; Time</th>
-                    <th className="px-4 py-3 text-label text-gray-400 text-right">Gross</th>
-                    <th className="px-4 py-3 text-label text-gray-400 text-right">Break</th>
-                    <th className="px-4 py-3 text-label text-gray-400 text-right">Net</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                  {stats.shifts.map((shift) => {
-                    const ongoing = !shift.ended_at;
-                    const gross = shiftGrossHours(shift);
-                    const brk = shiftBreakHours(shift);
-                    const net = shiftHours(shift);
-                    const date = new Date(shift.started_at);
-                    return (
-                      <tr key={shift.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-800/20 transition-colors">
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex flex-col">
-                            <span className="text-small-strong dark:text-white">
-                              {date.getDate()} {date.toLocaleDateString(undefined, { month: 'short' })}
-                            </span>
-                            <span className="text-micro text-gray-400">
-                              {WEEKDAYS[(date.getDay() + 6) % 7]}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-col">
-                            <span className="text-small-strong text-gray-700 dark:text-gray-200 truncate">{locationName(shift.location_id)}</span>
-                            <span className="text-caption text-gray-400 tabular-nums">{fmtTimeRange(shift)}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-right text-xs font-bold tabular-nums text-gray-600 dark:text-gray-300">{fmtDuration(gross)}</td>
-                        <td className="px-4 py-3 text-right text-xs font-bold tabular-nums text-amber-500">{brk > 0 ? `-${fmtDuration(brk)}` : '—'}</td>
-                        <td className="px-4 py-3 text-right">
-                          <span className={`text-xs font-black tabular-nums ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{fmtDuration(net)}</span>
-                          {ongoing && <span className="block text-micro text-amber-500">Live</span>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
-                    <td className="px-4 py-3 text-label text-gray-400" colSpan={2}>Total</td>
-                    <td className="px-4 py-3 text-right text-xs font-black tabular-nums dark:text-white">{fmtHours(stats.totalGross)}</td>
-                    <td className="px-4 py-3 text-right text-xs font-black tabular-nums text-amber-500">-{fmtHours(stats.totalBreak)}</td>
-                    <td className="px-4 py-3 text-right text-xs font-black tabular-nums text-emerald-600 dark:text-emerald-400">{fmtHours(stats.totalHours)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-
-            {/* MOBILE CARDS */}
-            <div className="sm:hidden space-y-2">
-              {stats.shifts.map((shift) => {
-                const ongoing = !shift.ended_at;
-                const gross = shiftGrossHours(shift);
-                const brk = shiftBreakHours(shift);
-                const net = shiftHours(shift);
-                const date = new Date(shift.started_at);
-                return (
-                  <div key={shift.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                    <div className="flex flex-col items-center justify-center w-11 shrink-0">
-                      <span className="text-metric-sm dark:text-white leading-none">{date.getDate()}</span>
-                      <span className="text-micro text-gray-400">{WEEKDAYS[(date.getDay() + 6) % 7]}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-small-strong text-gray-800 dark:text-gray-100 truncate">{locationName(shift.location_id)}</p>
-                      <p className="text-caption text-gray-400 tabular-nums">{fmtTimeRange(shift)}</p>
-                      <p className="text-caption text-gray-400 tabular-nums mt-0.5">
-                        Gross {fmtDuration(gross)}{brk > 0 ? ` · Break -${fmtDuration(brk)}` : ''}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className={`text-metric-sm ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{fmtDuration(net)}</span>
-                      <span className="block text-micro text-gray-400">{ongoing ? 'Live' : 'Net'}</span>
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-100 dark:border-gray-800">
-                <span className="text-micro text-gray-400">Total</span>
-                <span className="text-metric-sm">
-                  <span className="text-gray-500 dark:text-gray-400">{fmtHours(stats.totalGross)}</span>
-                  <span className="text-amber-500"> −{fmtHours(stats.totalBreak)}</span>
-                  <span className="text-emerald-600 dark:text-emerald-400"> = {fmtHours(stats.totalHours)}</span>
-                </span>
-              </div>
-            </div>
+            <DataTable rows={stats.shifts} rowKey={(s) => s.id} columns={historyColumns} />
           </div>
         </>
       )}

@@ -169,7 +169,7 @@ function AdminPanel() {
             </header>
 
             {/* --- STATS --- */}
-            <div className={`grid gap-3 ${isSuperAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <div className={`grid gap-2 sm:gap-3 ${isSuperAdmin ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2'}`}>
                 <StatCard icon={UsersIcon} label="Employees" value={empCount} accent="emerald" />
                 <StatCard icon={MapPinIcon} label="Locations" value={locCount} accent="blue" />
                 {isSuperAdmin && <StatCard icon={BuildingsIcon} label="Organizations" value={orgCount} accent="violet" />}
