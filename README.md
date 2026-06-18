@@ -33,17 +33,54 @@ The app is wrapped using **Capacitor**, providing:
 
 ## 📦 Getting Started
 
+This project uses **npm** (single lockfile: `package-lock.json`). Do not add `yarn.lock`.
+
 ### Development
 1. Clone the repository.
-2. Install dependencies: `yarn install`.
-3. Start the dev server: `yarn dev`.
+2. Install dependencies: `npm install`.
+3. Copy env: `cp .env.example .env` and fill in the values (see below).
+4. Start the dev server: `npm run dev` (local only) or `npm run dev:lan` (exposed on your LAN, e.g. for testing on a phone).
+
+### Environment variables
+Create a `.env` (see [`.env.example`](.env.example)):
+
+| Variable | Description |
+| --- | --- |
+| `VITE_SUPABASE_URL` | Supabase project URL, e.g. `https://<ref>.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable (anon) key — public client key. **Never** put the `service_role` key in the client. |
+
+On Vercel, set these under **Project → Settings → Environment Variables** (per environment: Production / Preview / Development).
+
+### Local Supabase workflow
+```bash
+supabase start              # boot the local stack (Docker)
+supabase db reset           # apply migrations + seed (supabase/seed.sql)
+supabase functions serve    # run Edge Functions locally
+```
+Remote DB changes go through migrations in `supabase/migrations/` (`supabase db push`).
 
 ### Build for Native
-1. Build the web project: `yarn build`.
+1. Build the web project: `npm run build`.
 2. Sync with native platforms: `npx cap sync`.
 3. Open in IDE:
    - Android: `npx cap open android`
    - iOS: `npx cap open ios`
+
+## 🧰 Scripts
+| Script | What it does |
+| --- | --- |
+| `npm run dev` / `dev:lan` | Vite dev server (local / LAN-exposed) |
+| `npm run build` | Type-check + production build |
+| `npm run typecheck` | Type-check only (`tsc -b`) |
+| `npm run lint` | ESLint |
+| `npm run format` | Prettier write |
+| `npm test` / `test:watch` | Vitest (run / watch) |
+
+## 🔒 Security note
+Do **not** use default/demo credentials (e.g. `admin / admin`) in any shared or
+public environment. Rotate the seeded admin account's password and prefer a
+non-obvious username before exposing an instance. Access is role-based (rank
+hierarchy) and enforced by Supabase RLS.
 
 ---
 *Created by Anuar Kairulla*
