@@ -48,7 +48,7 @@ export function ActiveShift() {
     if (!activeShift) {
         return (
             <div className="mb-6 flex justify-center">
-                <div className="flex items-center gap-1.5 rounded-full bg-gray-200/50 dark:bg-gray-800/50 px-3 py-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-1.5 rounded-full bg-gray-200/50 dark:bg-gray-800/50 px-3 py-1 text-body text-gray-500 dark:text-gray-400">
                     <LiveClockIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" isActive={false} />
                     No Active Shift
                 </div>
@@ -60,12 +60,12 @@ export function ActiveShift() {
         <>
             {/* --- MOBILE VIEW --- */}
             <div className="mb-6 flex flex-col items-center md:hidden">
-                <div className="flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                <div className="flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 text-body text-emerald-700 dark:text-emerald-400">
                     <LiveClockIcon className="h-4 w-4" isActive={true} />
                     Active Shift: {startTime}
                 </div>
                 {previousLocation && (
-                    <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-gray-500 uppercase tracking-tight">
+                    <div className="mt-2 flex items-center gap-1 text-micro text-gray-500">
                         <span>Moved from {previousLocation.name}</span>
                     </div>
                 )}
@@ -80,11 +80,11 @@ export function ActiveShift() {
                     </div>
                     <div>
                         <div className="mb-1 flex items-center gap-2">
-                            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                            <span className="text-label text-emerald-600 dark:text-emerald-400">
                                 Active Shift
                             </span>
                             {previousLocation && (
-                                <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tight">
+                                <span className="flex items-center gap-1 text-micro text-gray-400 dark:text-gray-500">
                                     <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                                     </svg>
@@ -92,10 +92,10 @@ export function ActiveShift() {
                                 </span>
                             )}
                         </div>
-                        <h3 className="text-lg font-bold leading-tight text-gray-800 dark:text-white">
-                            {userName} <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({user.role.name})</span>
+                        <h3 className="text-title leading-tight text-gray-800 dark:text-white">
+                            {userName} <span className="ml-1 text-body text-gray-500 dark:text-gray-400">({user.role.name})</span>
                         </h3>
-                        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400 font-medium">
+                        <p className="mt-0.5 text-body text-gray-500 dark:text-gray-400">
                             {locationName} • Started at {startTime}
                         </p>
                     </div>
@@ -122,7 +122,7 @@ export function ActiveShift() {
                 <button
                     onClick={onEndShiftClick}
                     disabled={isDisabled}
-                    className={`flex w-full items-center justify-center gap-2 rounded-2xl px-8 py-4 text-lg font-bold text-white shadow-lg shadow-red-500/30 transition-all active:scale-[0.98] ${buttonClasses}`}
+                    className={`flex w-full items-center justify-center gap-2 rounded-2xl px-8 py-4 text-title text-white shadow-lg shadow-red-500/30 transition-all active:scale-[0.98] ${buttonClasses}`}
                 >
                     {isEnding ? (
                         <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent"></div>

@@ -45,7 +45,7 @@ export function BottomNav() {
                             }`}
                         >
                             <item.icon weight={active ? 'fill' : 'regular'} className="w-6 h-6" />
-                            <span className="text-[10px] font-bold tracking-tight">{item.name}</span>
+                            <span className="text-caption">{item.name}</span>
                         </Link>
                     );
                 })}

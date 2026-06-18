@@ -83,7 +83,7 @@ export function LocationSelection({
           <motion.button
             layout
             onClick={() => setShowAll(!showAll)}
-            className="flex items-center justify-center p-2 rounded-lg border border-dashed border-gray-300 dark:border-white/10 text-[10px] font-bold text-gray-500 uppercase cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+            className="flex items-center justify-center p-2 rounded-lg border border-dashed border-gray-300 dark:border-white/10 text-micro text-gray-500 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
           >
             {showAll ? 'Show Less' : `Show All (+${locations.length - displayedLocations.length})`}
           </motion.button>
@@ -109,7 +109,7 @@ function LocationButton({ location, isActive, onClick }: { location: Location, i
         }`}>
         <MapPinIcon className='h-3 w-3' />
       </div>
-      <span className="text-[11px] md:text-xs font-bold truncate leading-none text-left flex-1">
+      <span className="text-small-strong truncate leading-none text-left flex-1">
         {location.name}
       </span>
     </button>

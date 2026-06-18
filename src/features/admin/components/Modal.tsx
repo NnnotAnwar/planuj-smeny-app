@@ -84,9 +84,9 @@ export function Modal({
             >
                 <div className="flex items-start justify-between gap-4 p-5 border-b border-gray-50 dark:border-white/5 shrink-0">
                     <div className="min-w-0">
-                        <h2 className="text-lg font-black text-gray-900 dark:text-white tracking-tight truncate">{title}</h2>
+                        <h2 className="text-title text-gray-900 dark:text-white truncate">{title}</h2>
                         {subtitle && (
-                            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-0.5">{subtitle}</p>
+                            <p className="text-micro text-emerald-500 mt-0.5">{subtitle}</p>
                         )}
                     </div>
                     <button
@@ -147,25 +147,25 @@ export function ConfirmDialog({
                     <div className="shrink-0 w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center">
                         <WarningIcon weight="fill" className="w-5 h-5" />
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{message}</p>
+                    <p className="text-body text-gray-600 dark:text-gray-300 leading-relaxed">{message}</p>
                 </div>
 
                 {error && (
-                    <p className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{error}</p>
+                    <p className="text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{error}</p>
                 )}
 
                 <div className="flex gap-2">
                     <button
                         onClick={onClose}
                         disabled={isBusy}
-                        className="flex-1 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                        className="flex-1 px-4 py-2.5 rounded-xl text-label text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleConfirm}
                         disabled={isBusy}
-                        className="flex-1 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60 shadow-lg shadow-red-500/20"
+                        className="flex-1 px-4 py-2.5 rounded-xl text-label text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60 shadow-lg shadow-red-500/20"
                     >
                         {isBusy ? 'Working…' : confirmLabel}
                     </button>

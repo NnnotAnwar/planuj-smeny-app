@@ -25,8 +25,8 @@ export function StatCard({
                 <StatIcon className="w-5 h-5" weight="bold" />
             </div>
             <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white leading-none">{value}</p>
-                <p className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{label}</p>
+                <p className="text-display text-gray-900 dark:text-white leading-none">{value}</p>
+                <p className="text-micro text-gray-400 mt-1">{label}</p>
             </div>
         </div>
     );
@@ -34,7 +34,7 @@ export function StatCard({
 
 export function LoadingState({ label }: { label: string }) {
     return (
-        <div className="py-20 text-center text-gray-400 text-xs font-bold uppercase tracking-widest animate-pulse">
+        <div className="py-20 text-center text-label text-gray-400 animate-pulse">
             Loading {label}…
         </div>
     );
@@ -42,15 +42,15 @@ export function LoadingState({ label }: { label: string }) {
 
 export function EmptyState({ label }: { label: string }) {
     return (
-        <div className="py-20 text-center text-gray-400 text-xs font-bold uppercase tracking-widest">No {label} found</div>
+        <div className="py-20 text-center text-label text-gray-400">No {label} found</div>
     );
 }
 
 export function ErrorState({ message }: { message: string }) {
     return (
         <div className="py-16 text-center space-y-1">
-            <p className="text-red-500 text-xs font-black uppercase tracking-widest">Something went wrong</p>
-            <p className="text-gray-400 text-xs font-medium">{message}</p>
+            <p className="text-label text-red-500">Something went wrong</p>
+            <p className="text-small text-gray-400">{message}</p>
         </div>
     );
 }
