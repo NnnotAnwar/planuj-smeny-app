@@ -39,7 +39,7 @@ export function LocationsList({
 }) {
     const columns: Column<LocationRow>[] = [
         { key: 'loc', header: 'Location', render: (loc) => <LocationIdentity loc={loc} /> },
-        { key: 'org', header: 'Organization', width: 'w-44', hideOnMobile: true, className: 'truncate', render: (loc) => <span className="text-body text-gray-500 dark:text-gray-400">{loc.organizationName}</span> },
+        { key: 'org', header: 'Organization', hideOnMobile: true, className: 'truncate', render: (loc) => <span className="text-body text-gray-500 dark:text-gray-400">{loc.organizationName}</span> },
         { key: 'id', header: 'ID', align: 'right', width: 'w-20', hideOnMobile: true, render: (loc) => <span className="text-micro text-gray-400 normal-case whitespace-nowrap">{loc.id.slice(0, 8)}</span> },
         ...(canManage
             ? [{ key: 'actions', header: '', align: 'right' as const, width: 'w-20', render: (loc: LocationRow) => <div className="flex justify-end"><ActionButtons onEdit={() => onEdit(loc)} onDelete={() => onDelete(loc)} /></div> }]
