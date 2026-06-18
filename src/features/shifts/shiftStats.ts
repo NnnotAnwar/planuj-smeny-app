@@ -2,17 +2,33 @@ import { type Shift } from '@shared/types';
 
 /**
  * --- SHIFT STATS HELPERS ---
- * Pure, dependency-free functions used by My Shifts. Extracted so they can be
- * unit-tested without rendering the page.
+ * Pure, dependency-free functions used by the Overview page. Extracted so they
+ * can be unit-tested without rendering the page.
  */
 
 const MS_PER_HOUR = 1000 * 60 * 60;
 
-/** Hours a shift lasted. Open shifts (no ended_at) count up to `now`. */
-export function shiftHours(s: Pick<Shift, 'started_at' | 'ended_at'>, now: number = Date.now()): number {
+/**
+ * Deducts mandatory breaks per Czech labour law (přestávky):
+ * −30 min for every started 6-hour block (triggers at 6h 1m, 12h 1m, …).
+ */
+export function calculateNetHours(grossHours: number): number {
+    if (grossHours <= 0) return 0;
+    const breakCount = Math.floor((grossHours - 0.0001) / 6);
+    const totalBreakTime = breakCount * 0.5; // 0.5h = 30 min
+    return Math.max(0, grossHours - totalBreakTime);
+}
+
+/** Raw clocked hours (Gross). Open shifts count up to `now`. */
+export function shiftGrossHours(s: Pick<Shift, 'started_at' | 'ended_at'>, now: number = Date.now()): number {
     const start = new Date(s.started_at).getTime();
     const end = s.ended_at ? new Date(s.ended_at).getTime() : now;
     return Math.max(0, (end - start) / MS_PER_HOUR);
+}
+
+/** Net working hours, with mandatory breaks deducted. */
+export function shiftHours(s: Pick<Shift, 'started_at' | 'ended_at'>, now: number = Date.now()): number {
+    return calculateNetHours(shiftGrossHours(s, now));
 }
 
 /** Compact hours label, e.g. 7.5 -> "7.5h", 124 -> "124h". */
