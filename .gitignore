@@ -22,6 +22,10 @@ old_migrations
 *.tsbuildinfo
 .mcp.json
 
+# Use npm (package-lock.json) as the single lockfile; yarn.lock caused
+# dual-lockfile install failures on Vercel.
+yarn.lock
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
