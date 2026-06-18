@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { shiftGrossHours, shiftHours, calculateNetHours, fmtHours, fmtDuration } from './shiftStats';
+import { shiftGrossHours, shiftHours, shiftBreakHours, calculateNetHours, fmtHours, fmtDuration } from './shiftStats';
 
 describe('shiftGrossHours', () => {
     it('computes raw hours for a completed shift', () => {
@@ -40,6 +40,13 @@ describe('shiftHours (net)', () => {
 
     it('leaves short shifts untouched', () => {
         expect(shiftHours({ started_at: '2026-06-17T08:00:00Z', ended_at: '2026-06-17T13:00:00Z' })).toBe(5);
+    });
+});
+
+describe('shiftBreakHours (gross − net)', () => {
+    it('is 0 for a short shift and 0.5 for an 8h shift', () => {
+        expect(shiftBreakHours({ started_at: '2026-06-17T08:00:00Z', ended_at: '2026-06-17T13:00:00Z' })).toBe(0);
+        expect(shiftBreakHours({ started_at: '2026-06-17T08:00:00Z', ended_at: '2026-06-17T16:00:00Z' })).toBe(0.5);
     });
 });
 

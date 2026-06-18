@@ -31,6 +31,11 @@ export function shiftHours(s: Pick<Shift, 'started_at' | 'ended_at'>, now: numbe
     return calculateNetHours(shiftGrossHours(s, now));
 }
 
+/** Break time deducted for a shift (gross − net). */
+export function shiftBreakHours(s: Pick<Shift, 'started_at' | 'ended_at'>, now: number = Date.now()): number {
+    return shiftGrossHours(s, now) - shiftHours(s, now);
+}
+
 /** Compact hours label, e.g. 7.5 -> "7.5h", 124 -> "124h". */
 export function fmtHours(h: number): string {
     return `${Math.round(h * 10) / 10}h`;
