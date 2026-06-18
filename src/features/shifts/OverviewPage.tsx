@@ -213,6 +213,7 @@ export default function OverviewPage() {
     {
       key: 'date',
       header: 'Date',
+      width: 'w-16 sm:w-24',
       className: 'whitespace-nowrap',
       footer: <span className="text-label text-gray-400">Total</span>,
       render: (shift) => {
@@ -230,7 +231,7 @@ export default function OverviewPage() {
     {
       key: 'location',
       header: 'Location & Time',
-      className: 'max-w-[46vw] sm:max-w-none',
+      className: 'w-full',
       // On mobile the Gross/Break columns are hidden to fit; surface them here.
       footer: (
         <span className="sm:hidden text-caption text-gray-500 dark:text-gray-400 tabular-nums">
@@ -255,6 +256,7 @@ export default function OverviewPage() {
       key: 'gross',
       header: 'Gross',
       align: 'right',
+      width: 'w-20',
       hideOnMobile: true,
       className: 'text-xs font-bold tabular-nums text-gray-600 dark:text-gray-300',
       footer: <span className="text-xs font-black tabular-nums dark:text-white">{fmtHours(stats.totalGross)}</span>,
@@ -264,6 +266,7 @@ export default function OverviewPage() {
       key: 'break',
       header: 'Break',
       align: 'right',
+      width: 'w-20',
       hideOnMobile: true,
       className: 'text-xs font-bold tabular-nums text-amber-500',
       footer: <span className="text-xs font-black tabular-nums text-amber-500">-{fmtHours(stats.totalBreak)}</span>,
@@ -276,6 +279,7 @@ export default function OverviewPage() {
       key: 'net',
       header: 'Net',
       align: 'right',
+      width: 'w-16 sm:w-20',
       footer: <span className="text-xs font-black tabular-nums text-emerald-600 dark:text-emerald-400">{fmtHours(stats.totalHours)}</span>,
       render: (shift) => {
         const ongoing = !shift.ended_at;
