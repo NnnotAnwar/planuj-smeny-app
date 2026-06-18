@@ -23,16 +23,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+
+      # Yarn Berry via Corepack (version pinned by package.json "packageManager").
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --immutable
 
       - name: Lint
-        run: npm run lint
+        run: yarn lint
 
       - name: Unit tests
-        run: npm test
+        run: yarn test
 
       - name: Build (tsc -b + vite build)
-        run: npm run build
+        run: yarn build
