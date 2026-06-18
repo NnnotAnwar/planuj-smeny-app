@@ -279,13 +279,13 @@ export default function OverviewPage() {
       key: 'net',
       header: 'Net',
       align: 'right',
-      width: 'w-16 sm:w-20',
-      footer: <span className="text-xs font-black tabular-nums text-emerald-600 dark:text-emerald-400">{fmtHours(stats.totalHours)}</span>,
+      width: 'w-20 sm:w-24',
+      footer: <span className="text-xs font-black tabular-nums whitespace-nowrap text-emerald-600 dark:text-emerald-400">{fmtHours(stats.totalHours)}</span>,
       render: (shift) => {
         const ongoing = !shift.ended_at;
         return (
           <>
-            <span className={`text-xs font-black tabular-nums ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+            <span className={`block text-xs font-black tabular-nums whitespace-nowrap ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
               {fmtDuration(shiftHours(shift))}
             </span>
             {ongoing && <span className="block text-micro text-amber-500">Live</span>}
@@ -495,8 +495,10 @@ export default function OverviewPage() {
                 {stats.shifts.length} entries
               </span>
             </div>
-            <p className="px-1 mb-3 text-caption text-gray-400">
-              Net = Gross − mandatory breaks (−30 min from 6h, −1h from 12h per shift).
+            <p className="px-1 mb-3 text-caption leading-relaxed text-gray-400">
+              Net = Gross − mandatory breaks:{' '}
+              <span className="whitespace-nowrap">−30&nbsp;min from 6&nbsp;h</span>,{' '}
+              <span className="whitespace-nowrap">−1&nbsp;h from 12&nbsp;h</span>.
             </p>
 
             <DataTable rows={stats.shifts} rowKey={(s) => s.id} columns={historyColumns} />
