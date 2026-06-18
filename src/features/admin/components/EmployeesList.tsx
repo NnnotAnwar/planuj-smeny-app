@@ -50,6 +50,12 @@ function AdminBadgeWithTooltip() {
     );
 }
 
+function RoleBadge({ role }: { role: Profile['role'] }) {
+    return (
+        <span className={`inline-block px-1.5 py-1 text-micro rounded-md whitespace-nowrap ${getRoleBadgeColor(role.name)}`}>{role.name}</span>
+    );
+}
+
 function EmployeeIdentity({ employee, isSelf }: { employee: Profile; isSelf: boolean }) {
     return (
         <div className="flex items-center gap-2.5 min-w-0">
@@ -69,14 +75,12 @@ function EmployeeIdentity({ employee, isSelf }: { employee: Profile; isSelf: boo
                     )}
                 </div>
                 <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{employee.username}</p>
+                {/* Role lives in its own column on sm+; stacked here to stay compact on mobile. */}
+                <div className="sm:hidden mt-1">
+                    <RoleBadge role={employee.role} />
+                </div>
             </div>
         </div>
-    );
-}
-
-function RoleBadge({ role }: { role: Profile['role'] }) {
-    return (
-        <span className={`px-2 py-1 text-micro rounded-md whitespace-nowrap ${getRoleBadgeColor(role.name)}`}>{role.name}</span>
     );
 }
 
@@ -96,9 +100,9 @@ export function EmployeesList({
     const manageable = (emp: Profile) => (currentUser ? canManageMember(currentUser, emp) : false);
 
     const columns: Column<Profile>[] = [
-        { key: 'employee', header: 'Employee', render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} />, className: 'max-w-[55vw]' },
+        { key: 'employee', header: 'Employee', render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} />, className: 'max-w-[72vw] sm:max-w-none' },
         { key: 'email', header: 'Email', hideOnMobile: true, render: (emp) => <span className="text-body text-gray-500 dark:text-gray-400 truncate">{emp.email}</span> },
-        { key: 'role', header: 'Role', align: 'right', render: (emp) => <RoleBadge role={emp.role} /> },
+        { key: 'role', header: 'Role', align: 'right', hideOnMobile: true, render: (emp) => <RoleBadge role={emp.role} /> },
         {
             key: 'actions',
             header: '',

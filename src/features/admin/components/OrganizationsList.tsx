@@ -13,6 +13,10 @@ function OrgIdentity({ org }: { org: Organization }) {
             <div className="min-w-0">
                 <h3 className="text-body-strong dark:text-white truncate">{org.name}</h3>
                 <p className="text-micro text-gray-400 truncate normal-case">{org.slug}</p>
+                {/* Counts have their own columns on sm+; stacked here to stay compact on mobile. */}
+                <p className="sm:hidden text-micro text-gray-400 mt-1">
+                    {org.locations.length} locs · {org.profiles.length} users
+                </p>
             </div>
         </div>
     );
@@ -30,9 +34,9 @@ export function OrganizationsList({
     onDelete: (org: Organization) => void;
 }) {
     const columns: Column<Organization>[] = [
-        { key: 'org', header: 'Organization', render: (org) => <OrgIdentity org={org} />, className: 'max-w-[60vw]' },
+        { key: 'org', header: 'Organization', render: (org) => <OrgIdentity org={org} />, className: 'max-w-[72vw] sm:max-w-none' },
         { key: 'locs', header: 'Locs', align: 'right', hideOnMobile: true, render: (org) => <span className="text-metric-sm dark:text-white">{org.locations.length}</span> },
-        { key: 'users', header: 'Users', align: 'right', render: (org) => <span className="text-metric-sm dark:text-white">{org.profiles.length}</span> },
+        { key: 'users', header: 'Users', align: 'right', hideOnMobile: true, render: (org) => <span className="text-metric-sm dark:text-white">{org.profiles.length}</span> },
         { key: 'actions', header: '', align: 'right', render: (org) => <div className="flex justify-end"><ActionButtons onEdit={() => onEdit(org)} onDelete={() => onDelete(org)} /></div> },
     ];
 

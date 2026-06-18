@@ -230,18 +230,32 @@ export default function OverviewPage() {
     {
       key: 'location',
       header: 'Location & Time',
-      className: 'max-w-[42vw] sm:max-w-none',
-      render: (shift) => (
-        <div className="flex flex-col">
-          <span className="text-small-strong text-gray-700 dark:text-gray-200 truncate">{locationName(shift.location_id)}</span>
-          <span className="text-caption text-gray-400 tabular-nums">{fmtTimeRange(shift)}</span>
-        </div>
+      className: 'max-w-[46vw] sm:max-w-none',
+      // On mobile the Gross/Break columns are hidden to fit; surface them here.
+      footer: (
+        <span className="sm:hidden text-caption text-gray-500 dark:text-gray-400 tabular-nums">
+          {fmtHours(stats.totalGross)} · −{fmtHours(stats.totalBreak)}
+        </span>
       ),
+      render: (shift) => {
+        const gross = shiftGrossHours(shift);
+        const brk = shiftBreakHours(shift);
+        return (
+          <div className="flex flex-col min-w-0">
+            <span className="text-small-strong text-gray-700 dark:text-gray-200 truncate">{locationName(shift.location_id)}</span>
+            <span className="text-caption text-gray-400 tabular-nums">{fmtTimeRange(shift)}</span>
+            <span className="sm:hidden text-caption text-gray-400 tabular-nums">
+              Gross {fmtDuration(gross)}{brk > 0 ? ` · −${fmtDuration(brk)}` : ''}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'gross',
       header: 'Gross',
       align: 'right',
+      hideOnMobile: true,
       className: 'text-xs font-bold tabular-nums text-gray-600 dark:text-gray-300',
       footer: <span className="text-xs font-black tabular-nums dark:text-white">{fmtHours(stats.totalGross)}</span>,
       render: (shift) => fmtDuration(shiftGrossHours(shift)),
@@ -250,6 +264,7 @@ export default function OverviewPage() {
       key: 'break',
       header: 'Break',
       align: 'right',
+      hideOnMobile: true,
       className: 'text-xs font-bold tabular-nums text-amber-500',
       footer: <span className="text-xs font-black tabular-nums text-amber-500">-{fmtHours(stats.totalBreak)}</span>,
       render: (shift) => {

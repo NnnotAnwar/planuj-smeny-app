@@ -38,9 +38,9 @@ export function LocationsList({
     onDelete: (loc: LocationRow) => void;
 }) {
     const columns: Column<LocationRow>[] = [
-        { key: 'loc', header: 'Location', render: (loc) => <LocationIdentity loc={loc} />, className: 'max-w-[60vw]' },
+        { key: 'loc', header: 'Location', render: (loc) => <LocationIdentity loc={loc} />, className: 'max-w-[70vw] sm:max-w-none' },
         { key: 'org', header: 'Organization', hideOnMobile: true, render: (loc) => <span className="text-body text-gray-500 dark:text-gray-400 truncate">{loc.organizationName}</span> },
-        { key: 'id', header: 'ID', align: 'right', hideOnMobile: true, render: (loc) => <span className="text-micro text-gray-400 normal-case">{loc.id.slice(0, 8)}</span> },
+        { key: 'id', header: 'ID', align: 'right', hideOnMobile: true, render: (loc) => <span className="text-micro text-gray-400 normal-case whitespace-nowrap">{loc.id.slice(0, 8)}</span> },
         ...(canManage
             ? [{ key: 'actions', header: '', align: 'right' as const, render: (loc: LocationRow) => <div className="flex justify-end"><ActionButtons onEdit={() => onEdit(loc)} onDelete={() => onDelete(loc)} /></div> }]
             : []),

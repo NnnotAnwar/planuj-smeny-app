@@ -20,14 +20,14 @@ export function StatCard({
     accent: string;
 }) {
     return (
-        <div className="flex items-center gap-3 p-3 sm:p-4 bg-white dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${STAT_ACCENTS[accent]}`}>
-                <StatIcon className="w-5 h-5" weight="bold" />
+        <div className="p-2.5 sm:p-4 bg-white dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${STAT_ACCENTS[accent]}`}>
+                    <StatIcon className="w-4 h-4 sm:w-5 sm:h-5" weight="bold" />
+                </div>
+                <p className="text-xl sm:text-2xl font-black tracking-tight text-gray-900 dark:text-white leading-none">{value}</p>
             </div>
-            <div className="min-w-0">
-                <p className="text-display text-gray-900 dark:text-white leading-none">{value}</p>
-                <p className="text-micro text-gray-400 mt-1">{label}</p>
-            </div>
+            <p className="text-micro text-gray-400 mt-2 truncate">{label}</p>
         </div>
     );
 }

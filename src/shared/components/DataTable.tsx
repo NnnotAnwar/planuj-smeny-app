@@ -47,7 +47,7 @@ const ALIGN: Record<NonNullable<Column<unknown>['align']>, string> = {
 };
 
 // Compact on phones, roomier on sm+. `hideOnMobile` columns appear from sm up.
-const cellPad = 'px-2.5 py-2 sm:px-4 sm:py-3';
+const cellPad = 'px-2 py-2.5 sm:px-4 sm:py-3';
 const mobileHidden = 'hidden sm:table-cell';
 
 /**
