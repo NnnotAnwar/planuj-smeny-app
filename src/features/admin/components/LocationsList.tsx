@@ -18,7 +18,8 @@ function LocationIdentity({ loc }: { loc: LocationRow }) {
             </div>
             <div className="min-w-0">
                 <h3 className="text-body-strong dark:text-white truncate">{loc.name}</h3>
-                <p className="text-micro text-gray-400 truncate">{loc.organizationName}</p>
+                {/* Org has its own column on sm+; show it here only on mobile (where that column is hidden). */}
+                <p className="sm:hidden text-micro text-gray-400 truncate">{loc.organizationName}</p>
             </div>
         </div>
     );
