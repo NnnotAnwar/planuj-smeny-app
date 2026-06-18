@@ -55,7 +55,7 @@ export function useShifts(user: User | null) {
     } catch (err) {
       console.error('Error refreshing shift data:', err);
     }
-  }, [user?.id, user?.role, user?.organization_id]);
+  }, [user]);
 
   // Load everything on startup (and whenever the identified user changes, since
   // refreshData is keyed on user id/org/role). We deliberately DON'T depend on

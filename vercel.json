@@ -1,5 +1,5 @@
 {
-    "installCommand": "npm install",
+    "installCommand": "corepack enable && yarn install --immutable",
     "rewrites": [
         {
             "source": "/(.*)",

@@ -33,13 +33,15 @@ The app is wrapped using **Capacitor**, providing:
 
 ## 📦 Getting Started
 
-This project uses **npm** (single lockfile: `package-lock.json`). Do not add `yarn.lock`.
+This project uses **Yarn (Berry v4, via Corepack)** — single lockfile: `yarn.lock`.
+Enable Corepack once: `corepack enable` (ships with Node 18+). The exact Yarn
+version is pinned in `package.json` (`packageManager`). Do not add `package-lock.json`.
 
 ### Development
 1. Clone the repository.
-2. Install dependencies: `npm install`.
+2. Install dependencies: `yarn install`.
 3. Copy env: `cp .env.example .env` and fill in the values (see below).
-4. Start the dev server: `npm run dev` (local only) or `npm run dev:lan` (exposed on your LAN, e.g. for testing on a phone).
+4. Start the dev server: `yarn dev` (exposed on your LAN — e.g. for testing on a phone).
 
 ### Environment variables
 Create a `.env` (see [`.env.example`](.env.example)):
@@ -60,7 +62,7 @@ supabase functions serve    # run Edge Functions locally
 Remote DB changes go through migrations in `supabase/migrations/` (`supabase db push`).
 
 ### Build for Native
-1. Build the web project: `npm run build`.
+1. Build the web project: `yarn build`.
 2. Sync with native platforms: `npx cap sync`.
 3. Open in IDE:
    - Android: `npx cap open android`
@@ -69,12 +71,12 @@ Remote DB changes go through migrations in `supabase/migrations/` (`supabase db 
 ## 🧰 Scripts
 | Script | What it does |
 | --- | --- |
-| `npm run dev` / `dev:lan` | Vite dev server (local / LAN-exposed) |
-| `npm run build` | Type-check + production build |
-| `npm run typecheck` | Type-check only (`tsc -b`) |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier write |
-| `npm test` / `test:watch` | Vitest (run / watch) |
+| `yarn dev` | Vite dev server (LAN-exposed, `--host`) |
+| `yarn build` | Type-check + production build |
+| `yarn typecheck` | Type-check only (`tsc -b`) |
+| `yarn lint` | ESLint |
+| `yarn format` | Prettier write |
+| `yarn test` / `test:watch` | Vitest (run / watch) |
 
 ## 🔒 Security note
 Do **not** use default/demo credentials (e.g. `admin / admin`) in any shared or
