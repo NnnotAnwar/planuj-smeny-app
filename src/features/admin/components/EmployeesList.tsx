@@ -97,8 +97,8 @@ export function EmployeesList({
 
     const columns: Column<Profile>[] = [
         { key: 'employee', header: 'Employee', render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} /> },
-        { key: 'email', header: 'Email', width: 'w-64', hideOnMobile: true, className: 'truncate', render: (emp) => <span className="text-body text-gray-500 dark:text-gray-400">{emp.email}</span> },
-        { key: 'role', header: 'Role', align: 'right', width: 'w-24', render: (emp) => <RoleBadge role={emp.role} /> },
+        { key: 'email', header: 'Email', hideOnMobile: true, className: 'truncate', render: (emp) => <span className="text-body text-gray-500 dark:text-gray-400">{emp.email}</span> },
+        { key: 'role', header: 'Role', align: 'right', width: 'w-24 sm:w-32', render: (emp) => <RoleBadge role={emp.role} /> },
         {
             key: 'actions',
             header: '',
