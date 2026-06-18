@@ -74,13 +74,13 @@ export default function SettingsPage() {
   };
 
   const fieldClass =
-    'w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-sm outline-none text-gray-900 dark:text-white transition-colors';
+    'w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none text-gray-900 dark:text-white transition-colors';
 
   return (
     <div className="space-y-6 px-1 max-w-2xl">
       <header className="space-y-0.5">
-        <p className="text-emerald-500 font-bold text-[10px] uppercase tracking-widest">Preferences</p>
-        <h1 className="text-gray-900 dark:text-white font-black text-2xl tracking-tight">Settings</h1>
+        <p className="text-label text-emerald-500">Preferences</p>
+        <h1 className="text-display text-gray-900 dark:text-white">Settings</h1>
       </header>
 
       {/* USER PREVIEW */}
@@ -89,28 +89,28 @@ export default function SettingsPage() {
           {(user.first_name?.[0] || user.username?.[0] || '?').toUpperCase()}
         </div>
         <div className="min-w-0">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
+          <h2 className="text-title text-gray-900 dark:text-white truncate">
             {user.first_name || user.last_name ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() : user.username}
           </h2>
           <div className="flex items-center gap-2 mt-1">
             <span
-              className={`inline-block px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-widest ${getRoleBadgeColor(
+              className={`inline-block px-2 py-0.5 text-micro rounded-md ${getRoleBadgeColor(
                 user.role.name,
               )}`}
             >
               {user.role.name}
             </span>
-            <span className="text-[11px] text-gray-400 font-bold">@{user.username}</span>
+            <span className="text-caption text-gray-400">@{user.username}</span>
           </div>
         </div>
       </div>
 
       {/* PROFILE FORM */}
       <form onSubmit={handleSubmit} className="space-y-2">
-        <h3 className="px-1 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Profile</h3>
+        <h3 className="px-1 text-label text-gray-400">Profile</h3>
         <div className="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm p-5 space-y-4">
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-gray-600 dark:text-gray-300 mb-1.5">
+            <label className="flex items-center gap-1.5 text-small-strong text-gray-600 dark:text-gray-300 mb-1.5">
               <AtIcon weight="bold" className="w-3.5 h-3.5 text-emerald-500" />
               Username
             </label>
@@ -123,25 +123,25 @@ export default function SettingsPage() {
               spellCheck={false}
               className={fieldClass}
             />
-            <p className="text-[11px] text-gray-400 mt-1.5">Used to sign in instead of your email. Must be unique.</p>
+            <p className="text-caption text-gray-400 mt-1.5">Used to sign in instead of your email. Must be unique.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1.5 block">First name</label>
+              <label className="text-small-strong text-gray-600 dark:text-gray-300 mb-1.5 block">First name</label>
               <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className={fieldClass} />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1.5 block">Last name</label>
+              <label className="text-small-strong text-gray-600 dark:text-gray-300 mb-1.5 block">Last name</label>
               <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className={fieldClass} />
             </div>
           </div>
 
           {error && (
-            <p className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{error}</p>
+            <p className="text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{error}</p>
           )}
           {saved && !error && (
-            <p className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-3 py-2">
+            <p className="flex items-center gap-1.5 text-small-strong text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-3 py-2">
               <CheckCircleIcon weight="fill" className="w-4 h-4" /> Changes saved.
             </p>
           )}
@@ -149,7 +149,7 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={busy || !dirty}
-            className="w-full px-4 py-3 rounded-xl font-bold text-sm text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/25"
+            className="w-full px-4 py-3 rounded-xl text-body-strong text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/25"
           >
             {busy ? 'Saving…' : 'Save changes'}
           </button>
@@ -158,7 +158,7 @@ export default function SettingsPage() {
 
       {/* APPEARANCE */}
       <div className="space-y-2">
-        <h3 className="px-1 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Appearance</h3>
+        <h3 className="px-1 text-label text-gray-400">Appearance</h3>
         <div className="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden">
           <button
             onClick={() => setTheme(isDark ? 'light' : 'dark')}
@@ -169,8 +169,8 @@ export default function SettingsPage() {
                 <PaletteIcon weight="bold" className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Dark mode</p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{isDark ? 'Enabled' : 'Disabled'}</p>
+                <p className="text-body-strong text-gray-900 dark:text-white">Dark mode</p>
+                <p className="text-micro text-gray-400">{isDark ? 'Enabled' : 'Disabled'}</p>
               </div>
             </div>
             <span
@@ -186,15 +186,15 @@ export default function SettingsPage() {
 
       {/* ACCOUNT (read-only) */}
       <div className="space-y-2">
-        <h3 className="px-1 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Account</h3>
+        <h3 className="px-1 text-label text-gray-400">Account</h3>
         <div className="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden">
           <div className="flex items-center gap-3 p-4 border-b border-gray-50 dark:border-white/5">
             <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
               <EnvelopeSimpleIcon weight="bold" className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Email</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.email}</p>
+              <p className="text-micro text-gray-400">Email</p>
+              <p className="text-body-strong text-gray-900 dark:text-white truncate">{user.email}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-4">
@@ -202,15 +202,15 @@ export default function SettingsPage() {
               <IdentificationBadgeIcon weight="bold" className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Role</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">{user.role.name}</p>
+              <p className="text-micro text-gray-400">Role</p>
+              <p className="text-body-strong text-gray-900 dark:text-white">{user.role.name}</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="pt-6 text-center">
-        <p className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest">Version 1.0.4 • 2026</p>
+        <p className="text-micro text-gray-300 dark:text-gray-600">Version 1.0.4 • 2026</p>
       </div>
     </div>
   );

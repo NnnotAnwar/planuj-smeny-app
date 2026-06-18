@@ -16,6 +16,35 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * --- TYPOGRAPHY SYSTEM ---
+ * Single source of truth for font size / weight / tracking across the app.
+ * These set size + weight + tracking ONLY — color (incl. dark: variants) is
+ * left to the call site, so e.g. `class="text-heading text-emerald-500"` works.
+ * Prefer these tokens over arbitrary `text-[Npx]` / ad-hoc size+weight combos.
+ */
+@layer components {
+  /* Headings */
+  .text-display    { @apply text-2xl font-black tracking-tight leading-tight; }
+  .text-title      { @apply text-lg  font-black tracking-tight leading-tight; }
+  .text-heading    { @apply text-sm  font-black tracking-tight; }
+
+  /* Body */
+  .text-body         { @apply text-sm font-medium; }
+  .text-body-strong  { @apply text-sm font-bold; }
+  .text-small        { @apply text-xs font-medium; }
+  .text-small-strong { @apply text-xs font-bold; }
+
+  /* Labels & captions (tiny) */
+  .text-label   { @apply text-[11px] font-black uppercase tracking-widest leading-tight; }
+  .text-caption { @apply text-[11px] font-medium leading-tight; }
+  .text-micro   { @apply text-[10px] font-black uppercase tracking-widest leading-none; }
+
+  /* Numeric metrics */
+  .text-metric    { @apply text-lg font-black tabular-nums tracking-tight; }
+  .text-metric-sm { @apply text-sm font-black tabular-nums; }
+}
+
 html, body, #root {
   min-height: 100%;
   width: 100%;

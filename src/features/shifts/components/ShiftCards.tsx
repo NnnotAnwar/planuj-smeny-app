@@ -36,7 +36,7 @@ export function ShiftCards({ locationName, shifts, userShift }: ShiftCardsProps)
       }}
       className="rounded-xl bg-white/40 dark:bg-white/5 backdrop-blur-md p-0 md:p-4 border border-emerald-500/10 dark:border-white/5 overflow-hidden shadow-xl shadow-emerald-500/5"
     >
-      <h3 className="mb-2 flex items-center justify-between rounded-lg bg-gray-800 dark:bg-gray-800/90 px-3 py-1.5 text-sm font-semibold text-white border border-gray-700 shadow-md">
+      <h3 className="mb-2 flex items-center justify-between rounded-lg bg-gray-800 dark:bg-gray-800/90 px-3 py-1.5 text-body-strong text-white border border-gray-700 shadow-md">
         <span>{locationName}</span>
       </h3>
 
@@ -87,16 +87,16 @@ function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['
   return (
     <div className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center transition-all border backdrop-blur-sm ${bg}`}>
       <div className={`flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 ${box}`}>
-        <span className="text-sm font-bold tracking-tight">{userShift.start ?? '--:--'}</span>
+        <span className="text-metric-sm">{userShift.start ?? '--:--'}</span>
       </div>
 
       <div className="flex flex-1 items-center justify-between min-w-0">
         <div className="flex flex-col min-w-0">
-          <p className={`text-[9px] font-black uppercase tracking-widest mb-0.5 ${label}`}>Your shift</p>
-          <p className="truncate text-sm font-bold text-gray-900 dark:text-white leading-tight">{userShift.name}</p>
+          <p className={`text-micro mb-0.5 ${label}`}>Your shift</p>
+          <p className="truncate text-body-strong text-gray-900 dark:text-white leading-tight">{userShift.name}</p>
         </div>
 
-        <div className={`shrink-0 ml-2 rounded-full px-2.5 py-1 text-[10px] md:text-xs font-bold shadow-xs ${getRoleBadgeColor(userShift.role)}`}>
+        <div className={`shrink-0 ml-2 rounded-full px-2.5 py-1 text-micro shadow-xs ${getRoleBadgeColor(userShift.role)}`}>
           {userShift.role}
         </div>
       </div>
@@ -118,13 +118,13 @@ function AssignedShiftCard({ shift }: { shift: ShiftDisplayData }) {
   return (
     <div className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center backdrop-blur-sm transition-all border ${bg}`}>
       <div className={`flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 text-white shadow-xs ${box}`}>
-        <span className="text-sm font-bold tracking-tight">{shift.start ?? '--:--'}</span>
+        <span className="text-metric-sm">{shift.start ?? '--:--'}</span>
       </div>
 
       <div className="flex flex-1 items-center justify-between min-w-0">
         <div className="flex flex-col min-w-0">
           {shift.previousLocationName && (
-            <div className="flex items-center flex-wrap gap-1 text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-0.5">
+            <div className="flex items-center flex-wrap gap-1 text-micro text-amber-600 dark:text-amber-500 mb-0.5">
               <svg className="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M11 17l-5-5 5-5" />
               </svg>
@@ -132,12 +132,12 @@ function AssignedShiftCard({ shift }: { shift: ShiftDisplayData }) {
             </div>
           )}
           {!shift.previousLocationName && isChange && (
-            <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-0.5">Moved</span>
+            <span className="text-micro text-emerald-600 dark:text-emerald-400 mb-0.5">Moved</span>
           )}
-          <p className={`truncate text-sm font-bold leading-tight ${nameLabel}`}>{shift.name}</p>
+          <p className={`truncate text-body-strong leading-tight ${nameLabel}`}>{shift.name}</p>
         </div>
 
-        <div className={`shrink-0 ml-2 rounded-full px-2.5 py-1 text-[10px] md:text-xs font-bold shadow-xs ${getRoleBadgeColor(shift.role)}`}>
+        <div className={`shrink-0 ml-2 rounded-full px-2.5 py-1 text-micro shadow-xs ${getRoleBadgeColor(shift.role)}`}>
           {shift.role}
         </div>
       </div>
@@ -154,8 +154,8 @@ function UnassignedShiftCard({ shift }: { shift: ShiftDisplayData }) {
         </svg>
       </div>
       <div className="flex flex-1 items-center justify-between">
-        <p className="flex-1 truncate text-lg font-bold text-gray-900 dark:text-white">{shift.name}</p>
-        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getRoleBadgeColor(shift.role)}`}>
+        <p className="flex-1 truncate text-title text-gray-900 dark:text-white">{shift.name}</p>
+        <span className={`rounded-full px-2.5 py-1 text-micro ${getRoleBadgeColor(shift.role)}`}>
           {shift.role}
         </span>
       </div>

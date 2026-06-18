@@ -1,7 +1,22 @@
 import { BuildingsIcon } from '@phosphor-icons/react';
 import type { Organization } from '@/shared/types';
+import { DataTable, type Column } from '@/shared/components/DataTable';
 import { ActionButtons } from './ActionButtons';
 import { LoadingState, EmptyState } from './AdminStateViews';
+
+function OrgIdentity({ org }: { org: Organization }) {
+    return (
+        <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center shrink-0">
+                <BuildingsIcon className="w-5 h-5" weight="bold" />
+            </div>
+            <div className="min-w-0">
+                <h3 className="text-body-strong dark:text-white truncate">{org.name}</h3>
+                <p className="text-micro text-gray-400">{org.slug}</p>
+            </div>
+        </div>
+    );
+}
 
 export function OrganizationsList({
     items,
@@ -14,38 +29,39 @@ export function OrganizationsList({
     onEdit: (org: Organization) => void;
     onDelete: (org: Organization) => void;
 }) {
-    if (isLoading) return <LoadingState label="organizations" />;
-    if (items.length === 0) return <EmptyState label="organizations" />;
+    const columns: Column<Organization>[] = [
+        { key: 'org', header: 'Organization', render: (org) => <OrgIdentity org={org} /> },
+        { key: 'locs', header: 'Locations', align: 'right', render: (org) => <span className="text-metric-sm dark:text-white">{org.locations.length}</span> },
+        { key: 'users', header: 'Users', align: 'right', render: (org) => <span className="text-metric-sm dark:text-white">{org.profiles.length}</span> },
+        { key: 'actions', header: '', align: 'right', render: (org) => <div className="flex justify-end"><ActionButtons onEdit={() => onEdit(org)} onDelete={() => onDelete(org)} /></div> },
+    ];
 
     return (
-        <div className="grid gap-2">
-            {items.map((org) => (
-                <div
-                    key={org.id}
-                    className="flex items-center gap-3 p-2 bg-white dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm"
-                >
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center shrink-0">
-                        <BuildingsIcon className="w-5 h-5" weight="bold" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-sm dark:text-white truncate">{org.name}</h3>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{org.slug}</p>
-                    </div>
-                    <div className="flex items-center gap-6 pr-2">
-                        <div className="hidden sm:flex gap-4">
-                            <div className="text-center">
-                                <p className="text-xs font-black dark:text-white">{org.locations.length}</p>
-                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Locs</p>
+        <DataTable
+            rows={items}
+            rowKey={(org) => org.id}
+            columns={columns}
+            isLoading={isLoading}
+            loadingState={<LoadingState label="organizations" />}
+            emptyState={<EmptyState label="organizations" />}
+            mobileCard={(org) => (
+                <div className="flex items-center gap-3 p-2 bg-white dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <OrgIdentity org={org} />
+                    <div className="flex items-center gap-4 ml-auto pr-1">
+                        <div className="flex gap-4 text-center">
+                            <div>
+                                <p className="text-metric-sm dark:text-white">{org.locations.length}</p>
+                                <p className="text-micro text-gray-400">Locs</p>
                             </div>
-                            <div className="text-center">
-                                <p className="text-xs font-black dark:text-white">{org.profiles.length}</p>
-                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Users</p>
+                            <div>
+                                <p className="text-metric-sm dark:text-white">{org.profiles.length}</p>
+                                <p className="text-micro text-gray-400">Users</p>
                             </div>
                         </div>
                         <ActionButtons onEdit={() => onEdit(org)} onDelete={() => onDelete(org)} />
                     </div>
                 </div>
-            ))}
-        </div>
+            )}
+        />
     );
 }

@@ -135,13 +135,13 @@ export function AcceptInvitePage() {
         return (
             <div className="min-h-dvh flex items-center justify-center bg-white dark:bg-gray-950 p-6">
                 <div className="text-center space-y-3 max-w-sm">
-                    <h1 className="text-xl font-black text-gray-900 dark:text-white">Invitation unavailable</h1>
-                    <p className="text-sm text-gray-500">
+                    <h1 className="text-display text-gray-900 dark:text-white">Invitation unavailable</h1>
+                    <p className="text-body text-gray-500">
                         This invitation link is invalid or has expired. Please ask an administrator to send a new one.
                     </p>
                     <button
                         onClick={() => navigate('/login', { replace: true })}
-                        className="text-emerald-600 dark:text-emerald-400 font-bold text-sm"
+                        className="text-emerald-600 dark:text-emerald-400 text-body-strong"
                     >
                         Go to sign in
                     </button>
@@ -157,7 +157,7 @@ export function AcceptInvitePage() {
                 <div className="p-6 bg-emerald-500/5 border-b border-emerald-100 dark:border-emerald-900/30 space-y-4">
                     <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                         <CheckCircleIcon weight="fill" className="w-5 h-5" />
-                        <p className="text-[10px] font-black uppercase tracking-widest">You've been invited</p>
+                        <p className="text-micro">You've been invited</p>
                     </div>
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
@@ -165,8 +165,8 @@ export function AcceptInvitePage() {
                                 <BuildingsIcon weight="bold" className="w-5 h-5" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Organization</p>
-                                <p className="font-bold text-gray-900 dark:text-white truncate">{info?.org}</p>
+                                <p className="text-micro text-gray-400">Organization</p>
+                                <p className="text-body-strong text-gray-900 dark:text-white truncate">{info?.org}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -174,9 +174,9 @@ export function AcceptInvitePage() {
                                 <IdentificationBadgeIcon weight="bold" className="w-5 h-5" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Role</p>
+                                <p className="text-micro text-gray-400">Role</p>
                                 <span
-                                    className={`inline-block px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-widest ${getRoleBadgeColor(
+                                    className={`inline-block px-2 py-0.5 text-micro rounded-md ${getRoleBadgeColor(
                                         info?.role ?? '',
                                     )}`}
                                 >
@@ -185,14 +185,14 @@ export function AcceptInvitePage() {
                             </div>
                         </div>
                     </div>
-                    <p className="text-[11px] text-gray-400">{info?.email}</p>
+                    <p className="text-caption text-gray-400">{info?.email}</p>
                 </div>
 
                 {/* Set password to finish */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
-                        <h2 className="font-black text-gray-900 dark:text-white">Set up your account</h2>
-                        <p className="text-xs text-gray-400 mt-0.5">Choose a password to accept the invitation.</p>
+                        <h2 className="text-heading text-gray-900 dark:text-white">Set up your account</h2>
+                        <p className="text-small text-gray-400 mt-0.5">Choose a password to accept the invitation.</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -200,13 +200,13 @@ export function AcceptInvitePage() {
                             value={firstName}
                             onChange={(e) => setFirstName(e.target.value)}
                             placeholder="First name"
-                            className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white"
+                            className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none dark:text-white"
                         />
                         <input
                             value={lastName}
                             onChange={(e) => setLastName(e.target.value)}
                             placeholder="Last name"
-                            className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white"
+                            className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none dark:text-white"
                         />
                     </div>
 
@@ -216,24 +216,24 @@ export function AcceptInvitePage() {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Password"
                         autoFocus
-                        className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white"
+                        className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none dark:text-white"
                     />
                     <input
                         type="password"
                         value={confirm}
                         onChange={(e) => setConfirm(e.target.value)}
                         placeholder="Confirm password"
-                        className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-sm outline-none dark:text-white"
+                        className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none dark:text-white"
                     />
 
                     {error && (
-                        <p className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{error}</p>
+                        <p className="text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{error}</p>
                     )}
 
                     <button
                         type="submit"
                         disabled={busy}
-                        className="w-full px-4 py-3 rounded-xl font-bold text-sm text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-60 shadow-lg shadow-emerald-500/25"
+                        className="w-full px-4 py-3 rounded-xl text-body-strong text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-60 shadow-lg shadow-emerald-500/25"
                     >
                         {busy ? 'Joining…' : `Join ${info?.org ?? ''}`}
                     </button>

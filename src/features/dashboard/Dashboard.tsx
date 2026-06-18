@@ -105,8 +105,8 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
                 {getInitials(user.first_name, user.last_name)}
               </div>
               <div className="overflow-hidden">
-                <p className="text-sm font-bold text-gray-800 dark:text-white truncate">Dobrý den, {user.first_name || user.username}!</p>
-                <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none mt-0.5">{user.role.name}</p>
+                <p className="text-body-strong text-gray-800 dark:text-white truncate">Dobrý den, {user.first_name || user.username}!</p>
+                <p className="text-micro text-emerald-600 dark:text-emerald-400 mt-0.5">{user.role.name}</p>
               </div>
             </div>
           )}
@@ -120,7 +120,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
                     : 'hover:bg-emerald-500/5 text-gray-500 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-gray-200'}`
                 }>
                   {item.icon && <item.icon />}
-                  <span className="text-sm">{item.name}</span>
+                  <span className="text-body">{item.name}</span>
                 </Link>
               ))}
             </nav>
@@ -150,12 +150,12 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
                   }}
                   className="flex flex-col gap-2 overflow-hidden">
                   <div className="px-2 flex items-center justify-between">
-                    <p className="font-bold text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500">Locations</p>
-                    <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-bold">{locations.length}</span>
+                    <p className="text-label text-gray-400 dark:text-gray-500">Locations</p>
+                    <span className="text-micro bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full">{locations.length}</span>
                   </div>
                   <div className="px-2">
                     <div className="relative">
-                      <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-emerald-500/5 dark:bg-white/5 border border-transparent focus:border-emerald-500/20 rounded-xl py-2 pl-8 pr-3 text-xs outline-none transition-all dark:text-white" />
+                      <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-emerald-500/5 dark:bg-white/5 border border-transparent focus:border-emerald-500/20 rounded-xl py-2 pl-8 pr-3 text-small outline-none transition-all dark:text-white" />
                       <svg className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
                   </div>
@@ -172,7 +172,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
           </div>
 
           <div className="shrink-0 hidden md:block mt-auto pt-4 pb-2">
-            <button onClick={logout} className="flex w-full items-center justify-center gap-2 text-sm font-bold text-red-600 dark:text-red-400 py-2.5 bg-white dark:bg-gray-900/40 rounded-xl border border-red-100 dark:border-red-900/20 shadow-sm cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+            <button onClick={logout} className="flex w-full items-center justify-center gap-2 text-body-strong text-red-600 dark:text-red-400 py-2.5 bg-white dark:bg-gray-900/40 rounded-xl border border-red-100 dark:border-red-900/20 shadow-sm cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
               Logout
             </button>
@@ -208,8 +208,8 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
                     {getInitials(user.first_name, user.last_name)}
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <p className="text-xl font-bold text-gray-900 dark:text-white truncate">Dobrý den, {user.first_name || user.username}!</p>
-                    <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] mt-1">{user.role.name}</p>
+                    <p className="text-title text-gray-900 dark:text-white truncate">Dobrý den, {user.first_name || user.username}!</p>
+                    <p className="text-label text-emerald-600 dark:text-emerald-400 mt-1">{user.role.name}</p>
                   </div>
                 </div>
               )}

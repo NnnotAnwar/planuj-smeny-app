@@ -52,7 +52,7 @@ export function LoginPage() {
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-gray-50">
             Log in to your account
           </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-body text-gray-600 dark:text-gray-400">
             Planuj Směny Employee Portal
           </p>
         </div>
@@ -60,7 +60,7 @@ export function LoginPage() {
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email or Username</label>
+              <label className="block text-body text-gray-700 dark:text-gray-300">Email or Username</label>
               <input
                 type="text"
                 required
@@ -68,25 +68,25 @@ export function LoginPage() {
                 onChange={(e) => setLoginInput(e.target.value)}
                 autoCapitalize="none"
                 autoCorrect="off"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-800 dark:text-gray-100 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-800 dark:text-gray-100 text-body"
                 placeholder="Username"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+              <label className="block text-body text-gray-700 dark:text-gray-300">Password</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-800 dark:text-gray-100 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-800 dark:text-gray-100 text-body"
                 placeholder="••••••••"
               />
             </div>
           </div>
 
           {errorMsg && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm text-center">
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-body text-center">
               {errorMsg}
             </div>
           )}
@@ -94,7 +94,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-body-strong text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>

@@ -122,7 +122,7 @@ function MonthPicker({ value, onChange }: MonthPickerProps) {
                   <button
                     key={month}
                     onClick={() => handleMonthClick(idx)}
-                    className={`relative py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                    className={`relative py-1.5 rounded-lg text-caption transition-all ${
                       isSelected ? 'bg-emerald-500 text-white shadow-md' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                     } ${isCurrent && !isSelected ? 'ring-1 ring-inset ring-emerald-500/30 text-emerald-600 dark:text-emerald-400' : ''}`}
                   >
@@ -134,8 +134,8 @@ function MonthPicker({ value, onChange }: MonthPickerProps) {
             </div>
 
             <div className="mt-3 pt-2 border-t border-gray-50 dark:border-gray-800 flex gap-1.5">
-              <button onClick={() => { setViewYear(today.getFullYear()); onChange(currentMonthStr); setIsOpen(false); }} className="flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tight bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors">Today</button>
-              <button onClick={() => { onChange(null); setIsOpen(false); }} className={`flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tight transition-colors ${value === null ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>All</button>
+              <button onClick={() => { setViewYear(today.getFullYear()); onChange(currentMonthStr); setIsOpen(false); }} className="flex-1 py-1.5 rounded-lg text-micro bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors">Today</button>
+              <button onClick={() => { onChange(null); setIsOpen(false); }} className={`flex-1 py-1.5 rounded-lg text-micro transition-colors ${value === null ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>All</button>
             </div>
           </motion.div>
         )}
@@ -274,10 +274,10 @@ export default function OverviewPage() {
     <div className="space-y-4 px-1 pb-10">
       <header className="flex items-end justify-between gap-3 pt-2">
         <div className="space-y-0.5">
-          <p className="text-emerald-500 font-bold text-[10px] uppercase tracking-widest text-left">
+          <p className="text-label text-emerald-500 text-left">
             {selectedMonth ? 'Monthly Analytics' : 'All Time Analytics'}
           </p>
-          <h1 className="text-gray-900 dark:text-white font-black text-2xl tracking-tight">Overview</h1>
+          <h1 className="text-display text-gray-900 dark:text-white">Overview</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -301,8 +301,8 @@ export default function OverviewPage() {
             <CalendarBlankIcon weight="bold" className="w-7 h-7" />
           </div>
           <div>
-            <h2 className="font-black text-gray-900 dark:text-white">No data found</h2>
-            <p className="text-sm text-gray-400 mt-1">Try selecting a different month or clear the filter.</p>
+            <h2 className="text-heading text-gray-900 dark:text-white">No data found</h2>
+            <p className="text-body text-gray-400 mt-1">Try selecting a different month or clear the filter.</p>
           </div>
         </div>
       ) : (
@@ -312,8 +312,8 @@ export default function OverviewPage() {
             {statCards.map((stat) => (
               <div key={stat.label} className="bg-white dark:bg-gray-800/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden group">
                 <div className="relative z-10">
-                  <p className="text-[9px] font-black uppercase tracking-tighter text-gray-400 mb-1 truncate">{stat.label}</p>
-                  <p className="text-lg font-black tabular-nums text-emerald-600 dark:text-emerald-400">{stat.value}</p>
+                  <p className="text-micro text-gray-400 mb-1 truncate">{stat.label}</p>
+                  <p className="text-metric text-emerald-600 dark:text-emerald-400">{stat.value}</p>
                 </div>
                 <stat.icon className="absolute -right-1 -bottom-1 w-12 h-12 text-emerald-500/5 group-hover:text-emerald-500/10 transition-colors" weight="bold" />
               </div>
@@ -325,20 +325,20 @@ export default function OverviewPage() {
             {/* BY LOCATION */}
             <div className="bg-white dark:bg-gray-800/40 p-5 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <h2 className="text-label text-gray-400 flex items-center gap-1.5">
                   <MapPinIcon weight="bold" className="w-4 h-4 text-emerald-500" /> Locations
                 </h2>
-                <span className="text-[9px] font-bold text-gray-400 uppercase">Share of time</span>
+                <span className="text-micro text-gray-400">Share of time</span>
               </div>
               <div className="space-y-4">
                 {stats.locationBreakdown.map((l) => (
                   <div key={l.id} className="group">
                     <div className="flex items-end justify-between mb-1.5">
                       <div className="flex flex-col">
-                        <span className="text-xs font-black text-gray-800 dark:text-gray-200 truncate">{locationName(l.id)}</span>
-                        <span className="text-[10px] font-bold text-gray-400 tabular-nums">{fmtHours(l.hours)} worked</span>
+                        <span className="text-small-strong text-gray-800 dark:text-gray-200 truncate">{locationName(l.id)}</span>
+                        <span className="text-caption text-gray-400 tabular-nums">{fmtHours(l.hours)} worked</span>
                       </div>
-                      <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{l.percent}%</span>
+                      <span className="text-metric-sm text-emerald-600 dark:text-emerald-400">{l.percent}%</span>
                     </div>
                     <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800/60 overflow-hidden">
                       <motion.div
@@ -355,7 +355,7 @@ export default function OverviewPage() {
             {/* BY WEEKDAY */}
             <div className="bg-white dark:bg-gray-800/40 p-5 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                <h2 className="text-label text-gray-400 flex items-center gap-1.5">
                   <ChartBarIcon weight="bold" className="w-4 h-4 text-emerald-500" /> Busiest Days
                 </h2>
                 <TrendUpIcon className="w-4 h-4 text-gray-300" />
@@ -370,7 +370,7 @@ export default function OverviewPage() {
                           <motion.span
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className={`absolute -top-6 text-[9px] font-black tabular-nums ${isMax ? 'text-emerald-500' : 'text-gray-400'}`}
+                            className={`absolute -top-6 text-micro tabular-nums ${isMax ? 'text-emerald-500' : 'text-gray-400'}`}
                           >
                             {Math.round(h)}h
                           </motion.span>
@@ -386,7 +386,7 @@ export default function OverviewPage() {
                           style={{ minHeight: h > 0 ? '4px' : '2px' }}
                         />
                       </div>
-                      <span className={`text-[9px] font-black uppercase ${isMax ? 'text-emerald-500' : 'text-gray-400'}`}>
+                      <span className={`text-micro ${isMax ? 'text-emerald-500' : 'text-gray-400'}`}>
                         {WEEKDAYS[i].slice(0, 3)}
                       </span>
                     </div>
@@ -399,14 +399,14 @@ export default function OverviewPage() {
           {/* HISTORY */}
           <div className="mt-2">
             <div className="flex items-center justify-between mb-1 px-1">
-              <h2 className="text-sm font-black dark:text-white">
+              <h2 className="text-heading dark:text-white">
                 {selectedMonth ? 'Monthly Activity' : 'History'}
               </h2>
-              <span className="text-[10px] font-bold text-gray-400 uppercase bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-lg">
+              <span className="text-micro text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-lg">
                 {stats.shifts.length} entries
               </span>
             </div>
-            <p className="px-1 mb-3 text-[10px] text-gray-400">
+            <p className="px-1 mb-3 text-caption text-gray-400">
               Net = Gross − mandatory breaks (−30 min from 6h, −1h from 12h per shift).
             </p>
 
@@ -415,11 +415,11 @@ export default function OverviewPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
-                    <th className="px-4 py-3 text-[10px] font-black uppercase text-gray-400 tracking-wider">Date</th>
-                    <th className="px-4 py-3 text-[10px] font-black uppercase text-gray-400 tracking-wider">Location &amp; Time</th>
-                    <th className="px-4 py-3 text-[10px] font-black uppercase text-gray-400 tracking-wider text-right">Gross</th>
-                    <th className="px-4 py-3 text-[10px] font-black uppercase text-gray-400 tracking-wider text-right">Break</th>
-                    <th className="px-4 py-3 text-[10px] font-black uppercase text-gray-400 tracking-wider text-right">Net</th>
+                    <th className="px-4 py-3 text-label text-gray-400">Date</th>
+                    <th className="px-4 py-3 text-label text-gray-400">Location &amp; Time</th>
+                    <th className="px-4 py-3 text-label text-gray-400 text-right">Gross</th>
+                    <th className="px-4 py-3 text-label text-gray-400 text-right">Break</th>
+                    <th className="px-4 py-3 text-label text-gray-400 text-right">Net</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
@@ -433,25 +433,25 @@ export default function OverviewPage() {
                       <tr key={shift.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-800/20 transition-colors">
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex flex-col">
-                            <span className="text-xs font-black dark:text-white">
+                            <span className="text-small-strong dark:text-white">
                               {date.getDate()} {date.toLocaleDateString(undefined, { month: 'short' })}
                             </span>
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+                            <span className="text-micro text-gray-400">
                               {WEEKDAYS[(date.getDay() + 6) % 7]}
                             </span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex flex-col">
-                            <span className="text-xs font-bold text-gray-700 dark:text-gray-200 truncate">{locationName(shift.location_id)}</span>
-                            <span className="text-[10px] text-gray-400 tabular-nums font-medium">{fmtTimeRange(shift)}</span>
+                            <span className="text-small-strong text-gray-700 dark:text-gray-200 truncate">{locationName(shift.location_id)}</span>
+                            <span className="text-caption text-gray-400 tabular-nums">{fmtTimeRange(shift)}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right text-xs font-bold tabular-nums text-gray-600 dark:text-gray-300">{fmtDuration(gross)}</td>
                         <td className="px-4 py-3 text-right text-xs font-bold tabular-nums text-amber-500">{brk > 0 ? `-${fmtDuration(brk)}` : '—'}</td>
                         <td className="px-4 py-3 text-right">
                           <span className={`text-xs font-black tabular-nums ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{fmtDuration(net)}</span>
-                          {ongoing && <span className="block text-[8px] font-black uppercase text-amber-500 tracking-tighter">Live</span>}
+                          {ongoing && <span className="block text-micro text-amber-500">Live</span>}
                         </td>
                       </tr>
                     );
@@ -459,7 +459,7 @@ export default function OverviewPage() {
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
-                    <td className="px-4 py-3 text-[10px] font-black uppercase text-gray-400 tracking-wider" colSpan={2}>Total</td>
+                    <td className="px-4 py-3 text-label text-gray-400" colSpan={2}>Total</td>
                     <td className="px-4 py-3 text-right text-xs font-black tabular-nums dark:text-white">{fmtHours(stats.totalGross)}</td>
                     <td className="px-4 py-3 text-right text-xs font-black tabular-nums text-amber-500">-{fmtHours(stats.totalBreak)}</td>
                     <td className="px-4 py-3 text-right text-xs font-black tabular-nums text-emerald-600 dark:text-emerald-400">{fmtHours(stats.totalHours)}</td>
@@ -479,26 +479,26 @@ export default function OverviewPage() {
                 return (
                   <div key={shift.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
                     <div className="flex flex-col items-center justify-center w-11 shrink-0">
-                      <span className="text-sm font-black dark:text-white leading-none">{date.getDate()}</span>
-                      <span className="text-[9px] text-gray-400 font-bold uppercase">{WEEKDAYS[(date.getDay() + 6) % 7]}</span>
+                      <span className="text-metric-sm dark:text-white leading-none">{date.getDate()}</span>
+                      <span className="text-micro text-gray-400">{WEEKDAYS[(date.getDay() + 6) % 7]}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{locationName(shift.location_id)}</p>
-                      <p className="text-[10px] text-gray-400 tabular-nums">{fmtTimeRange(shift)}</p>
-                      <p className="text-[10px] text-gray-400 tabular-nums mt-0.5">
+                      <p className="text-small-strong text-gray-800 dark:text-gray-100 truncate">{locationName(shift.location_id)}</p>
+                      <p className="text-caption text-gray-400 tabular-nums">{fmtTimeRange(shift)}</p>
+                      <p className="text-caption text-gray-400 tabular-nums mt-0.5">
                         Gross {fmtDuration(gross)}{brk > 0 ? ` · Break -${fmtDuration(brk)}` : ''}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className={`text-sm font-black tabular-nums ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{fmtDuration(net)}</span>
-                      <span className="block text-[8px] font-bold uppercase text-gray-400 tracking-tighter">{ongoing ? 'Live' : 'Net'}</span>
+                      <span className={`text-metric-sm ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{fmtDuration(net)}</span>
+                      <span className="block text-micro text-gray-400">{ongoing ? 'Live' : 'Net'}</span>
                     </div>
                   </div>
                 );
               })}
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-100 dark:border-gray-800">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total</span>
-                <span className="text-xs font-black tabular-nums">
+                <span className="text-micro text-gray-400">Total</span>
+                <span className="text-metric-sm">
                   <span className="text-gray-500 dark:text-gray-400">{fmtHours(stats.totalGross)}</span>
                   <span className="text-amber-500"> −{fmtHours(stats.totalBreak)}</span>
                   <span className="text-emerald-600 dark:text-emerald-400"> = {fmtHours(stats.totalHours)}</span>

@@ -141,13 +141,13 @@ function AdminPanel() {
                 <div className="absolute -right-8 -top-10 w-40 h-40 rounded-full bg-emerald-400/10 blur-2xl" />
                 <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <div className="space-y-1">
-                        <p className="text-emerald-500 font-bold text-[10px] uppercase tracking-widest">
+                        <p className="text-label text-emerald-500">
                             System Infrastructure
                         </p>
-                        <h1 className="text-gray-900 dark:text-white font-black text-2xl sm:text-3xl tracking-tight">
+                        <h1 className="text-display text-gray-900 dark:text-white sm:text-3xl">
                             Admin Panel
                         </h1>
-                        <p className="text-xs font-medium text-gray-400">
+                        <p className="text-small text-gray-400">
                             {isSuperAdmin ? 'Full system access' : 'Managing your organization'}
                         </p>
                     </div>
@@ -155,7 +155,7 @@ function AdminPanel() {
                     {canAdd && (
                         <button
                             onClick={handleAdd}
-                            className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-lg shadow-emerald-500/25"
+                            className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-small-strong transition-all active:scale-95 shadow-lg shadow-emerald-500/25"
                         >
                             {safeTab === 'employees' ? (
                                 <PaperPlaneTiltIcon weight="bold" className="w-4 h-4" />
@@ -184,7 +184,7 @@ function AdminPanel() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as TabType)}
-                                className={`relative flex items-center justify-center gap-2 flex-1 md:flex-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all z-10 h-9 ${
+                                className={`relative flex items-center justify-center gap-2 flex-1 md:flex-none px-4 py-2 rounded-xl text-micro transition-all z-10 h-9 ${
                                     isActive
                                         ? 'text-emerald-700 dark:text-emerald-400'
                                         : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
@@ -211,7 +211,7 @@ function AdminPanel() {
                         placeholder={`Search ${safeTab}...`}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 focus:border-emerald-500/50 rounded-xl py-2 pl-9 pr-4 text-[10px] font-bold uppercase tracking-wider outline-none transition-all dark:text-white"
+                        className="w-full bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 focus:border-emerald-500/50 rounded-xl py-2 pl-9 pr-4 text-micro outline-none transition-all dark:text-white"
                     />
                     <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                 </div>
