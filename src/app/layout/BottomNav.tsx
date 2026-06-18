@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { SquaresFourIcon, ChartBarIcon, ClockIcon, GearIcon, ShieldCheckIcon, type Icon } from '@phosphor-icons/react';
+import { SquaresFourIcon, ChartBarIcon, GearIcon, ShieldCheckIcon, type Icon } from '@phosphor-icons/react';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { canViewAdminPanel } from '@features/admin/permissions';
 
@@ -23,7 +23,6 @@ export function BottomNav() {
     const items: NavItem[] = [
         { name: 'Home', icon: SquaresFourIcon, route: '/' },
         { name: 'Overview', icon: ChartBarIcon, route: '/overview' },
-        { name: 'Shifts', icon: ClockIcon, route: '/my-shifts' },
         ...(user && canViewAdminPanel(user) ? [{ name: 'Admin', icon: ShieldCheckIcon, route: '/admin' }] : []),
         { name: 'Settings', icon: GearIcon, route: '/settings' },
     ];

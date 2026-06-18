@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import { SquaresFourIcon, ChartBarIcon, ClockIcon, GearIcon, ShieldCheckIcon } from "@phosphor-icons/react";
+import { SquaresFourIcon, ChartBarIcon, GearIcon, ShieldCheckIcon } from "@phosphor-icons/react";
 
 import { Clock } from '@shared/components/Clock';
 import { useAuthContext } from '@features/auth/AuthContext';
@@ -49,7 +49,6 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
   const navItems = [
     { name: 'Dashboard', icon: SquaresFourIcon, route: '/' },
     { name: 'Overview', icon: ChartBarIcon, route: '/overview' },
-    { name: 'My Shifts', icon: ClockIcon, route: '/my-shifts' },
     ...(user && canViewAdminPanel(user) ? [{ name: 'Admin Panel', icon: ShieldCheckIcon, route: '/admin' }] : []),
     { name: 'Settings', icon: GearIcon, route: '/settings' }
   ];

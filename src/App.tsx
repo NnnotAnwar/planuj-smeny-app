@@ -38,9 +38,8 @@ const LoginPage = lazy(() => import('./features/auth/LoginPage').then((m) => ({ 
 const AcceptInvitePage = lazy(() =>
     import('./features/auth/AcceptInvitePage').then((m) => ({ default: m.AcceptInvitePage })),
 );
-const OverviewPage = lazy(() => import('./features/overview/OverviewPage').then((m) => ({ default: m.OverviewPage })));
+const OverviewPage = lazy(() => import('./features/shifts/OverviewPage'));
 const AdminPage = lazy(() => import('./features/admin/AdminPage').then((m) => ({ default: m.AdminPage })));
-const MyShiftsPage = lazy(() => import('./features/shifts/MyShiftsPage'));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 
 export default function App() {
@@ -65,7 +64,6 @@ export default function App() {
                   <Route path="/" element={<AppShell />}>
                     <Route index element={<HomePage />} />
                     <Route path="overview" element={<OverviewPage />} />
-                    <Route path="my-shifts" element={<MyShiftsPage />} />
                     <Route element={<RoleGuard />}>
                       <Route path="admin" element={<AdminPage />} />
                     </Route>
