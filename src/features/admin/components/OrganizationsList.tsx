@@ -6,13 +6,13 @@ import { LoadingState, EmptyState } from './AdminStateViews';
 
 function OrgIdentity({ org }: { org: Organization }) {
     return (
-        <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center shrink-0">
-                <BuildingsIcon className="w-5 h-5" weight="bold" />
+        <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center shrink-0">
+                <BuildingsIcon className="w-4 h-4 sm:w-5 sm:h-5" weight="bold" />
             </div>
             <div className="min-w-0">
                 <h3 className="text-body-strong dark:text-white truncate">{org.name}</h3>
-                <p className="text-micro text-gray-400">{org.slug}</p>
+                <p className="text-micro text-gray-400 truncate normal-case">{org.slug}</p>
             </div>
         </div>
     );
@@ -30,8 +30,8 @@ export function OrganizationsList({
     onDelete: (org: Organization) => void;
 }) {
     const columns: Column<Organization>[] = [
-        { key: 'org', header: 'Organization', render: (org) => <OrgIdentity org={org} /> },
-        { key: 'locs', header: 'Locations', align: 'right', render: (org) => <span className="text-metric-sm dark:text-white">{org.locations.length}</span> },
+        { key: 'org', header: 'Organization', render: (org) => <OrgIdentity org={org} />, className: 'max-w-[60vw]' },
+        { key: 'locs', header: 'Locs', align: 'right', hideOnMobile: true, render: (org) => <span className="text-metric-sm dark:text-white">{org.locations.length}</span> },
         { key: 'users', header: 'Users', align: 'right', render: (org) => <span className="text-metric-sm dark:text-white">{org.profiles.length}</span> },
         { key: 'actions', header: '', align: 'right', render: (org) => <div className="flex justify-end"><ActionButtons onEdit={() => onEdit(org)} onDelete={() => onDelete(org)} /></div> },
     ];
@@ -44,24 +44,6 @@ export function OrganizationsList({
             isLoading={isLoading}
             loadingState={<LoadingState label="organizations" />}
             emptyState={<EmptyState label="organizations" />}
-            mobileCard={(org) => (
-                <div className="flex items-center gap-3 p-2 bg-white dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                    <OrgIdentity org={org} />
-                    <div className="flex items-center gap-4 ml-auto pr-1">
-                        <div className="flex gap-4 text-center">
-                            <div>
-                                <p className="text-metric-sm dark:text-white">{org.locations.length}</p>
-                                <p className="text-micro text-gray-400">Locs</p>
-                            </div>
-                            <div>
-                                <p className="text-metric-sm dark:text-white">{org.profiles.length}</p>
-                                <p className="text-micro text-gray-400">Users</p>
-                            </div>
-                        </div>
-                        <ActionButtons onEdit={() => onEdit(org)} onDelete={() => onDelete(org)} />
-                    </div>
-                </div>
-            )}
         />
     );
 }

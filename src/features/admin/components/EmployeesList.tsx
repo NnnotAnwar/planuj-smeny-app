@@ -52,8 +52,8 @@ function AdminBadgeWithTooltip() {
 
 function EmployeeIdentity({ employee, isSelf }: { employee: Profile; isSelf: boolean }) {
     return (
-        <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-micro shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-micro shrink-0">
                 {getFullInitials(employee.first_name, employee.last_name)}
             </div>
             <div className="min-w-0">
@@ -76,7 +76,7 @@ function EmployeeIdentity({ employee, isSelf }: { employee: Profile; isSelf: boo
 
 function RoleBadge({ role }: { role: Profile['role'] }) {
     return (
-        <span className={`px-2 py-1 text-micro rounded-md ${getRoleBadgeColor(role.name)}`}>{role.name}</span>
+        <span className={`px-2 py-1 text-micro rounded-md whitespace-nowrap ${getRoleBadgeColor(role.name)}`}>{role.name}</span>
     );
 }
 
@@ -96,8 +96,8 @@ export function EmployeesList({
     const manageable = (emp: Profile) => (currentUser ? canManageMember(currentUser, emp) : false);
 
     const columns: Column<Profile>[] = [
-        { key: 'employee', header: 'Employee', render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} /> },
-        { key: 'email', header: 'Email', render: (emp) => <span className="text-body text-gray-500 dark:text-gray-400 truncate">{emp.email}</span> },
+        { key: 'employee', header: 'Employee', render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} />, className: 'max-w-[55vw]' },
+        { key: 'email', header: 'Email', hideOnMobile: true, render: (emp) => <span className="text-body text-gray-500 dark:text-gray-400 truncate">{emp.email}</span> },
         { key: 'role', header: 'Role', align: 'right', render: (emp) => <RoleBadge role={emp.role} /> },
         {
             key: 'actions',
@@ -120,18 +120,6 @@ export function EmployeesList({
             isLoading={isLoading}
             loadingState={<LoadingState label="employees" />}
             emptyState={<EmptyState label="employees" />}
-            mobileCard={(emp) => (
-                <div className="flex items-center gap-2 p-1.5 bg-white dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                    <div className="min-w-0 flex-1">
-                        <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} />
-                        <p className="text-micro text-gray-400 truncate mt-1 pl-12">{emp.email}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                        <RoleBadge role={emp.role} />
-                        {manageable(emp) && <ActionButtons onEdit={() => onEdit(emp)} onDelete={() => onDelete(emp)} />}
-                    </div>
-                </div>
-            )}
         />
     );
 }

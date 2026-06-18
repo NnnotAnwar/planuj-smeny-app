@@ -3,9 +3,10 @@ import type { ReactNode } from 'react';
 /**
  * A single column definition for {@link DataTable}.
  *
- * Columns drive the desktop `<table>` layout. On mobile the table collapses to
- * stacked cards — either auto-generated from these columns (label/value pairs)
- * or fully custom via {@link DataTableProps.mobileCard}.
+ * The table renders as ONE real `<table>` on every breakpoint (no separate
+ * mobile card layout) — compact on phones, roomier on `sm+`. Columns that are
+ * secondary on small screens can opt out with {@link Column.hideOnMobile}; the
+ * container also scrolls horizontally as a safety net so nothing ever clips.
  */
 export interface Column<T> {
   /** Stable identifier for the column (used as React key). */
@@ -20,8 +21,10 @@ export interface Column<T> {
   className?: string;
   /** Extra classes applied to the `<th>`. */
   headerClassName?: string;
-  /** Hide this column when the table auto-stacks into mobile cards. */
+  /** Hide this column on mobile (shown from `sm` up). */
   hideOnMobile?: boolean;
+  /** Optional footer cell (e.g. totals). If any column sets this, a `tfoot` renders. */
+  footer?: ReactNode;
 }
 
 interface DataTableProps<T> {
@@ -29,14 +32,6 @@ interface DataTableProps<T> {
   rows: T[];
   /** Stable key for each row. */
   rowKey: (row: T) => string;
-  /**
-   * Custom mobile card renderer. When provided it fully replaces the
-   * auto-stacked mobile layout, giving each surface a tailored card while
-   * sharing the desktop table chrome. Falls back to label/value stacking.
-   */
-  mobileCard?: (row: T) => ReactNode;
-  /** Optional full-width footer (e.g. totals) — desktop `tfoot` + mobile card. */
-  footer?: ReactNode;
   isLoading?: boolean;
   /** Shown while `isLoading` and there are no rows yet. */
   loadingState?: ReactNode;
@@ -51,17 +46,20 @@ const ALIGN: Record<NonNullable<Column<unknown>['align']>, string> = {
   center: 'text-center',
 };
 
+// Compact on phones, roomier on sm+. `hideOnMobile` columns appear from sm up.
+const cellPad = 'px-2.5 py-2 sm:px-4 sm:py-3';
+const mobileHidden = 'hidden sm:table-cell';
+
 /**
- * Responsive, generic data table: a real `<table>` on `sm+` and stacked cards
- * on mobile. Centralizes table chrome (header, dividers, hover, rounded card
- * container) so feature surfaces only describe their columns.
+ * Responsive, generic data table. A single `<table>` on all breakpoints —
+ * compact and monolithic — sharing one look across Overview and the admin
+ * panel. Centralizes the table chrome (rounded container, header, dividers,
+ * hover, footer, loading/empty states) so feature surfaces only declare columns.
  */
 export function DataTable<T>({
   columns,
   rows,
   rowKey,
-  mobileCard,
-  footer,
   isLoading,
   loadingState,
   emptyState,
@@ -70,19 +68,20 @@ export function DataTable<T>({
   if (isLoading && rows.length === 0) return <>{loadingState ?? null}</>;
   if (rows.length === 0) return <>{emptyState ?? null}</>;
 
-  const mobileColumns = columns.filter((c) => !c.hideOnMobile);
+  const hasFooter = columns.some((c) => c.footer !== undefined);
 
   return (
-    <>
-      {/* DESKTOP TABLE */}
-      <div className="hidden sm:block bg-white dark:bg-gray-900/40 rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+    <div className="bg-white dark:bg-gray-900/40 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+      <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3 text-label text-gray-400 ${ALIGN[col.align ?? 'left']} ${col.headerClassName ?? ''}`}
+                  className={`${cellPad} text-label text-gray-400 whitespace-nowrap ${ALIGN[col.align ?? 'left']} ${
+                    col.hideOnMobile ? mobileHidden : ''
+                  } ${col.headerClassName ?? ''}`}
                 >
                   {col.header}
                 </th>
@@ -99,51 +98,36 @@ export function DataTable<T>({
                 }`}
               >
                 {columns.map((col) => (
-                  <td key={col.key} className={`px-4 py-3 ${ALIGN[col.align ?? 'left']} ${col.className ?? ''}`}>
+                  <td
+                    key={col.key}
+                    className={`${cellPad} ${ALIGN[col.align ?? 'left']} ${col.hideOnMobile ? mobileHidden : ''} ${
+                      col.className ?? ''
+                    }`}
+                  >
                     {col.render(row)}
                   </td>
                 ))}
               </tr>
             ))}
           </tbody>
-          {footer && (
+          {hasFooter && (
             <tfoot>
               <tr className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
-                <td colSpan={columns.length} className="px-4 py-3">
-                  {footer}
-                </td>
+                {columns.map((col) => (
+                  <td
+                    key={col.key}
+                    className={`${cellPad} whitespace-nowrap ${ALIGN[col.align ?? 'left']} ${
+                      col.hideOnMobile ? mobileHidden : ''
+                    }`}
+                  >
+                    {col.footer}
+                  </td>
+                ))}
               </tr>
             </tfoot>
           )}
         </table>
       </div>
-
-      {/* MOBILE CARDS */}
-      <div className="sm:hidden space-y-2">
-        {rows.map((row) =>
-          mobileCard ? (
-            <div key={rowKey(row)}>{mobileCard(row)}</div>
-          ) : (
-            <div
-              key={rowKey(row)}
-              onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className="p-3 bg-white dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm space-y-1"
-            >
-              {mobileColumns.map((col) => (
-                <div key={col.key} className="flex items-center justify-between gap-3">
-                  {col.header ? <span className="text-micro text-gray-400">{col.header}</span> : <span />}
-                  <span className="text-body-strong dark:text-white min-w-0 truncate">{col.render(row)}</span>
-                </div>
-              ))}
-            </div>
-          ),
-        )}
-        {footer && (
-          <div className="p-3 bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-100 dark:border-gray-800">
-            {footer}
-          </div>
-        )}
-      </div>
-    </>
+    </div>
   );
 }
