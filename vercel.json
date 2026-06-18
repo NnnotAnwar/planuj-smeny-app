@@ -1,5 +1,5 @@
 {
-    "installCommand": "corepack enable && yarn install --immutable",
+    "installCommand": "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack yarn install --immutable",
     "rewrites": [
         {
             "source": "/(.*)",
