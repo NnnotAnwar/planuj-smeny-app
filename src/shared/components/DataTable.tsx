@@ -4,9 +4,11 @@ import type { ReactNode } from 'react';
  * A single column definition for {@link DataTable}.
  *
  * The table renders as ONE real `<table>` on every breakpoint (no separate
- * mobile card layout) — compact on phones, roomier on `sm+`. Columns that are
- * secondary on small screens can opt out with {@link Column.hideOnMobile}; the
- * container also scrolls horizontally as a safety net so nothing ever clips.
+ * mobile card layout) — compact on phones, roomier on `sm+`. Layout is
+ * `table-fixed`: give the secondary columns a fixed {@link Column.width} and
+ * leave exactly one (the primary/identity column) without a width so it absorbs
+ * the remaining space and truncates. Columns can drop off small screens with
+ * {@link Column.hideOnMobile}.
  */
 export interface Column<T> {
   /** Stable identifier for the column (used as React key). */
@@ -17,6 +19,8 @@ export interface Column<T> {
   render: (row: T) => ReactNode;
   /** Horizontal alignment of the cell + header. Defaults to `left`. */
   align?: 'left' | 'right' | 'center';
+  /** Fixed column width (Tailwind class, e.g. `w-20`). Omit on the one flexible column. */
+  width?: string;
   /** Extra classes applied to the `<td>`. */
   className?: string;
   /** Extra classes applied to the `<th>`. */
@@ -51,10 +55,11 @@ const cellPad = 'px-2 py-2.5 sm:px-4 sm:py-3';
 const mobileHidden = 'hidden sm:table-cell';
 
 /**
- * Responsive, generic data table. A single `<table>` on all breakpoints —
- * compact and monolithic — sharing one look across Overview and the admin
- * panel. Centralizes the table chrome (rounded container, header, dividers,
- * hover, footer, loading/empty states) so feature surfaces only declare columns.
+ * Responsive, generic data table. A single `table-fixed` `<table>` that always
+ * fits its container (never scrolls sideways) — compact and monolithic — shared
+ * across Overview and the admin panel. Centralizes the table chrome (rounded
+ * container, header, dividers, hover, footer, loading/empty states) so feature
+ * surfaces only declare columns.
  */
 export function DataTable<T>({
   columns,
@@ -72,62 +77,60 @@ export function DataTable<T>({
 
   return (
     <div className="bg-white dark:bg-gray-900/40 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+      <table className="w-full table-fixed text-left border-collapse">
+        <thead>
+          <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+            {columns.map((col) => (
+              <th
+                key={col.key}
+                className={`${cellPad} text-label text-gray-400 truncate ${ALIGN[col.align ?? 'left']} ${
+                  col.width ?? ''
+                } ${col.hideOnMobile ? mobileHidden : ''} ${col.headerClassName ?? ''}`}
+              >
+                {col.header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
+          {rows.map((row) => (
+            <tr
+              key={rowKey(row)}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              className={`transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-800/20 ${
+                onRowClick ? 'cursor-pointer' : ''
+              }`}
+            >
               {columns.map((col) => (
-                <th
+                <td
                   key={col.key}
-                  className={`${cellPad} text-label text-gray-400 whitespace-nowrap ${ALIGN[col.align ?? 'left']} ${
+                  className={`${cellPad} ${ALIGN[col.align ?? 'left']} ${col.width ?? ''} ${
                     col.hideOnMobile ? mobileHidden : ''
-                  } ${col.headerClassName ?? ''}`}
+                  } ${col.className ?? ''}`}
                 >
-                  {col.header}
-                </th>
+                  {col.render(row)}
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-            {rows.map((row) => (
-              <tr
-                key={rowKey(row)}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
-                className={`transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-800/20 ${
-                  onRowClick ? 'cursor-pointer' : ''
-                }`}
-              >
-                {columns.map((col) => (
-                  <td
-                    key={col.key}
-                    className={`${cellPad} ${ALIGN[col.align ?? 'left']} ${col.hideOnMobile ? mobileHidden : ''} ${
-                      col.className ?? ''
-                    }`}
-                  >
-                    {col.render(row)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-          {hasFooter && (
-            <tfoot>
-              <tr className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
-                {columns.map((col) => (
-                  <td
-                    key={col.key}
-                    className={`${cellPad} whitespace-nowrap ${ALIGN[col.align ?? 'left']} ${
-                      col.hideOnMobile ? mobileHidden : ''
-                    }`}
-                  >
-                    {col.footer}
-                  </td>
-                ))}
-              </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
+          ))}
+        </tbody>
+        {hasFooter && (
+          <tfoot>
+            <tr className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
+              {columns.map((col) => (
+                <td
+                  key={col.key}
+                  className={`${cellPad} truncate ${ALIGN[col.align ?? 'left']} ${col.width ?? ''} ${
+                    col.hideOnMobile ? mobileHidden : ''
+                  }`}
+                >
+                  {col.footer}
+                </td>
+              ))}
+            </tr>
+          </tfoot>
+        )}
+      </table>
     </div>
   );
 }

@@ -52,7 +52,7 @@ function AdminBadgeWithTooltip() {
 
 function RoleBadge({ role }: { role: Profile['role'] }) {
     return (
-        <span className={`inline-block px-1.5 py-1 text-micro rounded-md whitespace-nowrap ${getRoleBadgeColor(role.name)}`}>{role.name}</span>
+        <span className={`inline-block px-1.5 py-1 text-micro tracking-tight rounded-md whitespace-nowrap ${getRoleBadgeColor(role.name)}`}>{role.name}</span>
     );
 }
 
@@ -63,8 +63,8 @@ function EmployeeIdentity({ employee, isSelf }: { employee: Profile; isSelf: boo
                 {getFullInitials(employee.first_name, employee.last_name)}
             </div>
             <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                    <h3 className="text-body-strong dark:text-white truncate">
+                <div className="flex items-center gap-1.5 min-w-0">
+                    <h3 className="text-body-strong dark:text-white truncate min-w-0">
                         {employee.first_name} {employee.last_name}
                     </h3>
                     {employee.role.rank >= RANK.ADMIN && <AdminBadgeWithTooltip />}
@@ -75,10 +75,6 @@ function EmployeeIdentity({ employee, isSelf }: { employee: Profile; isSelf: boo
                     )}
                 </div>
                 <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{employee.username}</p>
-                {/* Role lives in its own column on sm+; stacked here to stay compact on mobile. */}
-                <div className="sm:hidden mt-1">
-                    <RoleBadge role={employee.role} />
-                </div>
             </div>
         </div>
     );
@@ -100,13 +96,14 @@ export function EmployeesList({
     const manageable = (emp: Profile) => (currentUser ? canManageMember(currentUser, emp) : false);
 
     const columns: Column<Profile>[] = [
-        { key: 'employee', header: 'Employee', render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} />, className: 'max-w-[72vw] sm:max-w-none' },
-        { key: 'email', header: 'Email', hideOnMobile: true, render: (emp) => <span className="text-body text-gray-500 dark:text-gray-400 truncate">{emp.email}</span> },
-        { key: 'role', header: 'Role', align: 'right', hideOnMobile: true, render: (emp) => <RoleBadge role={emp.role} /> },
+        { key: 'employee', header: 'Employee', render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} /> },
+        { key: 'email', header: 'Email', width: 'w-64', hideOnMobile: true, className: 'truncate', render: (emp) => <span className="text-body text-gray-500 dark:text-gray-400">{emp.email}</span> },
+        { key: 'role', header: 'Role', align: 'right', width: 'w-24', render: (emp) => <RoleBadge role={emp.role} /> },
         {
             key: 'actions',
             header: '',
             align: 'right',
+            width: 'w-20',
             render: (emp) =>
                 manageable(emp) ? (
                     <div className="flex justify-end">
