@@ -94,23 +94,31 @@ export function EmployeesList({
     onDelete: (emp: Profile) => void;
 }) {
     const manageable = (emp: Profile) => (currentUser ? canManageMember(currentUser, emp) : false);
+    // Read-only viewers (e.g. Manager) can't manage anyone — drop the actions
+    // column entirely so the Role badge sits flush right instead of leaving an
+    // empty gutter.
+    const anyManageable = items.some(manageable);
 
     const columns: Column<Profile>[] = [
         { key: 'employee', header: 'Employee', render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} /> },
         { key: 'email', header: 'Email', hideOnMobile: true, className: 'truncate', render: (emp) => <span className="text-body text-gray-500 dark:text-gray-400">{emp.email}</span> },
         { key: 'role', header: 'Role', align: 'right', width: 'w-24 sm:w-32', render: (emp) => <RoleBadge role={emp.role} /> },
-        {
-            key: 'actions',
-            header: '',
-            align: 'right',
-            width: 'w-20 sm:w-28',
-            render: (emp) =>
-                manageable(emp) ? (
-                    <div className="flex justify-end">
-                        <ActionButtons onEdit={() => onEdit(emp)} onDelete={() => onDelete(emp)} />
-                    </div>
-                ) : null,
-        },
+        ...(anyManageable
+            ? [
+                  {
+                      key: 'actions',
+                      header: '',
+                      align: 'right' as const,
+                      width: 'w-20 sm:w-28',
+                      render: (emp: Profile) =>
+                          manageable(emp) ? (
+                              <div className="flex justify-end">
+                                  <ActionButtons onEdit={() => onEdit(emp)} onDelete={() => onDelete(emp)} />
+                              </div>
+                          ) : null,
+                  },
+              ]
+            : []),
     ];
 
     return (
