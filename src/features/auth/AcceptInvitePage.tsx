@@ -5,6 +5,7 @@ import {
     BuildingsIcon,
     IdentificationBadgeIcon,
     CheckCircleIcon,
+    AtIcon,
     LockIcon,
     EyeIcon,
     EyeSlashIcon,
@@ -25,6 +26,9 @@ import { getRoleBadgeColor } from '@shared/utils/roleColors';
  */
 
 type Status = 'loading' | 'ready' | 'invalid';
+
+// Mirrors the rule enforced in Settings + the DB unique_username constraint.
+const USERNAME_RE = /^[a-z0-9._-]{3,30}$/;
 
 interface InviteInfo {
     email: string;
@@ -72,6 +76,7 @@ export function AcceptInvitePage() {
     const navigate = useNavigate();
     const [status, setStatus] = useState<Status>('loading');
     const [info, setInfo] = useState<InviteInfo | null>(null);
+    const [username, setUsername] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [password, setPassword] = useState('');
@@ -92,6 +97,7 @@ export function AcceptInvitePage() {
                 .single();
 
             setInfo({ email: profile.email, role: profile.role.name, org: org?.name ?? '—' });
+            setUsername(profile.username ?? '');
             setFirstName(profile.first_name ?? '');
             setLastName(profile.last_name ?? '');
             setStatus('ready');
@@ -143,6 +149,10 @@ export function AcceptInvitePage() {
 
     const handleSubmit = async (e: SyntheticEvent) => {
         e.preventDefault();
+        const uname = username.trim().toLowerCase();
+        if (!USERNAME_RE.test(uname)) {
+            return setError('Username must be 3–30 characters: lowercase letters, numbers, dot, underscore or hyphen.');
+        }
         if (password.length < 6) return setError('Password must be at least 6 characters.');
         if (password !== confirm) return setError('Passwords do not match.');
 
@@ -155,13 +165,26 @@ export function AcceptInvitePage() {
             });
             if (updateError) throw updateError;
 
-            // Persist names to the profile row as well.
+            // Persist the chosen username + names to the profile row.
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                await supabase
+                const { error: profileError } = await supabase
                     .from('profiles')
-                    .update({ first_name: firstName.trim() || null, last_name: lastName.trim() || null })
+                    .update({
+                        username: uname,
+                        first_name: firstName.trim() || null,
+                        last_name: lastName.trim() || null,
+                    })
                     .eq('id', user.id);
+                if (profileError) {
+                    setError(
+                        profileError.code === '23505'
+                            ? 'That username is already taken. Please choose another.'
+                            : profileError.message || 'Could not save your changes.',
+                    );
+                    setBusy(false);
+                    return;
+                }
             }
 
             // Full reload so AuthProvider re-initialises with the now-complete session.
@@ -251,7 +274,25 @@ export function AcceptInvitePage() {
                     <form onSubmit={handleSubmit} className="p-6 space-y-4">
                         <div>
                             <h2 className="text-heading text-gray-900 dark:text-white">Set up your account</h2>
-                            <p className="text-small text-gray-400 mt-0.5">Choose a password to accept the invitation.</p>
+                            <p className="text-small text-gray-400 mt-0.5">Pick a username and password to accept the invitation.</p>
+                        </div>
+
+                        <div>
+                            <label htmlFor="username" className="text-micro text-gray-400 ml-1">Username</label>
+                            <div className="relative mt-1.5">
+                                <AtIcon weight="bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    id="username"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="username"
+                                    autoCapitalize="none"
+                                    autoCorrect="off"
+                                    spellCheck={false}
+                                    className={`${INPUT} pl-10 pr-3.5`}
+                                />
+                            </div>
+                            <p className="text-caption text-gray-400 mt-1.5 ml-1">Used to sign in instead of your email. Must be unique.</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
