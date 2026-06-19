@@ -1,7 +1,19 @@
-import { useState, useEffect, useCallback, type SyntheticEvent } from 'react';
+import { useState, useEffect, useCallback, type SyntheticEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BuildingsIcon, IdentificationBadgeIcon, CheckCircleIcon } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    BuildingsIcon,
+    IdentificationBadgeIcon,
+    CheckCircleIcon,
+    LockIcon,
+    EyeIcon,
+    EyeSlashIcon,
+    SunIcon,
+    MoonIcon,
+    WarningCircleIcon,
+} from '@phosphor-icons/react';
 import { supabase } from '@shared/api/supabaseClient';
+import { useTheme } from '@app/providers/ThemeContext';
 import { authService } from './authService';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
 
@@ -20,6 +32,42 @@ interface InviteInfo {
     org: string;
 }
 
+/** Branded shell shared by every state: app gradient, ambient glow, theme toggle. */
+function PageShell({ children }: { children: ReactNode }) {
+    const { resolvedTheme, setTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
+    return (
+        <div className="relative min-h-dvh flex items-center justify-center overflow-hidden px-4 py-10">
+            <div className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-emerald-500/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-32 -right-20 w-96 h-96 rounded-full bg-emerald-400/10 blur-3xl" />
+
+            <button
+                onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                aria-label="Toggle theme"
+                className="absolute top-4 right-4 z-10 p-2.5 rounded-xl bg-white/60 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-500 dark:text-gray-300 backdrop-blur-md hover:bg-white/80 dark:hover:bg-white/10 active:scale-90 transition-all"
+            >
+                <AnimatePresence mode="wait" initial={false}>
+                    <motion.span
+                        key={resolvedTheme}
+                        initial={{ y: -6, opacity: 0, rotate: -30 }}
+                        animate={{ y: 0, opacity: 1, rotate: 0 }}
+                        exit={{ y: 6, opacity: 0, rotate: 30 }}
+                        transition={{ duration: 0.2 }}
+                        className="block"
+                    >
+                        {isDark ? <SunIcon weight="bold" className="w-5 h-5" /> : <MoonIcon weight="bold" className="w-5 h-5" />}
+                    </motion.span>
+                </AnimatePresence>
+            </button>
+
+            {children}
+        </div>
+    );
+}
+
+const INPUT =
+    'w-full bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-xl py-3 text-body text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400';
+
 export function AcceptInvitePage() {
     const navigate = useNavigate();
     const [status, setStatus] = useState<Status>('loading');
@@ -28,6 +76,7 @@ export function AcceptInvitePage() {
     const [lastName, setLastName] = useState('');
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
+    const [showPwd, setShowPwd] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -125,120 +174,161 @@ export function AcceptInvitePage() {
 
     if (status === 'loading') {
         return (
-            <div className="min-h-dvh flex items-center justify-center bg-white dark:bg-gray-950">
+            <PageShell>
                 <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-            </div>
+            </PageShell>
         );
     }
 
     if (status === 'invalid') {
         return (
-            <div className="min-h-dvh flex items-center justify-center bg-white dark:bg-gray-950 p-6">
-                <div className="text-center space-y-3 max-w-sm">
-                    <h1 className="text-display text-gray-900 dark:text-white">Invitation unavailable</h1>
-                    <p className="text-body text-gray-500">
+            <PageShell>
+                <motion.div
+                    initial={{ opacity: 0, y: 20, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+                    className="relative w-full max-w-md bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-3xl shadow-2xl shadow-emerald-500/5 p-8 text-center"
+                >
+                    <div className="w-14 h-14 mx-auto rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center">
+                        <WarningCircleIcon weight="fill" className="w-7 h-7" />
+                    </div>
+                    <h1 className="text-title text-gray-900 dark:text-white mt-5">Invitation unavailable</h1>
+                    <p className="text-body text-gray-500 dark:text-gray-400 mt-2">
                         This invitation link is invalid or has expired. Please ask an administrator to send a new one.
                     </p>
                     <button
                         onClick={() => navigate('/login', { replace: true })}
-                        className="text-emerald-600 dark:text-emerald-400 text-body-strong"
+                        className="mt-6 w-full py-3 rounded-xl text-body-strong text-white bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all"
                     >
                         Go to sign in
                     </button>
-                </div>
-            </div>
+                </motion.div>
+            </PageShell>
         );
     }
 
     return (
-        <div className="min-h-dvh flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-white dark:from-emerald-950/30 dark:via-gray-950 dark:to-gray-950 p-4">
-            <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl overflow-hidden">
-                {/* Invite summary — clearly states where and as what */}
-                <div className="p-6 bg-emerald-500/5 border-b border-emerald-100 dark:border-emerald-900/30 space-y-4">
-                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                        <CheckCircleIcon weight="fill" className="w-5 h-5" />
-                        <p className="text-micro">You've been invited</p>
-                    </div>
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                <BuildingsIcon weight="bold" className="w-5 h-5" />
+        <PageShell>
+            <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+                className="relative w-full max-w-md"
+            >
+                <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-3xl shadow-2xl shadow-emerald-500/5 overflow-hidden">
+                    {/* Invite summary — clearly states where and as what */}
+                    <div className="p-6 bg-emerald-500/5 border-b border-emerald-100/60 dark:border-emerald-900/30 space-y-4">
+                        <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                            <CheckCircleIcon weight="fill" className="w-5 h-5" />
+                            <p className="text-micro">You've been invited</p>
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                    <BuildingsIcon weight="bold" className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-micro text-gray-400">Organization</p>
+                                    <p className="text-body-strong text-gray-900 dark:text-white truncate">{info?.org}</p>
+                                </div>
                             </div>
-                            <div className="min-w-0">
-                                <p className="text-micro text-gray-400">Organization</p>
-                                <p className="text-body-strong text-gray-900 dark:text-white truncate">{info?.org}</p>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center shrink-0">
+                                    <IdentificationBadgeIcon weight="bold" className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-micro text-gray-400">Role</p>
+                                    <span className={`inline-block px-2 py-0.5 text-micro rounded-md ${getRoleBadgeColor(info?.role ?? '')}`}>
+                                        {info?.role}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center shrink-0">
-                                <IdentificationBadgeIcon weight="bold" className="w-5 h-5" />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-micro text-gray-400">Role</p>
-                                <span
-                                    className={`inline-block px-2 py-0.5 text-micro rounded-md ${getRoleBadgeColor(
-                                        info?.role ?? '',
-                                    )}`}
+                        <p className="text-caption text-gray-400">{info?.email}</p>
+                    </div>
+
+                    {/* Set password to finish */}
+                    <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                        <div>
+                            <h2 className="text-heading text-gray-900 dark:text-white">Set up your account</h2>
+                            <p className="text-small text-gray-400 mt-0.5">Choose a password to accept the invitation.</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <input
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                placeholder="First name"
+                                autoComplete="given-name"
+                                className={`${INPUT} px-3.5`}
+                            />
+                            <input
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                placeholder="Last name"
+                                autoComplete="family-name"
+                                className={`${INPUT} px-3.5`}
+                            />
+                        </div>
+
+                        <div className="relative">
+                            <LockIcon weight="bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type={showPwd ? 'text' : 'password'}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Password"
+                                autoComplete="new-password"
+                                autoFocus
+                                className={`${INPUT} pl-10 pr-11`}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPwd((v) => !v)}
+                                aria-label={showPwd ? 'Hide password' : 'Show password'}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                            >
+                                {showPwd ? <EyeSlashIcon weight="bold" className="w-4 h-4" /> : <EyeIcon weight="bold" className="w-4 h-4" />}
+                            </button>
+                        </div>
+
+                        <div className="relative">
+                            <LockIcon weight="bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type={showPwd ? 'text' : 'password'}
+                                value={confirm}
+                                onChange={(e) => setConfirm(e.target.value)}
+                                placeholder="Confirm password"
+                                autoComplete="new-password"
+                                className={`${INPUT} pl-10 pr-3.5`}
+                            />
+                        </div>
+
+                        <AnimatePresence>
+                            {error && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="flex items-center gap-2 text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl px-3 py-2.5"
                                 >
-                                    {info?.role}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <p className="text-caption text-gray-400">{info?.email}</p>
+                                    <WarningCircleIcon weight="fill" className="w-4 h-4 shrink-0" />
+                                    <span>{error}</span>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        <button
+                            type="submit"
+                            disabled={busy}
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-body-strong text-white bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/25 active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 transition-all"
+                        >
+                            {busy && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+                            {busy ? 'Joining…' : `Join ${info?.org ?? ''}`}
+                        </button>
+                    </form>
                 </div>
-
-                {/* Set password to finish */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div>
-                        <h2 className="text-heading text-gray-900 dark:text-white">Set up your account</h2>
-                        <p className="text-small text-gray-400 mt-0.5">Choose a password to accept the invitation.</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <input
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            placeholder="First name"
-                            className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none dark:text-white"
-                        />
-                        <input
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            placeholder="Last name"
-                            className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none dark:text-white"
-                        />
-                    </div>
-
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Password"
-                        autoFocus
-                        className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none dark:text-white"
-                    />
-                    <input
-                        type="password"
-                        value={confirm}
-                        onChange={(e) => setConfirm(e.target.value)}
-                        placeholder="Confirm password"
-                        className="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none dark:text-white"
-                    />
-
-                    {error && (
-                        <p className="text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{error}</p>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={busy}
-                        className="w-full px-4 py-3 rounded-xl text-body-strong text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-60 shadow-lg shadow-emerald-500/25"
-                    >
-                        {busy ? 'Joining…' : `Join ${info?.org ?? ''}`}
-                    </button>
-                </form>
-            </div>
-        </div>
+            </motion.div>
+        </PageShell>
     );
 }
