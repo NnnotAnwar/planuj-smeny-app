@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { SquaresFourIcon, ChartBarIcon, GearIcon, ShieldCheckIcon } from "@phosphor-icons/react";
 
@@ -20,21 +20,6 @@ interface DashboardProps {
   onLocationSelect: (locationId: string | null) => void;
 }
 
-const menuVariants: Variants = {
-  closed: { opacity: 0, x: "100%" },
-  open: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 30,
-      staggerChildren: 0.05,
-      delayChildren: 0.1
-    }
-  }
-};
-
 function getInitials(firstName?: string | null, lastName?: string | null): string {
   const f = firstName?.[0] || '';
   const l = lastName?.[0] || '';
@@ -54,15 +39,8 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
   ];
 
   const { setTheme, resolvedTheme } = useTheme();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const currentRoute = useLocation();
-
-  useEffect(() => {
-    if (isMobileMenuOpen) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = 'unset';
-    return () => { document.body.style.overflow = 'unset'; };
-  }, [isMobileMenuOpen]);
 
   const filteredLocations = locations.filter(loc =>
     loc.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -94,8 +72,12 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
               <div className="text-xl font-bold text-gray-800 dark:text-white tracking-tight"><Clock seconds={false} /></div>
             </div>
 
-            <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden -mr-2 rounded-xl text-gray-600 dark:text-gray-300 cursor-pointer z-10">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-10 h-10"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+            <button onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')} className="md:hidden -mr-2 p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-emerald-500/5 dark:hover:bg-white/5 transition-all cursor-pointer active:scale-90 z-10" aria-label="Toggle theme">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div key={resolvedTheme} initial={{ y: -5, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 5, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
+                  {resolvedTheme === 'dark' ? <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M3 12h2.25m.386-6.364l-1.591 1.591M12 7.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9z" /></svg> : <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7"><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>}
+                </motion.div>
+              </AnimatePresence>
             </button>
           </div>
 
@@ -179,71 +161,6 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
           </div>
         </div>
       </header>
-
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div initial="closed" animate="open" exit="closed" variants={menuVariants} className="fixed inset-0 z-100 md:hidden bg-linear-to-br from-white via-emerald-50 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 flex flex-col transition-colors duration-500 pt-[env(safe-area-inset-top,0px)]">
-            <div className="flex justify-between items-center px-4 py-3 h-13 shrink-0 border-b border-gray-200 dark:border-white/5">
-              <div className="w-8 h-8 md:w-9 md:h-9 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/30 transition-all">
-                <span className="text-white font-black text-sm md:text-base">PS</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <button onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')} className="rounded-xl text-gray-600 dark:text-gray-300 cursor-pointer">
-                  <AnimatePresence mode="wait" initial={false}>
-                    <motion.div key={resolvedTheme} initial={{ y: -10, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 10, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
-                      {resolvedTheme === 'dark' ? <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M3 12h2.25m.386-6.364l-1.591 1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M3 12h2.25m.386-6.364l-1.591 1.591M12 7.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9z" /></svg> : <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>}
-                    </motion.div>
-                  </AnimatePresence>
-                </button>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="-mr-2 text-gray-900 dark:text-white cursor-pointer">
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-6 py-10 flex flex-col">
-              {user && (
-                <div className="flex items-center gap-3 p-3 mb-3 bg-white/50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-xl shadow-emerald-500/5 transition-all">
-                  <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 shadow-md flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xl font-black shrink-0">
-                    {getInitials(user.first_name, user.last_name)}
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-title text-gray-900 dark:text-white truncate">Dobrý den, {user.first_name || user.username}!</p>
-                    <p className="text-label text-emerald-600 dark:text-emerald-400 mt-1">{user.role.name}</p>
-                  </div>
-                </div>
-              )}
-
-              <nav className="flex flex-col gap-2">
-                {navItems.map((item) => (
-                  <Link to={item?.route || '/'}
-                    key={item.name}
-                    onClick={() => { setIsMobileMenuOpen(false) }}
-                    className={`flex items-center gap-5 w-full p-4 rounded-2xl transition-all duration-200 text-left ${item.route === currentRoute.pathname
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                      }`}>
-                    {item.icon && <item.icon className='h-7 w-7' />}
-                    <span className="text-xl font-bold tracking-tight">{item.name}</span>
-                  </Link>
-                ))}
-              </nav>
-            </div>
-
-            <div className="mt-auto p-6 shrink-0 border-t border-gray-100 dark:border-white/5">
-              <button
-                onClick={logout}
-                className="flex items-center justify-center gap-3 w-full py-5 text-xl font-black text-red-600 bg-red-50/50 dark:bg-red-900/10 rounded-2xl cursor-pointer active:scale-95 transition-all"
-              >
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span>Logout</span>
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   );
 }
