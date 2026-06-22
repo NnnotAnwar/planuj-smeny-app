@@ -113,8 +113,10 @@ export const adminService = {
         if (error) throw error;
     },
 
-    async updateLocation(id: string, name: string): Promise<void> {
-        const { error } = await supabase.from('locations').update({ name }).eq('id', id);
+    async updateLocation(id: string, values: { name: string; organization_id?: string }): Promise<void> {
+        const patch: { name: string; organization_id?: string } = { name: values.name };
+        if (values.organization_id) patch.organization_id = values.organization_id; // Superadmin only (RLS)
+        const { error } = await supabase.from('locations').update(patch).eq('id', id);
         if (error) throw error;
     },
 

@@ -29,7 +29,7 @@ interface AdminContextType {
 
     // Locations
     createLocation: (values: { organization_id: string; name: string }) => Promise<void>;
-    updateLocation: (id: string, name: string) => Promise<void>;
+    updateLocation: (id: string, values: { name: string; organization_id?: string }) => Promise<void>;
     deleteLocation: (id: string) => Promise<void>;
 
     // Employees
@@ -109,7 +109,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         [run],
     );
     const updateLocation = useCallback(
-        (id: string, name: string) => run(() => adminService.updateLocation(id, name)),
+        (id: string, values: { name: string; organization_id?: string }) =>
+            run(() => adminService.updateLocation(id, values)),
         [run],
     );
     const deleteLocation = useCallback(
