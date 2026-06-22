@@ -22,7 +22,7 @@ import { z } from 'zod';
 
 // Shared select used to hydrate the full organization tree (locations + members).
 const ORG_TREE_SELECT =
-    '*, locations(id, name, organization_id), profiles(id, role(name, is_admin, rank), email, username, first_name, last_name, organization_id)';
+    '*, locations(id, name, organization_id, archived_at), profiles(id, role(name, is_admin, rank), email, username, first_name, last_name, organization_id)';
 
 export interface EmployeeUpdate {
     first_name: string | null;
@@ -118,8 +118,17 @@ export const adminService = {
         if (error) throw error;
     },
 
+    /**
+     * "Deletes" a location by archiving it (soft delete). Hard-deleting would
+     * CASCADE-remove every shift there — wiping active shifts and payroll
+     * history. Archiving hides it from pickers/admin while keeping all history,
+     * and is what the realtime subscription propagates to dashboards.
+     */
     async deleteLocation(id: string): Promise<void> {
-        const { error } = await supabase.from('locations').delete().eq('id', id);
+        const { error } = await supabase
+            .from('locations')
+            .update({ archived_at: new Date().toISOString() })
+            .eq('id', id);
         if (error) throw error;
     },
 

@@ -30,11 +30,13 @@ export const locationService = {
     // Validate that the array of locations matches our expected structure.
     const validated = z.array(LocationSchema).parse(data);
 
-    // Return them in a format the app likes.
+    // Return all (including archived) so historical shift names still resolve
+    // in Overview; pickers filter out archived locations at the display layer.
     return validated.map(l => ({
       id: l.id,
       name: l.name,
-      organization_id: l.organization_id
+      organization_id: l.organization_id,
+      archived_at: l.archived_at ?? null,
     }));
   }
 };

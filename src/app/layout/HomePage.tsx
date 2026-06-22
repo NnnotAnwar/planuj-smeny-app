@@ -21,6 +21,10 @@ export function HomePage() {
 
   if (!user) return null;
 
+  // Archived locations stay available for history-name resolution (Overview) but
+  // must not appear as places you can pick or clock in at.
+  const activeLocations = locations.filter((l) => !l.archived_at);
+
   return (
     <>
       {/* 1. CLOCK (Desktop Only) */}
@@ -39,14 +43,14 @@ export function HomePage() {
       {/* 4. MOBILE LOCATION PICKER */}
       <div className="md:hidden mb-6 -mx-3 px-3">
         <LocationSelection
-          locations={locations}
+          locations={activeLocations}
           selectedLocationId={selectedLocationId}
           onLocationSelect={handleLocationSelect}
         />
       </div>
 
       <div className="space-y-4">
-        {locations.map((location) => {
+        {activeLocations.map((location) => {
           const userFullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
           const role = user.role.name
           // Find colleagues working in this specific location.

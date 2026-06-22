@@ -84,12 +84,14 @@ function AdminPanel() {
     const locations = useMemo<LocationRow[]>(() => {
         const all =
             adminData?.flatMap((org) =>
-                org.locations.map((loc) => ({
-                    id: loc.id,
-                    name: loc.name,
-                    organization_id: loc.organization_id,
-                    organizationName: org.name,
-                })),
+                org.locations
+                    .filter((loc) => !loc.archived_at) // archived locations are hidden
+                    .map((loc) => ({
+                        id: loc.id,
+                        name: loc.name,
+                        organization_id: loc.organization_id,
+                        organizationName: org.name,
+                    })),
             ) ?? [];
         if (!query) return all;
         return all.filter((l) => `${l.name} ${l.organizationName}`.toLowerCase().includes(query));
@@ -125,7 +127,7 @@ function AdminPanel() {
     };
 
     const orgCount = adminData?.length ?? 0;
-    const locCount = adminData?.reduce((n, o) => n + o.locations.length, 0) ?? 0;
+    const locCount = adminData?.reduce((n, o) => n + o.locations.filter((l) => !l.archived_at).length, 0) ?? 0;
     const empCount = adminData?.reduce((n, o) => n + o.profiles.length, 0) ?? 0;
 
     // Capability flags drive what the current user can do (mirrors RLS).
