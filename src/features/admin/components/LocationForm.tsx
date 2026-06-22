@@ -27,8 +27,9 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
     const [isBusy, setIsBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Only Superadmins editing across orgs need a selector, and only on create.
-    const showOrgSelect = !isEdit && isSuperAdmin && (adminData?.length ?? 0) > 1;
+    // Superadmins can pick the organization — both when creating and when moving
+    // an existing location to another org.
+    const showOrgSelect = isSuperAdmin && (adminData?.length ?? 0) > 1;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,7 +41,10 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
         setError(null);
         try {
             if (isEdit && location) {
-                await updateLocation(location.id, trimmedName);
+                await updateLocation(location.id, {
+                    name: trimmedName,
+                    ...(isSuperAdmin ? { organization_id: organizationId } : {}),
+                });
             } else {
                 await createLocation({ organization_id: organizationId, name: trimmedName });
             }
