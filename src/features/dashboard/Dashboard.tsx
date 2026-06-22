@@ -43,7 +43,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
   const currentRoute = useLocation();
 
   const filteredLocations = locations.filter(loc =>
-    loc.name.toLowerCase().includes(searchQuery.toLowerCase())
+    !loc.archived_at && loc.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

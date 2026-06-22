@@ -52,7 +52,8 @@ export const LocationSchema = z.object({
   id: z.string(), // Unique location ID
   name: z.string(), // Name of the restaurant/office
   organization_id: z.string().optional(),
-  organizationName: z.string().optional()
+  organizationName: z.string().optional(),
+  archived_at: z.string().nullable().optional(), // soft-delete: hidden from pickers, history kept
 });
 
 /**
@@ -66,7 +67,8 @@ export const OrganizationSchema = z.object({
     {
       id: z.string(),
       name: z.string(),
-      organization_id: z.string()
+      organization_id: z.string(),
+      archived_at: z.string().nullable().optional()
     }
   )),
   profiles: z.array(z.object({
