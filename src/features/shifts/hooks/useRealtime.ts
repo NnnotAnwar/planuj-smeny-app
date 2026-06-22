@@ -128,6 +128,20 @@ export function useRealtime({
           }
         }
       )
+      // 3. Locations: when an admin adds / renames / removes a location, refetch
+      //    so it appears in the dashboard picker live (no reload needed).
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'locations',
+          filter: `organization_id=eq.${user.organization_id}`,
+        },
+        () => {
+          refreshData();
+        },
+      )
       .subscribe();
 
     // CLEANUP: Close connections when component is unmounted.
