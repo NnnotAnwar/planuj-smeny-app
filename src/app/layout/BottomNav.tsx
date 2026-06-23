@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import {
     SquaresFourIcon,
     ChartBarIcon,
@@ -17,9 +17,9 @@ import { usePendingNameRequestCount } from '@features/admin/usePendingNameReques
 
 /**
  * --- BOTTOM NAVIGATION (mobile) ---
- * Persistent native-style tab bar (hidden on md+). The primary destinations live
- * in the bar; secondary ones (Settings, and Requests for admins) are tucked into
- * a "More" sheet that opens above the bar without covering it.
+ * Persistent native-style tab bar (hidden on md+). Primary destinations live in
+ * the bar; secondary ones (Settings, and Requests for admins) are tucked into a
+ * "More" sheet that slides in above — but never covers — the bar.
  */
 
 interface NavItem {
@@ -27,6 +27,22 @@ interface NavItem {
     icon: Icon;
     route: string;
 }
+
+// Burger-style slide-in (mirrors the old fullscreen menu): the panel springs in
+// from the right and staggers its items.
+const sheetVariants: Variants = {
+    closed: { opacity: 0, x: '100%' },
+    open: {
+        opacity: 1,
+        x: 0,
+        transition: { type: 'spring', stiffness: 320, damping: 32, staggerChildren: 0.06, delayChildren: 0.08 },
+    },
+};
+
+const itemVariants: Variants = {
+    closed: { opacity: 0, x: 24 },
+    open: { opacity: 1, x: 0 },
+};
 
 export function BottomNav() {
     const { user } = useAuthContext();
@@ -49,6 +65,7 @@ export function BottomNav() {
         { name: 'Settings', icon: GearIcon, route: '/settings' },
     ];
 
+    // When the sheet is open only "More" is lit; otherwise it's lit on its routes.
     const moreActive = menuOpen || moreItems.some((i) => i.route === pathname);
     const moreBadge = isAdmin ? pending : 0;
 
@@ -62,18 +79,23 @@ export function BottomNav() {
 
     return (
         <>
-            {/* FULL-SCREEN "MORE" SHEET — sits above content but stops above the bar. */}
+            {/* FULL-SCREEN "MORE" SHEET — slides in above the bar (never over it). */}
             <AnimatePresence>
                 {menuOpen && (
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                        variants={sheetVariants}
+                        initial="closed"
+                        animate="open"
+                        exit="closed"
                         className="md:hidden fixed inset-x-0 top-0 z-30 bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] flex flex-col bg-gradient-to-br from-white via-emerald-50 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 pt-[env(safe-area-inset-top,0px)]"
                     >
                         <div className="flex justify-between items-center px-5 py-4 shrink-0">
-                            <h2 className="text-title text-gray-900 dark:text-white">Menu</h2>
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                                    <span className="text-white font-black text-base">PS</span>
+                                </div>
+                                <h2 className="text-title text-gray-900 dark:text-white">Menu</h2>
+                            </div>
                             <button
                                 onClick={() => setMenuOpen(false)}
                                 aria-label="Close menu"
@@ -83,29 +105,30 @@ export function BottomNav() {
                             </button>
                         </div>
 
-                        <nav className="flex-1 overflow-y-auto px-4 pb-6 flex flex-col gap-2">
+                        <nav className="flex-1 overflow-y-auto px-4 pb-6 flex flex-col gap-3">
                             {moreItems.map((item) => {
                                 const active = item.route === pathname;
                                 const badge = item.route === '/requests' ? moreBadge : 0;
                                 return (
-                                    <Link
-                                        key={item.route}
-                                        to={item.route}
-                                        onClick={() => setMenuOpen(false)}
-                                        className={`flex items-center gap-4 w-full p-4 rounded-2xl transition-all ${
-                                            active
-                                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                                                : 'bg-white/60 dark:bg-white/5 text-gray-700 dark:text-gray-200 active:scale-[0.99]'
-                                        }`}
-                                    >
-                                        <item.icon weight="bold" className="w-6 h-6 shrink-0" />
-                                        <span className="text-body-strong">{item.name}</span>
-                                        {badge > 0 && (
-                                            <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center">
-                                                {badge}
-                                            </span>
-                                        )}
-                                    </Link>
+                                    <motion.div key={item.route} variants={itemVariants}>
+                                        <Link
+                                            to={item.route}
+                                            onClick={() => setMenuOpen(false)}
+                                            className={`flex items-center gap-5 w-full p-4 rounded-2xl transition-all ${
+                                                active
+                                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                                    : 'bg-white/60 dark:bg-white/5 text-gray-700 dark:text-gray-200 active:scale-[0.98]'
+                                            }`}
+                                        >
+                                            <item.icon weight="bold" className="w-7 h-7 shrink-0" />
+                                            <span className="text-xl font-bold tracking-tight">{item.name}</span>
+                                            {badge > 0 && (
+                                                <span className="ml-auto min-w-6 h-6 px-2 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">
+                                                    {badge}
+                                                </span>
+                                            )}
+                                        </Link>
+                                    </motion.div>
                                 );
                             })}
                         </nav>
@@ -120,7 +143,9 @@ export function BottomNav() {
             >
                 <div className="flex items-stretch justify-around h-16">
                     {items.map((item) => {
-                        const active = item.route === pathname;
+                        // While the sheet is open, the bar shows nothing as active
+                        // (only "More" is lit) — fixes the double-highlight.
+                        const active = !menuOpen && item.route === pathname;
                         return (
                             <Link
                                 key={item.route}

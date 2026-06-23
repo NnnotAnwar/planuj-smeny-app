@@ -30,22 +30,23 @@ function RequestsInner() {
     const { nameRequests, nameRequestsLoading, reviewNameRequest, error } = useAdminContext();
 
     return (
-        <div className="space-y-6 px-1 max-w-3xl mx-auto w-full">
-            <header className="space-y-0.5">
-                <p className="text-label text-emerald-500">Administration</p>
-                <h1 className="text-display text-gray-900 dark:text-white">Requests</h1>
-                <p className="text-small text-gray-400">Review and action staff requests.</p>
+        <div className="space-y-4 px-1 pb-10 max-w-3xl mx-auto w-full">
+            <header className="flex items-end justify-between gap-3 pt-2">
+                <div className="space-y-0.5">
+                    <p className="text-label text-emerald-500 text-left">Administration</p>
+                    <h1 className="text-display text-gray-900 dark:text-white">Requests</h1>
+                </div>
+                {nameRequests.length > 0 && (
+                    <span className="flex items-center gap-1.5 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm text-xs font-black text-emerald-600 dark:text-emerald-400">
+                        {nameRequests.length} pending
+                    </span>
+                )}
             </header>
 
             <section className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
                     <UserCircleGearIcon weight="bold" className="w-4 h-4 text-emerald-500" />
                     <h2 className="text-label text-gray-400">Name changes</h2>
-                    {nameRequests.length > 0 && (
-                        <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center">
-                            {nameRequests.length}
-                        </span>
-                    )}
                 </div>
 
                 {error ? (
