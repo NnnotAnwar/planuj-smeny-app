@@ -22,8 +22,9 @@ export function HomePage() {
   if (!user) return null;
 
   // Archived locations stay available for history-name resolution (Overview) but
-  // must not appear as places you can pick or clock in at.
-  const activeLocations = locations.filter((l) => !l.archived_at);
+  // must not appear as places you can pick or clock in at — except the one you're
+  // currently clocked into, so you never lose sight of where you are.
+  const activeLocations = locations.filter((l) => !l.archived_at || l.id === activeShift?.location_id);
 
   return (
     <>

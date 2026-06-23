@@ -64,6 +64,8 @@ export function ActiveShift() {
                     <LiveClockIcon className="h-4 w-4" isActive={true} />
                     Active Shift: {startTime}
                 </div>
+                {/* Make it obvious WHERE you're clocked in (esp. on phone). */}
+                <p className="mt-2 text-body-strong text-gray-900 dark:text-white text-center">{locationName}</p>
                 {previousLocation && (
                     <div className="mt-2 flex items-center gap-1 text-micro text-gray-500">
                         <span>Moved from {previousLocation.name}</span>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal } from './Modal';
 import { Field, TextInput, SelectInput, FormError, FormActions } from './FormControls';
 import { useAdminContext } from '../AdminContext';
+import { adminService } from '../adminService';
 import { useAuthContext } from '@/features/auth/AuthContext';
 
 export interface LocationEditTarget {
@@ -41,6 +42,15 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
         setError(null);
         try {
             if (isEdit && location) {
+                // Moving a location to another org while someone is clocked in
+                // there leaves their shift stranded in the old org (shows up as
+                // "Unknown Location"). Block it until the shift is ended.
+                const orgChanged = isSuperAdmin && organizationId !== location.organization_id;
+                if (orgChanged && (await adminService.hasActiveShiftsAtLocation(location.id))) {
+                    setError('Someone is currently clocked in here. End their active shift before moving this location to another organization.');
+                    setIsBusy(false);
+                    return;
+                }
                 await updateLocation(location.id, {
                     name: trimmedName,
                     ...(isSuperAdmin ? { organization_id: organizationId } : {}),
