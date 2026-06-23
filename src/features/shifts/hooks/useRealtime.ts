@@ -32,6 +32,13 @@ export function useRealtime({
   useEffect(() => {
     if (!user?.organization_id || !user?.id) return;
 
+    // Superadmins oversee every organization, so they subscribe WITHOUT the
+    // org filter (RLS `is_superadmin()` still authorizes the rows). Everyone
+    // else is scoped to their own organization. This mirrors the initial load
+    // (getAllActiveShifts returns all orgs for a superadmin).
+    const isSuperadmin = user.role?.name === 'Superadmin';
+    const orgFilter = isSuperadmin ? {} : { filter: `organization_id=eq.${user.organization_id}` };
+
     // 1. MOBILE ONLY: Refresh data when user re-opens the app from background.
     let listener: PluginListenerHandle | null = null;
     if (Capacitor.isNativePlatform()) {
@@ -49,7 +56,7 @@ export function useRealtime({
           event: '*', // Listen for ALL events (Insert, Update, Delete)
           schema: 'public',
           table: 'shifts',
-          filter: `organization_id=eq.${user.organization_id}` // Only for my organization.
+          ...orgFilter, // own org, or all orgs for a superadmin
         },
         async (payload) => {
           // Optimization: Use payload data directly when possible
@@ -136,7 +143,7 @@ export function useRealtime({
           event: '*',
           schema: 'public',
           table: 'locations',
-          filter: `organization_id=eq.${user.organization_id}`,
+          ...orgFilter, // own org, or all orgs for a superadmin
         },
         () => {
           refreshData();
@@ -149,5 +156,5 @@ export function useRealtime({
       supabase.removeChannel(channel);
       if (listener) listener.remove();
     };
-  }, [user?.organization_id, user?.id, setActiveShift, setUserShifts, setSelectedLocationId, setAllActiveShifts, refreshData]);
+  }, [user?.organization_id, user?.id, user?.role?.name, setActiveShift, setUserShifts, setSelectedLocationId, setAllActiveShifts, refreshData]);
 }
