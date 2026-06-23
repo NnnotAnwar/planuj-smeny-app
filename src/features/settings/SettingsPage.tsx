@@ -195,7 +195,7 @@ export default function SettingsPage() {
   const pending = latestRequest?.status === 'pending' ? latestRequest : null;
 
   return (
-    <div className="space-y-4 px-1 pb-10 max-w-2xl">
+    <div className="space-y-4 px-1 pb-10">
       <header className="pt-2 space-y-0.5">
         <p className="text-label text-emerald-500 text-left">Preferences</p>
         <h1 className="text-display text-gray-900 dark:text-white">Settings</h1>

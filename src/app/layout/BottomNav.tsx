@@ -87,7 +87,7 @@ export function BottomNav() {
                         initial="closed"
                         animate="open"
                         exit="closed"
-                        className="md:hidden fixed inset-x-0 top-0 z-30 bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] flex flex-col bg-gradient-to-br from-white via-emerald-50 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 pt-[env(safe-area-inset-top,0px)]"
+                        className="md:hidden fixed inset-x-0 top-0 z-[60] bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] flex flex-col bg-gradient-to-br from-white via-emerald-50 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 pt-[env(safe-area-inset-top,0px)]"
                     >
                         <div className="flex justify-between items-center px-5 py-4 shrink-0">
                             <div className="flex items-center gap-3">

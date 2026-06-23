@@ -30,7 +30,7 @@ function RequestsInner() {
     const { nameRequests, nameRequestsLoading, reviewNameRequest, error } = useAdminContext();
 
     return (
-        <div className="space-y-4 px-1 pb-10 max-w-3xl mx-auto w-full">
+        <div className="space-y-4 px-1 pb-10">
             <header className="flex items-end justify-between gap-3 pt-2">
                 <div className="space-y-0.5">
                     <p className="text-label text-emerald-500 text-left">Administration</p>
