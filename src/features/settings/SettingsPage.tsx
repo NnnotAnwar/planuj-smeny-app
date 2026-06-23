@@ -75,16 +75,33 @@ export default function SettingsPage() {
     }
   }, [user, isStaff]);
 
+  // Initial load (inline async so we don't call a setState-callback directly in
+  // the effect body). Handlers reuse loadRequest() to refresh after an action.
   useEffect(() => {
-    loadRequest();
-  }, [loadRequest]);
+    if (!user || !isStaff) return;
+    let active = true;
+    (async () => {
+      try {
+        const req = await authService.getMyLatestNameRequest(user.id);
+        if (active) setLatestRequest(req);
+      } catch (err) {
+        console.error('Failed to load name request:', err);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [user, isStaff]);
+
+  // Captured once at mount (clock reads must not happen during render).
+  const [nowTs] = useState(() => Date.now());
 
   if (!user) return null;
 
   // --- username weekly limit ---
   const lastChanged = user.username_changed_at ? new Date(user.username_changed_at).getTime() : null;
   const nextAllowedAt = lastChanged ? lastChanged + WEEK_MS : null;
-  const usernameLocked = nextAllowedAt ? Date.now() < nextAllowedAt : false;
+  const usernameLocked = nextAllowedAt ? nowTs < nextAllowedAt : false;
   const nextAllowedStr = nextAllowedAt
     ? new Date(nextAllowedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
     : '';
