@@ -2,7 +2,7 @@ import { createContext, useContext, useCallback, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, type EmployeeUpdate, type EmployeeInvite } from './adminService';
 import { useAuthContext } from '@/features/auth/AuthContext';
-import type { Organization, Role } from '@/shared/types';
+import type { Organization, Role, NameChangeRequest } from '@/shared/types';
 
 /**
  * --- ADMIN CONTEXT ---
@@ -36,12 +36,17 @@ interface AdminContextType {
     inviteEmployee: (payload: EmployeeInvite) => Promise<void>;
     updateEmployee: (id: string, values: EmployeeUpdate) => Promise<void>;
     deleteEmployee: (id: string) => Promise<void>;
+
+    // Name change requests
+    nameRequests: NameChangeRequest[];
+    reviewNameRequest: (id: string, approve: boolean, note?: string | null) => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 const TREE_KEY = ['admin', 'tree'] as const;
 const ROLES_KEY = ['admin', 'roles'] as const;
+const REQUESTS_KEY = ['admin', 'name-requests'] as const;
 
 export function AdminProvider({ children }: { children: ReactNode }) {
     const { user } = useAuthContext();
@@ -59,6 +64,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         queryFn: () => adminService.getRoles(),
         enabled: !!user,
         staleTime: 5 * 60 * 1000, // roles rarely change
+    });
+
+    // Only admins (rank >= 30) can see/review name-change requests.
+    const canReview = (user?.role.rank ?? 0) >= 30;
+    const requestsQuery = useQuery({
+        queryKey: [...REQUESTS_KEY, user?.id],
+        queryFn: () => adminService.getNameChangeRequests(),
+        enabled: !!user && canReview,
     });
 
     const invalidateTree = useCallback(
@@ -136,6 +149,19 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         [user?.id, run],
     );
 
+    // Name change requests ------------------------------------------
+    const reviewNameRequest = useCallback(
+        async (id: string, approve: boolean, note?: string | null) => {
+            await adminService.reviewNameChange(id, approve, note);
+            // Approval renames a member, so refresh both the requests and the tree.
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: REQUESTS_KEY }),
+                invalidateTree(),
+            ]);
+        },
+        [queryClient, invalidateTree],
+    );
+
     const value: AdminContextType = {
         adminData: treeQuery.data ?? null,
         roles: rolesQuery.data ?? [],
@@ -158,6 +184,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         inviteEmployee,
         updateEmployee,
         deleteEmployee,
+        nameRequests: requestsQuery.data ?? [],
+        reviewNameRequest,
     };
 
     return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;

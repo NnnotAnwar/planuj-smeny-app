@@ -3,9 +3,11 @@ import {
     type Shift,
     type Organization,
     type Role,
+    type NameChangeRequest,
     OrganizationSchema,
     ShiftSchema,
     RoleSchema,
+    NameChangeRequestSchema,
     type User,
 } from '@shared/types';
 import { z } from 'zod';
@@ -165,6 +167,37 @@ export const adminService = {
             body: { user_id: id },
         });
         if (error) throw await toFunctionError(error);
+    },
+
+    // ----------------------------------------------------------------
+    // NAME CHANGE REQUESTS
+    // ----------------------------------------------------------------
+
+    /**
+     * Pending name-change requests visible to the caller (RLS scopes them to the
+     * admin's organization; Superadmin sees all). Includes the requester profile.
+     */
+    async getNameChangeRequests(): Promise<NameChangeRequest[]> {
+        const { data, error } = await supabase
+            .from('name_change_requests')
+            .select(
+                'id, user_id, organization_id, current_first_name, current_last_name, requested_first_name, requested_last_name, note, review_note, status, reviewed_at, created_at, requester:profiles!name_change_requests_user_id_fkey(username, email, first_name, last_name)',
+            )
+            .eq('status', 'pending')
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        return z.array(NameChangeRequestSchema).parse(data ?? []);
+    },
+
+    /** Approve or reject a request (SECURITY DEFINER RPC enforces authorization). */
+    async reviewNameChange(id: string, approve: boolean, note?: string | null): Promise<void> {
+        const { error } = await supabase.rpc('review_name_change_request', {
+            p_id: id,
+            p_approve: approve,
+            p_review_note: note ?? null,
+        });
+        if (error) throw new Error(error.message);
     },
 
     /**

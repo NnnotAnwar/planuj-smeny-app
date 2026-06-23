@@ -7,12 +7,14 @@ import {
     PlusIcon,
     PaperPlaneTiltIcon,
     MagnifyingGlassIcon,
+    UserCircleGearIcon,
 } from '@phosphor-icons/react';
 import type { Organization, Profile } from '@/shared/types';
 
 import { useAuthContext } from '@/features/auth/AuthContext';
 import { AdminProvider, useAdminContext } from './AdminContext';
 import { canManageEmployees, canManageLocations } from './permissions';
+import { NameChangeRequestsList } from './components/NameChangeRequestsList';
 import { ConfirmDialog } from './components/Modal';
 import { OrganizationForm } from './components/OrganizationForm';
 import { LocationForm, type LocationEditTarget } from './components/LocationForm';
@@ -23,7 +25,7 @@ import { OrganizationsList } from './components/OrganizationsList';
 import { LocationsList, type LocationRow } from './components/LocationsList';
 import { EmployeesList, type EmployeeRow } from './components/EmployeesList';
 
-type TabType = 'employees' | 'locations' | 'organizations';
+type TabType = 'employees' | 'locations' | 'organizations' | 'requests';
 
 type ModalState =
     | { kind: 'org-form'; org?: Organization }
@@ -37,6 +39,7 @@ const ADD_LABEL: Record<TabType, string> = {
     organizations: 'Add Organization',
     locations: 'Add Location',
     employees: 'Invite Employee',
+    requests: '',
 };
 
 /**
@@ -61,8 +64,14 @@ function AdminPanel() {
         deleteOrganization,
         deleteLocation,
         deleteEmployee,
+        nameRequests,
+        reviewNameRequest,
     } = useAdminContext();
     const { user } = useAuthContext();
+
+    // Admin (rank >= 30) capability — also gates the name-change requests tab.
+    const canManageEmp = user ? canManageEmployees(user) : false;
+    const canManageLoc = user ? canManageLocations(user) : false;
 
     const [activeTab, setActiveTab] = useState<TabType>('employees');
     const [searchQuery, setSearchQuery] = useState('');
@@ -71,12 +80,16 @@ function AdminPanel() {
     const tabs = [
         { id: 'employees', label: 'Employees', icon: UsersIcon },
         { id: 'locations', label: 'Locations', icon: MapPinIcon },
+        ...(canManageEmp ? [{ id: 'requests', label: 'Requests', icon: UserCircleGearIcon }] : []),
         ...(isSuperAdmin ? [{ id: 'organizations', label: 'Organizations', icon: BuildingsIcon }] : []),
     ] as const;
 
-    // Guard against showing the Organizations tab to a non-Superadmin (e.g. if
-    // their role changes mid-session) without a setState-in-effect round trip.
-    const safeTab: TabType = activeTab === 'organizations' && !isSuperAdmin ? 'employees' : activeTab;
+    // Guard against showing a tab the user may not access (e.g. if their role
+    // changes mid-session) without a setState-in-effect round trip.
+    const safeTab: TabType =
+        (activeTab === 'organizations' && !isSuperAdmin) || (activeTab === 'requests' && !canManageEmp)
+            ? 'employees'
+            : activeTab;
 
     // --- Derived, flattened + searched collections ---
     const query = searchQuery.trim().toLowerCase();
@@ -134,10 +147,14 @@ function AdminPanel() {
     const empCount = adminData?.reduce((n, o) => n + o.profiles.length, 0) ?? 0;
 
     // Capability flags drive what the current user can do (mirrors RLS).
-    const canManageEmp = user ? canManageEmployees(user) : false;
-    const canManageLoc = user ? canManageLocations(user) : false;
     const canAdd =
-        safeTab === 'employees' ? canManageEmp : safeTab === 'locations' ? canManageLoc : isSuperAdmin;
+        safeTab === 'employees'
+            ? canManageEmp
+            : safeTab === 'locations'
+              ? canManageLoc
+              : safeTab === 'organizations'
+                ? isSuperAdmin
+                : false; // 'requests' has no "add" action
 
     return (
         <div className="space-y-6 px-1 max-w-7xl mx-auto w-full">
@@ -205,6 +222,11 @@ function AdminPanel() {
                                 )}
                                 <tab.icon weight={isActive ? 'fill' : 'bold'} className="w-5 h-5 sm:w-4 sm:h-4 relative z-10" />
                                 <span className="relative z-10 hidden sm:block">{tab.label}</span>
+                                {tab.id === 'requests' && nameRequests.length > 0 && (
+                                    <span className="relative z-10 ml-0.5 min-w-4 h-4 px-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                                        {nameRequests.length}
+                                    </span>
+                                )}
                             </button>
                         );
                     })}
@@ -272,6 +294,13 @@ function AdminPanel() {
                                             label: `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() || emp.username,
                                         })
                                     }
+                                />
+                            )}
+                            {safeTab === 'requests' && (
+                                <NameChangeRequestsList
+                                    items={nameRequests}
+                                    isLoading={isLoading}
+                                    onReview={reviewNameRequest}
                                 />
                             )}
                         </motion.div>

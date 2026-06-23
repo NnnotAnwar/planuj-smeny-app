@@ -1,6 +1,6 @@
 import { supabase } from '@shared/api/supabaseClient';
-import { type User } from '@shared/types';
-import { ProfileSchema } from '@shared/types';
+import { type User, type NameChangeRequest } from '@shared/types';
+import { ProfileSchema, NameChangeRequestSchema } from '@shared/types';
 
 /**
  * --- AUTH SERVICE ---
@@ -24,7 +24,7 @@ export const authService = {
   async getUserProfile(userId: string): Promise<User | null> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, first_name, last_name, role(name, is_admin, rank), email, organization_id')
+      .select('id, username, first_name, last_name, role(name, is_admin, rank), email, organization_id, username_changed_at')
       .eq('id', userId)
       .single();
 
@@ -44,7 +44,8 @@ export const authService = {
       },
       email: validated.email,
       last_name: validated.last_name ?? null,
-      organization_id: validated.organization_id
+      organization_id: validated.organization_id,
+      username_changed_at: validated.username_changed_at ?? null
     };
   },
 
@@ -96,5 +97,40 @@ export const authService = {
     fields: { username?: string; first_name?: string | null; last_name?: string | null }
   ) {
     return await supabase.from('profiles').update(fields).eq('id', userId);
-  }
+  },
+
+  /**
+   * The caller's most recent name-change request (any status), or null.
+   * Staff use this to see whether they already have one pending.
+   */
+  async getMyLatestNameRequest(userId: string): Promise<NameChangeRequest | null> {
+    const { data, error } = await supabase
+      .from('name_change_requests')
+      .select(
+        'id, user_id, organization_id, current_first_name, current_last_name, requested_first_name, requested_last_name, note, review_note, status, reviewed_at, created_at',
+      )
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data ? NameChangeRequestSchema.parse(data) : null;
+  },
+
+  /** Submit a request to change your first/last name (SECURITY DEFINER RPC). */
+  async requestNameChange(firstName: string, lastName: string, note?: string | null) {
+    const { error } = await supabase.rpc('request_name_change', {
+      p_first_name: firstName,
+      p_last_name: lastName,
+      p_note: note ?? null,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  /** Cancel your own pending name-change request. */
+  async cancelNameChange(requestId: string) {
+    const { error } = await supabase.rpc('cancel_name_change_request', { p_id: requestId });
+    if (error) throw new Error(error.message);
+  },
 };

@@ -22,6 +22,37 @@ export const ProfileSchema = z.object({
     rank: z.number().default(0), // Position in the role hierarchy (higher = more privileged)
   }),
   organization_id: z.string(), // The company this user belongs to
+  username_changed_at: z.string().nullable().optional(), // last username change (7-day self-service limit)
+});
+
+/**
+ * NameChangeRequestSchema: an employee's request to change their first/last name.
+ * Staff (rank < 30) cannot edit their own name directly — they file one of these
+ * and an admin approves it (which applies the new name automatically).
+ */
+export const NameChangeRequestSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  organization_id: z.string(),
+  current_first_name: z.string().nullable(),
+  current_last_name: z.string().nullable(),
+  requested_first_name: z.string().nullable(),
+  requested_last_name: z.string().nullable(),
+  note: z.string().nullable().optional(),
+  review_note: z.string().nullable().optional(),
+  status: z.enum(['pending', 'approved', 'rejected']),
+  reviewed_at: z.string().nullable().optional(),
+  created_at: z.string(),
+  // Embedded requester profile (admin list view).
+  requester: z
+    .object({
+      username: z.string(),
+      email: z.email().nullable().optional(),
+      first_name: z.string().nullable().optional(),
+      last_name: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 /** 
@@ -109,6 +140,7 @@ export type Shift = z.infer<typeof ShiftSchema>;
 export type Location = z.infer<typeof LocationSchema>;
 export type Organization = z.infer<typeof OrganizationSchema>;
 export type Role = z.infer<typeof RoleSchema>;
+export type NameChangeRequest = z.infer<typeof NameChangeRequestSchema>;
 
 /**
  * --- COMPONENT TYPES ---
