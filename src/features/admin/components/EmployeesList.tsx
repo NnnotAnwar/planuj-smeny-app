@@ -56,7 +56,9 @@ function RoleBadge({ role }: { role: Profile['role'] }) {
     );
 }
 
-function EmployeeIdentity({ employee, isSelf }: { employee: Profile; isSelf: boolean }) {
+export type EmployeeRow = Profile & { organizationName?: string };
+
+function EmployeeIdentity({ employee, isSelf, org }: { employee: Profile; isSelf: boolean; org?: string }) {
     return (
         <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-micro shrink-0">
@@ -75,6 +77,8 @@ function EmployeeIdentity({ employee, isSelf }: { employee: Profile; isSelf: boo
                     )}
                 </div>
                 <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{employee.username}</p>
+                {/* Org has its own column on sm+; shown here only on mobile (superadmin). */}
+                {org && <p className="sm:hidden text-micro text-gray-400 truncate mt-0.5">{org}</p>}
             </div>
         </div>
     );
@@ -84,12 +88,14 @@ export function EmployeesList({
     items,
     isLoading,
     currentUser,
+    showOrganization = false,
     onEdit,
     onDelete,
 }: {
-    items: Profile[];
+    items: EmployeeRow[];
     isLoading: boolean;
     currentUser: User | null;
+    showOrganization?: boolean;
     onEdit: (emp: Profile) => void;
     onDelete: (emp: Profile) => void;
 }) {
@@ -99,9 +105,12 @@ export function EmployeesList({
     // empty gutter.
     const anyManageable = items.some(manageable);
 
-    const columns: Column<Profile>[] = [
-        { key: 'employee', header: 'Employee', render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} /> },
+    const columns: Column<EmployeeRow>[] = [
+        { key: 'employee', header: 'Employee', render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} org={showOrganization ? emp.organizationName : undefined} /> },
         { key: 'email', header: 'Email', hideOnMobile: true, className: 'truncate', render: (emp) => <span className="text-body text-gray-500 dark:text-gray-400">{emp.email}</span> },
+        ...(showOrganization
+            ? [{ key: 'org', header: 'Organization', hideOnMobile: true, className: 'truncate', render: (emp: EmployeeRow) => <span className="text-body text-gray-500 dark:text-gray-400">{emp.organizationName ?? '—'}</span> }]
+            : []),
         { key: 'role', header: 'Role', align: 'right', width: 'w-24 sm:w-32', render: (emp) => <RoleBadge role={emp.role} /> },
         ...(anyManageable
             ? [
