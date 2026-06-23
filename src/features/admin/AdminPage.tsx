@@ -21,7 +21,7 @@ import { InviteEmployeeForm } from './components/InviteEmployeeForm';
 import { StatCard, ErrorState } from './components/AdminStateViews';
 import { OrganizationsList } from './components/OrganizationsList';
 import { LocationsList, type LocationRow } from './components/LocationsList';
-import { EmployeesList } from './components/EmployeesList';
+import { EmployeesList, type EmployeeRow } from './components/EmployeesList';
 
 type TabType = 'employees' | 'locations' | 'organizations';
 
@@ -97,11 +97,14 @@ function AdminPanel() {
         return all.filter((l) => `${l.name} ${l.organizationName}`.toLowerCase().includes(query));
     }, [adminData, query]);
 
-    const employees = useMemo<Profile[]>(() => {
-        const all = adminData?.flatMap((org) => org.profiles) ?? [];
+    const employees = useMemo<EmployeeRow[]>(() => {
+        const all =
+            adminData?.flatMap((org) =>
+                org.profiles.map((p) => ({ ...p, organizationName: org.name })),
+            ) ?? [];
         if (!query) return all;
         return all.filter((e) =>
-            `${e.first_name ?? ''} ${e.last_name ?? ''} ${e.email} ${e.username} ${e.role.name}`
+            `${e.first_name ?? ''} ${e.last_name ?? ''} ${e.email} ${e.username} ${e.role.name} ${e.organizationName}`
                 .toLowerCase()
                 .includes(query),
         );
@@ -259,6 +262,7 @@ function AdminPanel() {
                                     items={employees}
                                     isLoading={isLoading}
                                     currentUser={user}
+                                    showOrganization={isSuperAdmin}
                                     onEdit={(emp) => setModal({ kind: 'emp-form', emp })}
                                     onDelete={(emp) =>
                                         setModal({
