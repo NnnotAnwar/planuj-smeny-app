@@ -43,7 +43,9 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
   const currentRoute = useLocation();
 
   const filteredLocations = locations.filter(loc =>
-    !loc.archived_at && loc.name.toLowerCase().includes(searchQuery.toLowerCase())
+    // hide archived, but keep the one you're currently clocked into
+    (!loc.archived_at || loc.id === selectedLocationId) &&
+    loc.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

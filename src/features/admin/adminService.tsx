@@ -70,6 +70,17 @@ export const adminService = {
         return z.array(RoleSchema).parse(data ?? []);
     },
 
+    /** True if anyone is currently clocked in at this location (open shift). */
+    async hasActiveShiftsAtLocation(locationId: string): Promise<boolean> {
+        const { count, error } = await supabase
+            .from('shifts')
+            .select('id', { count: 'exact', head: true })
+            .eq('location_id', locationId)
+            .is('ended_at', null);
+        if (error) throw error;
+        return (count ?? 0) > 0;
+    },
+
     async getAllActiveShifts(organizationId: string, isSuperAdmin: boolean): Promise<Shift[]> {
         let query = supabase
             .from('shifts')
