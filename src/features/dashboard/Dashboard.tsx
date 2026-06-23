@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import { SquaresFourIcon, ChartBarIcon, GearIcon, ShieldCheckIcon } from "@phosphor-icons/react";
+import { SquaresFourIcon, ChartBarIcon, GearIcon, ShieldCheckIcon, UserCircleGearIcon, type Icon } from "@phosphor-icons/react";
 
 import { Clock } from '@shared/components/Clock';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useTheme } from '@app/providers/ThemeContext';
 import { LocationSelection } from '@features/locations/components/LocationSelection';
-import { canViewAdminPanel } from '@features/admin/permissions';
+import { canViewAdminPanel, canManageEmployees } from '@features/admin/permissions';
+import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
 
 /**
  * --- DASHBOARD COMPONENT ---
@@ -31,10 +32,12 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
   const { user, logout } = useAuthContext();
   const { locations, selectedLocationId } = useShiftContext();
 
-  const navItems = [
+  const pendingRequests = usePendingNameRequestCount();
+  const navItems: { name: string; icon: Icon; route: string; badge?: number }[] = [
     { name: 'Dashboard', icon: SquaresFourIcon, route: '/' },
     { name: 'Overview', icon: ChartBarIcon, route: '/overview' },
     ...(user && canViewAdminPanel(user) ? [{ name: 'Admin Panel', icon: ShieldCheckIcon, route: '/admin' }] : []),
+    ...(user && canManageEmployees(user) ? [{ name: 'Requests', icon: UserCircleGearIcon, route: '/requests', badge: pendingRequests }] : []),
     { name: 'Settings', icon: GearIcon, route: '/settings' }
   ];
 
@@ -105,6 +108,11 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
                 }>
                   {item.icon && <item.icon />}
                   <span className="text-body">{item.name}</span>
+                  {!!item.badge && (
+                    <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center">
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               ))}
             </nav>

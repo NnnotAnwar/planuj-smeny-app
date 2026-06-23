@@ -40,6 +40,7 @@ const AcceptInvitePage = lazy(() =>
 );
 const OverviewPage = lazy(() => import('./features/shifts/OverviewPage'));
 const AdminPage = lazy(() => import('./features/admin/AdminPage').then((m) => ({ default: m.AdminPage })));
+const RequestsPage = lazy(() => import('./features/requests/RequestsPage').then((m) => ({ default: m.RequestsPage })));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 
 export default function App() {
@@ -66,6 +67,8 @@ export default function App() {
                     <Route path="overview" element={<OverviewPage />} />
                     <Route element={<RoleGuard />}>
                       <Route path="admin" element={<AdminPage />} />
+                      {/* Requests is admin-only (rank >= 30); the page self-guards too. */}
+                      <Route path="requests" element={<RequestsPage />} />
                     </Route>
                     <Route path="settings" element={<SettingsPage />} />
                   </Route>

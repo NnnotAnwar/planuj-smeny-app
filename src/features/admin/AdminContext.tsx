@@ -39,6 +39,7 @@ interface AdminContextType {
 
     // Name change requests
     nameRequests: NameChangeRequest[];
+    nameRequestsLoading: boolean;
     reviewNameRequest: (id: string, approve: boolean, note?: string | null) => Promise<void>;
 }
 
@@ -185,6 +186,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         updateEmployee,
         deleteEmployee,
         nameRequests: requestsQuery.data ?? [],
+        nameRequestsLoading: requestsQuery.isLoading,
         reviewNameRequest,
     };
 
