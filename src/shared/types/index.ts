@@ -131,6 +131,42 @@ export const RoleSchema = z.object({
 });
 
 /**
+ * A point-in-time snapshot of a shift's editable fields, stored inside an audit
+ * entry's `details` so the log stays readable even after the shift/location is
+ * removed.
+ */
+export const ShiftSnapshotSchema = z.object({
+  started_at: z.string().nullable().optional(),
+  ended_at: z.string().nullable().optional(),
+  location_id: z.string().nullable().optional(),
+  location_name: z.string().nullable().optional(),
+  role: z.string().nullable().optional(),
+});
+
+/**
+ * ShiftAuditLogSchema: one administrative change to a member's shift
+ * (create/update/delete), recorded by the SECURITY DEFINER RPCs. Admins+ can
+ * review these; `details` snapshots names + before/after values.
+ */
+export const ShiftAuditLogSchema = z.object({
+  id: z.string(),
+  organization_id: z.string(),
+  shift_id: z.string().nullable(),
+  actor_id: z.string().nullable(),
+  target_user_id: z.string().nullable(),
+  action: z.enum(['create', 'update', 'delete']),
+  details: z
+    .object({
+      actor_name: z.string().nullable().optional(),
+      target_name: z.string().nullable().optional(),
+      old: ShiftSnapshotSchema.nullable().optional(),
+      new: ShiftSnapshotSchema.nullable().optional(),
+    })
+    .default({}),
+  created_at: z.string(),
+});
+
+/**
  * --- TYPES FOR TYPESCRIPT ---
  * These are generated automatically from the schemas above.
  * We use these throughout the app to get auto-completion and error checking.
@@ -141,6 +177,8 @@ export type Location = z.infer<typeof LocationSchema>;
 export type Organization = z.infer<typeof OrganizationSchema>;
 export type Role = z.infer<typeof RoleSchema>;
 export type NameChangeRequest = z.infer<typeof NameChangeRequestSchema>;
+export type ShiftSnapshot = z.infer<typeof ShiftSnapshotSchema>;
+export type ShiftAuditLog = z.infer<typeof ShiftAuditLogSchema>;
 
 /**
  * --- COMPONENT TYPES ---

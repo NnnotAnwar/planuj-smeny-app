@@ -7,6 +7,8 @@ import {
     GearIcon,
     ShieldCheckIcon,
     UserCircleGearIcon,
+    ClockUserIcon,
+    ClockCounterClockwiseIcon,
     DotsThreeOutlineIcon,
     XIcon,
     SignOutIcon,
@@ -65,6 +67,7 @@ export function BottomNav() {
             : user?.username ?? '';
 
     const isAdmin = !!user && canManageEmployees(user);
+    const canViewPanel = !!user && canViewAdminPanel(user);
     const pending = usePendingNameRequestCount();
 
     // Primary bar destinations.
@@ -76,7 +79,9 @@ export function BottomNav() {
 
     // Destinations that live inside the "More" sheet.
     const moreItems: NavItem[] = [
+        ...(canViewPanel ? [{ name: 'Timesheets', icon: ClockUserIcon, route: '/timesheets' }] : []),
         ...(isAdmin ? [{ name: 'Requests', icon: UserCircleGearIcon, route: '/requests' }] : []),
+        ...(isAdmin ? [{ name: 'Activity Log', icon: ClockCounterClockwiseIcon, route: '/activity' }] : []),
         { name: 'Settings', icon: GearIcon, route: '/settings' },
     ];
 

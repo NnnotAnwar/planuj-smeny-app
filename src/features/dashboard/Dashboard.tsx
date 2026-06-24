@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import { SquaresFourIcon, ChartBarIcon, GearIcon, ShieldCheckIcon, UserCircleGearIcon, type Icon } from "@phosphor-icons/react";
+import { SquaresFourIcon, ChartBarIcon, GearIcon, ShieldCheckIcon, UserCircleGearIcon, ClockUserIcon, ClockCounterClockwiseIcon, type Icon } from "@phosphor-icons/react";
 
 import { Clock } from '@shared/components/Clock';
 import { useAuthContext } from '@features/auth/AuthContext';
@@ -37,7 +37,9 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
     { name: 'Dashboard', icon: SquaresFourIcon, route: '/' },
     { name: 'Overview', icon: ChartBarIcon, route: '/overview' },
     ...(user && canViewAdminPanel(user) ? [{ name: 'Admin Panel', icon: ShieldCheckIcon, route: '/admin' }] : []),
+    ...(user && canViewAdminPanel(user) ? [{ name: 'Timesheets', icon: ClockUserIcon, route: '/timesheets' }] : []),
     ...(user && canManageEmployees(user) ? [{ name: 'Requests', icon: UserCircleGearIcon, route: '/requests', badge: pendingRequests }] : []),
+    ...(user && canManageEmployees(user) ? [{ name: 'Activity Log', icon: ClockCounterClockwiseIcon, route: '/activity' }] : []),
     { name: 'Settings', icon: GearIcon, route: '/settings' }
   ];
 

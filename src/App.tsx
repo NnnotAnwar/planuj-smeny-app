@@ -41,6 +41,8 @@ const AcceptInvitePage = lazy(() =>
 const OverviewPage = lazy(() => import('./features/shifts/OverviewPage'));
 const AdminPage = lazy(() => import('./features/admin/AdminPage').then((m) => ({ default: m.AdminPage })));
 const RequestsPage = lazy(() => import('./features/requests/RequestsPage').then((m) => ({ default: m.RequestsPage })));
+const TimesheetsPage = lazy(() => import('./features/timesheets/TimesheetsPage').then((m) => ({ default: m.TimesheetsPage })));
+const AuditLogPage = lazy(() => import('./features/timesheets/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 
 export default function App() {
@@ -69,6 +71,10 @@ export default function App() {
                       <Route path="admin" element={<AdminPage />} />
                       {/* Requests is admin-only (rank >= 30); the page self-guards too. */}
                       <Route path="requests" element={<RequestsPage />} />
+                      {/* Timesheets is for managers+ (rank >= 20). */}
+                      <Route path="timesheets" element={<TimesheetsPage />} />
+                      {/* Activity Log is admin-only (rank >= 30); the page self-guards too. */}
+                      <Route path="activity" element={<AuditLogPage />} />
                     </Route>
                     <Route path="settings" element={<SettingsPage />} />
                   </Route>

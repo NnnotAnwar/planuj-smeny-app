@@ -1,0 +1,456 @@
+import { useMemo, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+    MagnifyingGlassIcon,
+    CaretRightIcon,
+    CaretLeftIcon,
+    PlusIcon,
+    DownloadSimpleIcon,
+    FilePdfIcon,
+    FileXlsIcon,
+    FileCsvIcon,
+    ClockUserIcon,
+} from '@phosphor-icons/react';
+
+import { useAuthContext } from '@features/auth/AuthContext';
+import { canViewAdminPanel, canManageMember } from '@features/admin/permissions';
+import { DataTable, type Column } from '@shared/components/DataTable';
+import { MonthPicker } from '@shared/components/MonthPicker';
+import { ActionButtons } from '@features/admin/components/ActionButtons';
+import { ConfirmDialog } from '@features/admin/components/Modal';
+import { getRoleBadgeColor } from '@shared/utils/roleColors';
+import { getFullInitials } from '@shared/utils/getInitials';
+import { type Shift, type Profile } from '@shared/types';
+import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from '@features/shifts/shiftStats';
+
+import { timesheetService } from './timesheetService';
+import { exportShifts, type ExportFormat } from './exportShifts';
+import { ShiftEditorModal, type ShiftFormValues } from './components/ShiftEditorModal';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function memberName(m: Profile): string {
+    return [m.first_name, m.last_name].filter(Boolean).join(' ') || m.username;
+}
+
+function fmtTimeRange(s: Shift): string {
+    const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
+    const start = new Date(s.started_at).toLocaleTimeString(undefined, opts);
+    const end = s.ended_at ? new Date(s.ended_at).toLocaleTimeString(undefined, opts) : '…';
+    return `${start} – ${end}`;
+}
+
+/**
+ * --- TIMESHEETS PAGE ---
+ * Managers and above (rank >= 20) pick a member, review their shifts for a month
+ * (or all-time), edit/add/delete them (when they out-rank the member), and
+ * export the timesheet as PDF / Excel / CSV for signing. Every administrative
+ * change is recorded in the Activity Log.
+ */
+export function TimesheetsPage() {
+    const { user } = useAuthContext();
+    if (user && !canViewAdminPanel(user)) return <Navigate to="/" replace />;
+    return <TimesheetsInner />;
+}
+
+function TimesheetsInner() {
+    const { user } = useAuthContext();
+    const qc = useQueryClient();
+
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [search, setSearch] = useState('');
+    const [month, setMonth] = useState<string | null>(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const [editing, setEditing] = useState<{ shift: Shift | null } | null>(null);
+    const [deleting, setDeleting] = useState<Shift | null>(null);
+    const [exportOpen, setExportOpen] = useState(false);
+
+    const membersQ = useQuery({
+        queryKey: ['timesheets', 'members'],
+        queryFn: () => timesheetService.getMembers(),
+        enabled: !!user,
+    });
+    const members = membersQ.data ?? [];
+    const selected = members.find((m) => m.id === selectedId) ?? null;
+
+    const locationsQ = useQuery({
+        queryKey: ['timesheets', 'locations', selected?.organization_id],
+        queryFn: () => timesheetService.getOrgLocations(selected!.organization_id),
+        enabled: !!selected,
+    });
+    const locations = useMemo(() => locationsQ.data ?? [], [locationsQ.data]);
+
+    const shiftsQ = useQuery({
+        queryKey: ['timesheets', 'shifts', selectedId],
+        queryFn: () => timesheetService.getMemberShifts(selectedId!),
+        enabled: !!selectedId,
+    });
+
+    const locationName = useMemo(() => {
+        const map = new Map(locations.map((l) => [l.id, l.name]));
+        return (id: string) => map.get(id) ?? 'Unknown';
+    }, [locations]);
+
+    const shifts = useMemo(() => {
+        const all = shiftsQ.data ?? [];
+        return month ? all.filter((s) => s.started_at.startsWith(month)) : all;
+    }, [shiftsQ.data, month]);
+
+    const totals = useMemo(() => {
+        let gross = 0;
+        let net = 0;
+        for (const s of shifts) {
+            gross += shiftGrossHours(s);
+            net += shiftHours(s);
+        }
+        return { gross, net, brk: gross - net, count: shifts.length };
+    }, [shifts]);
+
+    const canEdit = !!(user && selected && canManageMember(user, selected));
+    const periodLabel = month ? `${MONTHS[+month.split('-')[1] - 1]} ${month.split('-')[0]}` : 'All time';
+
+    const invalidate = () =>
+        Promise.all([
+            qc.invalidateQueries({ queryKey: ['timesheets', 'shifts', selectedId] }),
+            qc.invalidateQueries({ queryKey: ['timesheets', 'audit'] }),
+        ]);
+
+    const filteredMembers = members.filter((m) => {
+        const q = search.trim().toLowerCase();
+        if (!q) return true;
+        return (
+            memberName(m).toLowerCase().includes(q) ||
+            m.username.toLowerCase().includes(q) ||
+            (m.email ?? '').toLowerCase().includes(q)
+        );
+    });
+
+    const handleSubmit = async (values: ShiftFormValues) => {
+        if (!selectedId) return;
+        if (editing?.shift) {
+            await timesheetService.updateShift(editing.shift.id, values);
+        } else {
+            await timesheetService.createShift({ user_id: selectedId, ...values });
+        }
+        await invalidate();
+    };
+
+    const handleDelete = async () => {
+        if (!deleting) return;
+        await timesheetService.deleteShift(deleting.id);
+        await invalidate();
+    };
+
+    const doExport = (fmt: ExportFormat) => {
+        if (!selected) return;
+        exportShifts(fmt, { employeeName: memberName(selected), periodLabel, shifts, locationName });
+        setExportOpen(false);
+    };
+
+    // -----------------------------------------------------------------
+    // Shift table columns
+    // -----------------------------------------------------------------
+    const columns: Column<Shift>[] = [
+        {
+            key: 'date',
+            header: 'Date',
+            width: 'w-16 sm:w-24',
+            className: 'whitespace-nowrap',
+            footer: <span className="text-label text-gray-400">Total</span>,
+            render: (s) => {
+                const d = new Date(s.started_at);
+                return (
+                    <div className="flex flex-col">
+                        <span className="text-small-strong dark:text-white">
+                            {d.getDate()} {d.toLocaleDateString(undefined, { month: 'short' })}
+                        </span>
+                        <span className="text-micro text-gray-400">{WEEKDAYS[(d.getDay() + 6) % 7]}</span>
+                    </div>
+                );
+            },
+        },
+        {
+            key: 'location',
+            header: 'Location & Time',
+            className: 'w-full',
+            footer: (
+                <span className="sm:hidden text-caption text-gray-500 dark:text-gray-400 tabular-nums">
+                    {fmtHours(totals.gross)} · −{fmtHours(totals.brk)}
+                </span>
+            ),
+            render: (s) => {
+                const gross = shiftGrossHours(s);
+                const brk = shiftBreakHours(s);
+                return (
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-small-strong text-gray-700 dark:text-gray-200 truncate">{locationName(s.location_id)}</span>
+                        <span className="text-caption text-gray-400 tabular-nums">{fmtTimeRange(s)}</span>
+                        <span className="sm:hidden text-caption text-gray-400 tabular-nums">
+                            Gross {fmtDuration(gross)}{brk > 0 ? ` · −${fmtDuration(brk)}` : ''}
+                        </span>
+                    </div>
+                );
+            },
+        },
+        {
+            key: 'gross',
+            header: 'Gross',
+            align: 'right',
+            width: 'w-20',
+            hideOnMobile: true,
+            className: 'text-xs font-bold tabular-nums text-gray-600 dark:text-gray-300',
+            footer: <span className="text-xs font-black tabular-nums dark:text-white">{fmtHours(totals.gross)}</span>,
+            render: (s) => fmtDuration(shiftGrossHours(s)),
+        },
+        {
+            key: 'break',
+            header: 'Break',
+            align: 'right',
+            width: 'w-20',
+            hideOnMobile: true,
+            className: 'text-xs font-bold tabular-nums text-amber-500',
+            footer: <span className="text-xs font-black tabular-nums text-amber-500">-{fmtHours(totals.brk)}</span>,
+            render: (s) => {
+                const brk = shiftBreakHours(s);
+                return brk > 0 ? `-${fmtDuration(brk)}` : '—';
+            },
+        },
+        {
+            key: 'net',
+            header: 'Net',
+            align: 'right',
+            width: canEdit ? 'w-16 sm:w-20' : 'w-20 sm:w-24',
+            footer: <span className="text-xs font-black tabular-nums whitespace-nowrap text-emerald-600 dark:text-emerald-400">{fmtHours(totals.net)}</span>,
+            render: (s) => {
+                const ongoing = !s.ended_at;
+                return (
+                    <>
+                        <span className={`block text-xs font-black tabular-nums whitespace-nowrap ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            {fmtDuration(shiftHours(s))}
+                        </span>
+                        {ongoing && <span className="block text-micro text-amber-500">Live</span>}
+                    </>
+                );
+            },
+        },
+        ...(canEdit
+            ? [
+                  {
+                      key: 'actions',
+                      header: '',
+                      align: 'right' as const,
+                      width: 'w-16 sm:w-24',
+                      render: (s: Shift) => (
+                          <div className="flex justify-end">
+                              <ActionButtons onEdit={() => setEditing({ shift: s })} onDelete={() => setDeleting(s)} />
+                          </div>
+                      ),
+                  },
+              ]
+            : []),
+    ];
+
+    // -----------------------------------------------------------------
+    // Render
+    // -----------------------------------------------------------------
+    return (
+        <div className="space-y-4 px-1 pb-10">
+            <header className="flex items-end justify-between gap-3 pt-2">
+                <div className="space-y-0.5">
+                    <p className="text-label text-emerald-500 text-left">Administration</p>
+                    <h1 className="text-display text-gray-900 dark:text-white">Timesheets</h1>
+                </div>
+                {selected && (
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <button
+                                onClick={() => setExportOpen((v) => !v)}
+                                disabled={shifts.length === 0}
+                                className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
+                                title="Export timesheet"
+                            >
+                                <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
+                            </button>
+                            <AnimatePresence>
+                                {exportOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 4, scale: 1 }}
+                                            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                                            className="absolute right-0 top-full z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-1.5 overflow-hidden"
+                                        >
+                                            {([
+                                                { fmt: 'pdf' as const, label: 'PDF (for signing)', Icon: FilePdfIcon },
+                                                { fmt: 'excel' as const, label: 'Excel', Icon: FileXlsIcon },
+                                                { fmt: 'csv' as const, label: 'CSV', Icon: FileCsvIcon },
+                                            ]).map(({ fmt, label, Icon }) => (
+                                                <button
+                                                    key={fmt}
+                                                    onClick={() => doExport(fmt)}
+                                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
+                                                >
+                                                    <Icon weight="bold" className="w-4 h-4 text-emerald-500" />
+                                                    {label}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                        <MonthPicker value={month} onChange={setMonth} />
+                    </div>
+                )}
+            </header>
+
+            {/* MEMBER PICKER */}
+            {!selected ? (
+                <div className="space-y-3">
+                    <div className="relative">
+                        <MagnifyingGlassIcon weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search employees…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 py-2.5 pl-9 pr-3 text-body text-gray-900 dark:text-white outline-none focus:border-emerald-500/40 shadow-sm transition-all"
+                        />
+                    </div>
+
+                    {membersQ.isLoading ? (
+                        <div className="py-20 text-center text-label text-gray-400 animate-pulse">Loading employees…</div>
+                    ) : filteredMembers.length === 0 ? (
+                        <div className="py-20 text-center text-label text-gray-400">No employees found</div>
+                    ) : (
+                        <div className="rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+                            {filteredMembers.map((m, i) => (
+                                <button
+                                    key={m.id}
+                                    onClick={() => { setSelectedId(m.id); setSearch(''); }}
+                                    className={`w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-left ${i > 0 ? 'border-t border-gray-50 dark:border-gray-800/50' : ''}`}
+                                >
+                                    <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-micro shrink-0">
+                                        {getFullInitials(m.first_name, m.last_name)}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-body-strong text-gray-900 dark:text-white truncate">{memberName(m)}</p>
+                                        <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{m.username}</p>
+                                    </div>
+                                    <span className={`shrink-0 px-1.5 py-1 text-micro tracking-tight rounded-md whitespace-nowrap ${getRoleBadgeColor(m.role.name)}`}>
+                                        {m.role.name}
+                                    </span>
+                                    <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-300 shrink-0" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {/* Selected member header */}
+                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm">
+                        <button
+                            onClick={() => setSelectedId(null)}
+                            className="shrink-0 p-2 -ml-1 rounded-xl text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
+                            aria-label="Back to employees"
+                        >
+                            <CaretLeftIcon weight="bold" className="w-5 h-5" />
+                        </button>
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-black shrink-0">
+                            {getFullInitials(selected.first_name, selected.last_name)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-body-strong text-gray-900 dark:text-white truncate">{memberName(selected)}</p>
+                            <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{selected.username}</p>
+                        </div>
+                        <span className={`shrink-0 px-1.5 py-1 text-micro tracking-tight rounded-md whitespace-nowrap ${getRoleBadgeColor(selected.role.name)}`}>
+                            {selected.role.name}
+                        </span>
+                    </div>
+
+                    {/* Summary stats */}
+                    <div className="grid grid-cols-3 gap-2">
+                        {[
+                            { label: 'Net Hours', value: fmtHours(totals.net) },
+                            { label: 'Shifts', value: String(totals.count) },
+                            { label: 'Breaks', value: fmtHours(totals.brk) },
+                        ].map((s) => (
+                            <div key={s.label} className="bg-white dark:bg-gray-800/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                                <p className="text-micro text-gray-400 mb-1 truncate">{s.label}</p>
+                                <p className="text-metric text-emerald-600 dark:text-emerald-400">{s.value}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Table header + add */}
+                    <div className="flex items-center justify-between gap-2 px-1">
+                        <p className="text-caption leading-relaxed text-gray-400">
+                            Net = Gross − mandatory breaks:{' '}
+                            <span className="whitespace-nowrap">−30&nbsp;min from 6&nbsp;h</span>,{' '}
+                            <span className="whitespace-nowrap">−1&nbsp;h from 12&nbsp;h</span>.
+                        </p>
+                        {canEdit && (
+                            <button
+                                onClick={() => setEditing({ shift: null })}
+                                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-white text-label shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 active:scale-95 transition-all"
+                            >
+                                <PlusIcon weight="bold" className="w-4 h-4" /> Add
+                            </button>
+                        )}
+                    </div>
+
+                    {shiftsQ.isLoading ? (
+                        <div className="py-20 text-center text-label text-gray-400 animate-pulse">Loading shifts…</div>
+                    ) : shifts.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center text-center py-16 gap-3">
+                            <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500">
+                                <ClockUserIcon weight="bold" className="w-7 h-7" />
+                            </div>
+                            <div>
+                                <h2 className="text-heading text-gray-900 dark:text-white">No shifts {month ? 'this month' : 'yet'}</h2>
+                                <p className="text-body text-gray-400 mt-1">
+                                    {canEdit ? 'Add a shift or pick another month.' : 'Pick another month to see more.'}
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <DataTable rows={shifts} rowKey={(s) => s.id} columns={columns} />
+                    )}
+                </div>
+            )}
+
+            {/* Editor modal */}
+            <AnimatePresence>
+                {editing && selected && (
+                    <ShiftEditorModal
+                        member={selected}
+                        shift={editing.shift}
+                        locations={locations}
+                        onClose={() => setEditing(null)}
+                        onSubmit={handleSubmit}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Delete confirm */}
+            <AnimatePresence>
+                {deleting && (
+                    <ConfirmDialog
+                        title="Delete shift"
+                        message="This permanently removes the shift and records the change in the Activity Log. Continue?"
+                        confirmLabel="Delete"
+                        onConfirm={handleDelete}
+                        onClose={() => setDeleting(null)}
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
