@@ -9,11 +9,19 @@ import {
     UserCircleGearIcon,
     DotsThreeOutlineIcon,
     XIcon,
+    SignOutIcon,
+    PaletteIcon,
+    CaretRightIcon,
     type Icon,
 } from '@phosphor-icons/react';
 import { useAuthContext } from '@features/auth/AuthContext';
+import { useTheme } from '@app/providers/ThemeContext';
 import { canViewAdminPanel, canManageEmployees } from '@features/admin/permissions';
 import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
+
+function getInitials(firstName?: string | null, lastName?: string | null): string {
+    return ((firstName?.[0] ?? '') + (lastName?.[0] ?? '')).toUpperCase() || '?';
+}
 
 /**
  * --- BOTTOM NAVIGATION (mobile) ---
@@ -45,9 +53,16 @@ const itemVariants: Variants = {
 };
 
 export function BottomNav() {
-    const { user } = useAuthContext();
+    const { user, logout } = useAuthContext();
+    const { resolvedTheme, setTheme } = useTheme();
+    const isDark = resolvedTheme === 'dark';
     const { pathname } = useLocation();
     const [menuOpen, setMenuOpen] = useState(false);
+
+    const fullName =
+        user && (user.first_name || user.last_name)
+            ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim()
+            : user?.username ?? '';
 
     const isAdmin = !!user && canManageEmployees(user);
     const pending = usePendingNameRequestCount();
@@ -87,51 +102,90 @@ export function BottomNav() {
                         initial="closed"
                         animate="open"
                         exit="closed"
-                        className="md:hidden fixed inset-x-0 top-0 z-[60] bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] flex flex-col bg-gradient-to-br from-white via-emerald-50 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 pt-[env(safe-area-inset-top,0px)]"
+                        className="md:hidden fixed inset-x-0 top-0 z-[60] bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] flex flex-col bg-white/80 dark:bg-gray-950/85 backdrop-blur-2xl pt-[env(safe-area-inset-top,0px)]"
                     >
-                        <div className="flex justify-between items-center px-5 py-4 shrink-0">
-                            <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                                    <span className="text-white font-black text-base">PS</span>
-                                </div>
-                                <h2 className="text-title text-gray-900 dark:text-white">Menu</h2>
-                            </div>
+                        {/* Header — just "Menu", no logo */}
+                        <div className="flex justify-between items-center px-5 h-14 shrink-0 border-b border-gray-200/70 dark:border-white/5">
+                            <h2 className="text-title text-gray-900 dark:text-white">Menu</h2>
                             <button
                                 onClick={() => setMenuOpen(false)}
                                 aria-label="Close menu"
-                                className="-mr-2 p-1 text-gray-600 dark:text-gray-300 active:scale-90 transition-transform"
+                                className="-mr-2 p-2 rounded-xl text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 active:scale-90 transition-all"
                             >
-                                <XIcon weight="bold" className="w-7 h-7" />
+                                <XIcon weight="bold" className="w-6 h-6" />
                             </button>
                         </div>
 
-                        <nav className="flex-1 overflow-y-auto px-4 pb-6 flex flex-col gap-3">
-                            {moreItems.map((item) => {
-                                const active = item.route === pathname;
-                                const badge = item.route === '/requests' ? moreBadge : 0;
-                                return (
-                                    <motion.div key={item.route} variants={itemVariants}>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {/* Profile */}
+                            {user && (
+                                <motion.div
+                                    variants={itemVariants}
+                                    className="flex items-center gap-3 p-4 rounded-2xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5"
+                                >
+                                    <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 shadow-md flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-title shrink-0">
+                                        {getInitials(user.first_name, user.last_name)}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-body-strong text-gray-900 dark:text-white truncate">{fullName}</p>
+                                        <p className="text-caption text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                                        <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{user.username}</p>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* Services */}
+                            <motion.div
+                                variants={itemVariants}
+                                className="rounded-2xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 overflow-hidden"
+                            >
+                                {moreItems.map((item, i) => {
+                                    const badge = item.route === '/requests' ? moreBadge : 0;
+                                    return (
                                         <Link
+                                            key={item.route}
                                             to={item.route}
                                             onClick={() => setMenuOpen(false)}
-                                            className={`flex items-center gap-5 w-full p-4 rounded-2xl transition-all ${
-                                                active
-                                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                                                    : 'bg-white/60 dark:bg-white/5 text-gray-700 dark:text-gray-200 active:scale-[0.98]'
-                                            }`}
+                                            className={`flex items-center gap-3 p-4 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors ${i > 0 ? 'border-t border-gray-100 dark:border-white/5' : ''}`}
                                         >
-                                            <item.icon weight="bold" className="w-7 h-7 shrink-0" />
-                                            <span className="text-xl font-bold tracking-tight">{item.name}</span>
+                                            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                                <item.icon weight="bold" className="w-4 h-4" />
+                                            </div>
+                                            <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{item.name}</span>
                                             {badge > 0 && (
-                                                <span className="ml-auto min-w-6 h-6 px-2 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">
-                                                    {badge}
-                                                </span>
+                                                <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-white text-micro flex items-center justify-center">{badge}</span>
                                             )}
+                                            <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-400" />
                                         </Link>
-                                    </motion.div>
-                                );
-                            })}
-                        </nav>
+                                    );
+                                })}
+
+                                {/* Dark mode */}
+                                <button
+                                    onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                                    className="w-full flex items-center gap-3 p-4 border-t border-gray-100 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left"
+                                >
+                                    <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center shrink-0">
+                                        <PaletteIcon weight="bold" className="w-4 h-4" />
+                                    </div>
+                                    <span className="flex-1 text-body-strong text-gray-900 dark:text-white">Dark mode</span>
+                                    <span className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${isDark ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${isDark ? 'translate-x-5' : ''}`} />
+                                    </span>
+                                </button>
+                            </motion.div>
+                        </div>
+
+                        {/* Pinned logout */}
+                        <motion.div variants={itemVariants} className="shrink-0 p-4 border-t border-gray-200/70 dark:border-white/5">
+                            <button
+                                onClick={logout}
+                                className="flex w-full items-center justify-center gap-2 py-3.5 rounded-2xl text-body-strong text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/20 active:scale-[0.99] transition-all"
+                            >
+                                <SignOutIcon weight="bold" className="w-5 h-5" />
+                                Log out
+                            </button>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
