@@ -9,7 +9,7 @@ import { useLocationManagement } from '@features/locations/hooks/useLocationMana
 
 import { Dashboard } from '@features/dashboard/Dashboard';
 import { BottomNav } from './BottomNav';
-import { LocationPopup } from '@features/locations/components/LocationPopup';
+import { LocationPopup, type LocationPopupVariant } from '@features/locations/components/LocationPopup';
 import { type User, type Shift, type Location } from '@shared/types';
 
 /**
@@ -36,7 +36,7 @@ export interface AppOutletContext {
 
 export function AppShell() {
   const { user, isAuthChecking, isLoading: isAuthLoading } = useAuthContext();
-  const { activeShift, allActiveShifts, locations, selectedLocationId, setSelectedLocationId, actionError, clearActionError } = useShiftContext();
+  const { activeShift, allActiveShifts, locations, selectedLocationId, setSelectedLocationId, handleChangeLocation, isChangingLocation, actionError, clearActionError } = useShiftContext();
 
   // Auto-dismiss the shift-action error toast after a few seconds.
   useEffect(() => {
@@ -49,6 +49,25 @@ export function AppShell() {
   const { isLocationPopupOpen, setIsLocationPopupOpen, pendingLocation, handleLocationSelect } = useLocationManagement({
     locations, activeShift, selectedLocationId, setSelectedLocationId,
   });
+
+  // What the location popup is asking, and what confirming does.
+  const popupVariant: LocationPopupVariant = !pendingLocation
+    ? 'confirm'
+    : pendingLocation.id === selectedLocationId
+      ? 'same'
+      : activeShift
+        ? 'switch'
+        : 'confirm';
+
+  const confirmLocation = async () => {
+    if (!pendingLocation) return;
+    if (activeShift && selectedLocationId && selectedLocationId !== pendingLocation.id) {
+      await handleChangeLocation(pendingLocation.id); // persist the move on the active shift
+    } else if (pendingLocation.id !== selectedLocationId) {
+      setSelectedLocationId(pendingLocation.id); // just pick where to clock in
+    }
+    setIsLocationPopupOpen(false);
+  };
 
   // 1. GLOBAL LOADING: Only show a full-page spinner during initial auth check or if no user is present.
   // We avoid unmounting the whole AppShell when shifts are refreshing in the background (flicker fix).
@@ -109,11 +128,11 @@ export function AppShell() {
       <AnimatePresence>
         {isLocationPopupOpen && pendingLocation && (
           <LocationPopup
-            isChangedLocation={{ selectedLocationId, pendingLocationId: pendingLocation.id }}
-            location={pendingLocation}
-            setIsLocationPopupOpen={setIsLocationPopupOpen}
-            setSelectedLocationId={setSelectedLocationId}
-            handleChangeLocation={() => { }}
+            locationName={pendingLocation.name}
+            variant={popupVariant}
+            isBusy={isChangingLocation}
+            onConfirm={confirmLocation}
+            onCancel={() => setIsLocationPopupOpen(false)}
           />
         )}
       </AnimatePresence>

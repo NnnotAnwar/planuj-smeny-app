@@ -5,7 +5,6 @@ import {
   EnvelopeSimpleIcon,
   IdentificationBadgeIcon,
   CheckCircleIcon,
-  SignOutIcon,
 } from '@phosphor-icons/react';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { authService } from '@features/auth/authService';
@@ -22,7 +21,7 @@ import { getRoleBadgeColor } from '@shared/utils/roleColors';
 const USERNAME_RE = /^[a-z0-9._-]{3,30}$/;
 
 export default function SettingsPage() {
-  const { user, refreshUser, logout } = useAuthContext();
+  const { user, refreshUser } = useAuthContext();
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
@@ -209,15 +208,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-
-      {/* LOG OUT */}
-      <button
-        onClick={logout}
-        className="flex w-full items-center justify-center gap-2 py-3.5 rounded-2xl text-body-strong text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/20 active:scale-[0.99] transition-all"
-      >
-        <SignOutIcon weight="bold" className="w-5 h-5" />
-        Log out
-      </button>
 
       <div className="pt-2 text-center">
         <p className="text-micro text-gray-300 dark:text-gray-600">Version 1.0.4 • 2026</p>

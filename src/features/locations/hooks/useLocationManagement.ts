@@ -34,7 +34,9 @@ export function useLocationManagement({
     // 1. Same location clicked
     if (locationId === selectedLocationId) {
       if (activeShift) {
-        setIsLocationPopupOpen(true); // Let them know they are already here.
+        // Let them know they're already here (popup needs the location to show).
+        setPendingLocation(locations.find((loc) => loc.id === locationId) ?? null);
+        setIsLocationPopupOpen(true);
       } else {
         setSelectedLocationId(null); // Deselect if no active shift.
       }
