@@ -15,6 +15,8 @@ interface UseLocationManagementProps {
   activeShift: Shift | null;
   selectedLocationId: string | null;
   setSelectedLocationId: (id: string | null) => void;
+  /** Tapped the location you're already working at — surfaced as a top toast. */
+  onAlreadyHere?: (locationName: string) => void;
 }
 
 
@@ -23,6 +25,7 @@ export function useLocationManagement({
   activeShift,
   selectedLocationId,
   setSelectedLocationId,
+  onAlreadyHere,
 }: UseLocationManagementProps) {
   const [isLocationPopupOpen, setIsLocationPopupOpen] = useState(false);
   const [pendingLocation, setPendingLocation] = useState<Location | null>(null);
@@ -34,9 +37,8 @@ export function useLocationManagement({
     // 1. Same location clicked
     if (locationId === selectedLocationId) {
       if (activeShift) {
-        // Let them know they're already here (popup needs the location to show).
-        setPendingLocation(locations.find((loc) => loc.id === locationId) ?? null);
-        setIsLocationPopupOpen(true);
+        // Already working here — a top toast (not a modal) just confirms it.
+        onAlreadyHere?.(locations.find((loc) => loc.id === locationId)?.name ?? '');
       } else {
         setSelectedLocationId(null); // Deselect if no active shift.
       }
