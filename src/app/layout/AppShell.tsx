@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Outlet } from 'react-router-dom';
-import { WarningCircleIcon, XIcon } from '@phosphor-icons/react';
+import { WarningCircleIcon, XIcon, MapPinIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -45,19 +45,23 @@ export function AppShell() {
     return () => clearTimeout(t);
   }, [actionError, clearActionError]);
 
+  // "You're already here" — a top push-style toast (auto-dismisses).
+  const [hereToast, setHereToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!hereToast) return;
+    const t = setTimeout(() => setHereToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [hereToast]);
+
   // Location switch/confirm logic hook.
   const { isLocationPopupOpen, setIsLocationPopupOpen, pendingLocation, handleLocationSelect } = useLocationManagement({
     locations, activeShift, selectedLocationId, setSelectedLocationId,
+    onAlreadyHere: (name) => setHereToast(name),
   });
 
-  // What the location popup is asking, and what confirming does.
-  const popupVariant: LocationPopupVariant = !pendingLocation
-    ? 'confirm'
-    : pendingLocation.id === selectedLocationId
-      ? 'same'
-      : activeShift
-        ? 'switch'
-        : 'confirm';
+  // What the location popup is asking, and what confirming does. (The "already
+  // here" case never opens the popup — it shows the toast instead.)
+  const popupVariant: LocationPopupVariant = activeShift ? 'switch' : 'confirm';
 
   const confirmLocation = async () => {
     if (!pendingLocation) return;
@@ -119,6 +123,31 @@ export function AppShell() {
               <button onClick={clearActionError} aria-label="Dismiss" className="shrink-0 -m-1 p-1 hover:bg-white/20 rounded-lg transition-colors">
                 <XIcon weight="bold" className="w-4 h-4" />
               </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* "ALREADY HERE" TOAST — push-style, slides in from the top. */}
+      <AnimatePresence>
+        {hereToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -24 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 30 }}
+            role="status"
+            onClick={() => setHereToast(null)}
+            className="fixed left-1/2 -translate-x-1/2 z-[200] top-[calc(0.75rem+env(safe-area-inset-top))] w-[calc(100%-2rem)] max-w-sm"
+          >
+            <div className="flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 shadow-2xl">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <MapPinIcon weight="fill" className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-body-strong text-gray-900 dark:text-white leading-tight">You're already here</p>
+                <p className="text-caption text-gray-500 dark:text-gray-400 truncate">Working at {hereToast}</p>
+              </div>
             </div>
           </motion.div>
         )}
