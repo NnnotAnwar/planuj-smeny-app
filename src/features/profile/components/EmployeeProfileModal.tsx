@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { ArrowSquareOutIcon } from '@phosphor-icons/react';
+import { ArrowSquareOutIcon, ClockUserIcon } from '@phosphor-icons/react';
 import { Modal } from '@features/admin/components/Modal';
 import type { Profile } from '@shared/types';
 import { getFullName } from '@shared/utils/getInitials';
+import { usePermissions } from '@shared/auth/usePermissions';
 import { ProfileView } from './ProfileView';
 
 export function EmployeeProfileModal({
@@ -18,6 +19,8 @@ export function EmployeeProfileModal({
   isSelf?: boolean;
   onClose: () => void;
 }) {
+  const { canViewAdminPanel } = usePermissions();
+
   return (
     <Modal title={getFullName(employee)} subtitle={`@${employee.username}`} onClose={onClose}>
       <div className="space-y-4">
@@ -27,6 +30,17 @@ export function EmployeeProfileModal({
           showOrganization={showOrganization}
           showHeader={false}
         />
+
+        {canViewAdminPanel && (
+          <Link
+            to={`/timesheets?member=${employee.id}`}
+            onClick={onClose}
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-body-strong text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+          >
+            <ClockUserIcon weight="bold" className="w-4 h-4" />
+            View timesheets
+          </Link>
+        )}
 
         {!isSelf && (
           <Link
