@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { GearIcon, PencilSimpleIcon, CheckIcon } from '@phosphor-icons/react';
+import { GearIcon, PencilSimpleIcon, CheckIcon, ClockUserIcon } from '@phosphor-icons/react';
 import { useAuthContext } from '@features/auth/AuthContext';
-import { isSuperAdmin } from '@shared/auth/permissions';
+import { isSuperAdmin, canViewAdminPanel } from '@shared/auth/permissions';
 import { PageLoader } from '@shared/components/PageLoader';
 import type { ProfileDetail } from '@shared/types';
 import { profileService } from './profileService';
@@ -85,6 +85,16 @@ export default function ProfilePage() {
           organizationName={profile.organizationName}
           showOrganization={showOrganization}
         />
+      )}
+
+      {!isEditing && !isSelf && currentUser && canViewAdminPanel(currentUser) && (
+        <Link
+          to={`/timesheets?member=${profile.id}`}
+          className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-body-strong text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+        >
+          <ClockUserIcon weight="bold" className="w-4 h-4" />
+          View timesheets
+        </Link>
       )}
     </div>
   );

@@ -55,7 +55,7 @@ export function HomePage() {
         />
       </div>
 
-      <div className="space-y-4">
+      <div className={`space-y-4 ${activeShift ? 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : ''} md:pb-0`}>
         {activeLocations.map((location) => {
           const userFullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
           const role = user.role.name
