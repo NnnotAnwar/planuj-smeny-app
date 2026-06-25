@@ -9,6 +9,7 @@ import {
 import type { Profile } from '@shared/types';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
 import { getFullInitials, getFullName } from '@shared/utils/getInitials';
+import { ShiftStatusBadge } from './ShiftStatusBadge';
 
 const cardClass =
   'bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm';
@@ -47,6 +48,8 @@ export function ProfileView({
 }) {
   return (
     <div className="space-y-4">
+      <ShiftStatusBadge userId={profile.id} />
+
       {showHeader && (
         <div className={`${cardClass} p-4 flex items-center gap-4`}>
           <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-lg font-black shrink-0">

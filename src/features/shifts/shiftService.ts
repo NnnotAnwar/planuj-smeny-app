@@ -12,6 +12,20 @@ import { z } from 'zod';
 const SHIFT_SELECT = '*';
 const SHIFT_WITH_PROFILE_SELECT = '*, profiles(username, first_name, last_name, role)';
 
+// Raw row for the profile "currently working" lookup (location joined to-one).
+const ActiveShiftStatusRowSchema = z.object({
+  started_at: z.string(),
+  location_id: z.string(),
+  locations: z.object({ name: z.string() }).nullable(),
+});
+
+/** Where and since when a user is currently clocked in, or null when off shift. */
+export interface ActiveShiftStatus {
+  started_at: string;
+  location_id: string;
+  location_name: string | null;
+}
+
 export const shiftService = {
   /**
    * Fetches the currently running shift for a specific user.
@@ -28,6 +42,29 @@ export const shiftService = {
     if (!data) return null;
 
     return ShiftSchema.parse(data);
+  },
+
+  /**
+   * Lightweight "are they working right now?" lookup for the profile page:
+   * the user's open shift with its location name joined, or null when off shift.
+   */
+  async getActiveShiftStatus(userId: string): Promise<ActiveShiftStatus | null> {
+    const { data, error } = await supabase
+      .from('shifts')
+      .select('started_at, location_id, locations(name)')
+      .eq('user_id', userId)
+      .is('ended_at', null)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    const parsed = ActiveShiftStatusRowSchema.parse(data);
+    return {
+      started_at: parsed.started_at,
+      location_id: parsed.location_id,
+      location_name: parsed.locations?.name ?? null,
+    };
   },
 
   /**
