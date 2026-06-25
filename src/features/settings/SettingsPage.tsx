@@ -1,4 +1,3 @@
-import { useState, useEffect, useCallback, type SyntheticEvent } from 'react';
 import {
   AtIcon,
   PaletteIcon,
@@ -11,25 +10,17 @@ import {
   HourglassMediumIcon,
   XCircleIcon,
 } from '@phosphor-icons/react';
-import { useAuthContext } from '@features/auth/AuthContext';
-import { authService } from '@features/auth/authService';
 import { useTheme } from '@app/providers/ThemeContext';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
-import type { NameChangeRequest } from '@shared/types';
+import { useProfileEditing } from '@features/profile/hooks/useProfileEditing';
 
 /**
  * --- SETTINGS PAGE ---
- * The signed-in user manages their own profile here.
- *
- * Rules (enforced in the DB, mirrored in this UI):
- *  - Username is self-service but can only change once every 7 days.
- *  - Staff (rank < 30) cannot edit their own first/last name — they file a
- *    request that an admin approves. Admins (rank >= 30) edit names directly.
+ * The signed-in user manages their own profile here. The editing rules
+ * (username weekly limit, admin-vs-staff name changes) live in the shared
+ * useProfileEditing hook so this screen and the inline profile editor stay in
+ * sync.
  */
-
-const USERNAME_RE = /^[a-z0-9._-]{3,30}$/;
-const ADMIN_RANK = 30;
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 const fieldClass =
   'w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none text-gray-900 dark:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed';
@@ -37,161 +28,22 @@ const cardClass =
   'bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm';
 
 export default function SettingsPage() {
-  const { user, refreshUser } = useAuthContext();
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
-  const isStaff = (user?.role.rank ?? 0) < ADMIN_RANK;
-
-  // username (self-service, weekly limited)
-  const [username, setUsername] = useState(user?.username ?? '');
-  const [busyUser, setBusyUser] = useState(false);
-  const [userErr, setUserErr] = useState<string | null>(null);
-  const [userSaved, setUserSaved] = useState(false);
-
-  // name (admins edit directly)
-  const [firstName, setFirstName] = useState(user?.first_name ?? '');
-  const [lastName, setLastName] = useState(user?.last_name ?? '');
-  const [busyName, setBusyName] = useState(false);
-  const [nameErr, setNameErr] = useState<string | null>(null);
-  const [nameSaved, setNameSaved] = useState(false);
-
-  // name change request (staff)
-  const [latestRequest, setLatestRequest] = useState<NameChangeRequest | null>(null);
-  const [showRequest, setShowRequest] = useState(false);
-  const [reqFirst, setReqFirst] = useState(user?.first_name ?? '');
-  const [reqLast, setReqLast] = useState(user?.last_name ?? '');
-  const [reqNote, setReqNote] = useState('');
-  const [busyReq, setBusyReq] = useState(false);
-  const [reqErr, setReqErr] = useState<string | null>(null);
-
-  const loadRequest = useCallback(async () => {
-    if (!user || !isStaff) return;
-    try {
-      setLatestRequest(await authService.getMyLatestNameRequest(user.id));
-    } catch (err) {
-      console.error('Failed to load name request:', err);
-    }
-  }, [user, isStaff]);
-
-  // Initial load (inline async so we don't call a setState-callback directly in
-  // the effect body). Handlers reuse loadRequest() to refresh after an action.
-  useEffect(() => {
-    if (!user || !isStaff) return;
-    let active = true;
-    (async () => {
-      try {
-        const req = await authService.getMyLatestNameRequest(user.id);
-        if (active) setLatestRequest(req);
-      } catch (err) {
-        console.error('Failed to load name request:', err);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [user, isStaff]);
-
-  // Captured once at mount (clock reads must not happen during render).
-  const [nowTs] = useState(() => Date.now());
+  const {
+    user, isStaff,
+    username, setUsername, busyUser, userErr, userSaved, usernameLocked, nextAllowedStr, usernameDirty, saveUsername,
+    firstName, setFirstName, lastName, setLastName, busyName, nameErr, nameSaved, nameDirty, saveName,
+    latestRequest, pending, showRequest,
+    reqFirst, setReqFirst, reqLast, setReqLast, reqNote, setReqNote,
+    busyReq, reqErr, submitRequest, cancelRequest, openRequest, closeRequest,
+  } = useProfileEditing();
 
   if (!user) return null;
 
-  // --- username weekly limit ---
-  const lastChanged = user.username_changed_at ? new Date(user.username_changed_at).getTime() : null;
-  const nextAllowedAt = lastChanged ? lastChanged + WEEK_MS : null;
-  const usernameLocked = nextAllowedAt ? nowTs < nextAllowedAt : false;
-  const nextAllowedStr = nextAllowedAt
-    ? new Date(nextAllowedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-    : '';
-
-  const normalizedUsername = username.trim().toLowerCase();
-  const usernameDirty = normalizedUsername !== (user.username ?? '');
-
-  const saveUsername = async (e: SyntheticEvent) => {
-    e.preventDefault();
-    setUserErr(null);
-    setUserSaved(false);
-    if (!USERNAME_RE.test(normalizedUsername)) {
-      setUserErr('Username must be 3–30 characters: lowercase letters, numbers, dot, underscore or hyphen.');
-      return;
-    }
-    setBusyUser(true);
-    const { error } = await authService.updateProfile(user.id, { username: normalizedUsername });
-    if (error) {
-      setUserErr(
-        error.code === '23505'
-          ? 'That username is already taken. Please choose another.'
-          : error.message || 'Could not update your username.',
-      );
-      setBusyUser(false);
-      return;
-    }
-    await refreshUser();
-    setUsername(normalizedUsername);
-    setBusyUser(false);
-    setUserSaved(true);
-  };
-
-  // --- name (admins) ---
-  const nameDirty = firstName.trim() !== (user.first_name ?? '') || lastName.trim() !== (user.last_name ?? '');
-
-  const saveName = async (e: SyntheticEvent) => {
-    e.preventDefault();
-    setNameErr(null);
-    setNameSaved(false);
-    setBusyName(true);
-    const { error } = await authService.updateProfile(user.id, {
-      first_name: firstName.trim() || null,
-      last_name: lastName.trim() || null,
-    });
-    if (error) {
-      setNameErr(error.message || 'Could not update your name.');
-      setBusyName(false);
-      return;
-    }
-    await refreshUser();
-    setBusyName(false);
-    setNameSaved(true);
-  };
-
-  // --- name change request (staff) ---
-  const submitRequest = async (e: SyntheticEvent) => {
-    e.preventDefault();
-    setReqErr(null);
-    if (!reqFirst.trim() && !reqLast.trim()) {
-      setReqErr('Enter the first and/or last name you would like.');
-      return;
-    }
-    setBusyReq(true);
-    try {
-      await authService.requestNameChange(reqFirst.trim(), reqLast.trim(), reqNote.trim() || null);
-      setShowRequest(false);
-      setReqNote('');
-      await loadRequest();
-    } catch (err) {
-      setReqErr(err instanceof Error ? err.message : 'Could not submit your request.');
-    } finally {
-      setBusyReq(false);
-    }
-  };
-
-  const cancelRequest = async () => {
-    if (!latestRequest) return;
-    setBusyReq(true);
-    try {
-      await authService.cancelNameChange(latestRequest.id);
-      await loadRequest();
-    } catch (err) {
-      setReqErr(err instanceof Error ? err.message : 'Could not cancel your request.');
-    } finally {
-      setBusyReq(false);
-    }
-  };
-
   const fullName =
     user.first_name || user.last_name ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() : '—';
-  const pending = latestRequest?.status === 'pending' ? latestRequest : null;
 
   return (
     <div className="space-y-4 px-1 pb-10">
@@ -385,7 +237,7 @@ export default function SettingsPage() {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => { setShowRequest(false); setReqErr(null); }}
+                      onClick={closeRequest}
                       className="flex-1 px-4 py-2.5 rounded-xl text-small-strong text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                     >
                       Cancel
@@ -402,12 +254,7 @@ export default function SettingsPage() {
                 </form>
               ) : (
                 <button
-                  onClick={() => {
-                    setReqFirst(user.first_name ?? '');
-                    setReqLast(user.last_name ?? '');
-                    setReqErr(null);
-                    setShowRequest(true);
-                  }}
+                  onClick={openRequest}
                   className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-body-strong text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/25 transition-colors"
                 >
                   <PaperPlaneTiltIcon weight="bold" className="w-4 h-4" />
