@@ -57,9 +57,13 @@ export function useNotifications() {
                     { event: 'INSERT', schema: 'public', table: 'shift_audit_log', filter: `target_user_id=eq.${userId}` },
                     () => qc.invalidateQueries({ queryKey: ['notifications', userId] }),
                 )
-                .subscribe((status) => {
+                .subscribe((status, err) => {
                     if (status === 'SUBSCRIBED') {
-                        // channel ready
+                        // channel ready - no-op
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                        console.error(`[notifications] realtime subscription failed for user ${userId}:`, err);
+                    } else if (status === 'CLOSED') {
+                        console.warn(`[notifications] realtime channel closed for user ${userId}`);
                     }
                 });
 
