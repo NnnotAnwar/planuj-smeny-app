@@ -1,19 +1,22 @@
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import { ClockIcon, CaretDownIcon } from '@phosphor-icons/react';
 
 /**
  * --- TIME PICKER ---
- * Compact hours:minutes selector styled to match {@link MonthPicker} — a pill
- * button that opens a popover with an Hours column and a Minutes column. Used by
- * the shift editor instead of the native `datetime-local` so only the time of a
- * shift can be changed (the date is held fixed by the caller).
+ * Compact hours:minutes selector. The popover is rendered in a portal with fixed
+ * positioning clamped to the viewport (and flipped above the trigger when needed),
+ * so it can't be clipped by — or pushed off the bottom of — a scrollable modal or
+ * its header on phones.
  *
  * `value` is a `"HH:mm"` string (24-hour). Every minute (0–59) is selectable.
  */
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
+const POP_W = 176; // w-44
+const MARGIN = 8;
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -21,48 +24,58 @@ interface TimePickerProps {
     value: string; // "HH:mm"
     onChange: (value: string) => void;
     disabled?: boolean;
-    /** Optional id/aria label for the trigger button. */
     'aria-label'?: string;
 }
 
 export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [dropUp, setDropUp] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
+    const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const popRef = useRef<HTMLDivElement>(null);
     const hoursRef = useRef<HTMLDivElement>(null);
     const minutesRef = useRef<HTMLDivElement>(null);
-
-    // Flip the popover above the trigger when there isn't room below it (keeps it
-    // on-screen inside the scrollable modal on phones).
-    const toggle = () => {
-        setIsOpen((prev) => {
-            if (!prev && containerRef.current) {
-                const rect = containerRef.current.getBoundingClientRect();
-                setDropUp(window.innerHeight - rect.bottom < 280);
-            }
-            return !prev;
-        });
-    };
 
     const [h, m] = value.split(':');
     const selHour = Number.isNaN(parseInt(h)) ? 0 : parseInt(h);
     const selMinute = Number.isNaN(parseInt(m)) ? 0 : parseInt(m);
 
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+    // Place the portal popover relative to the trigger, clamped on-screen and
+    // flipped above when there isn't room below.
+    const place = useCallback(() => {
+        const trigger = triggerRef.current;
+        if (!trigger) return;
+        const r = trigger.getBoundingClientRect();
+        const ph = popRef.current?.offsetHeight ?? 240;
+        const left = Math.max(MARGIN, Math.min(r.left, window.innerWidth - POP_W - MARGIN));
+        let top: number;
+        if (r.bottom + 6 + ph <= window.innerHeight - MARGIN) top = r.bottom + 6;
+        else if (r.top - 6 - ph >= MARGIN) top = r.top - 6 - ph;
+        else top = Math.max(MARGIN, window.innerHeight - ph - MARGIN);
+        setPos({ top, left });
     }, []);
 
-    // On open, center the selected hour/minute inside ITS OWN column only — set
-    // the column's scrollTop directly. (scrollIntoView would bubble up and shift
-    // the whole popover/modal, which looked like the popup "jumping".)
     useEffect(() => {
         if (!isOpen) return;
+        function onDown(e: MouseEvent) {
+            const t = e.target as Node;
+            if (triggerRef.current?.contains(t) || popRef.current?.contains(t)) return;
+            setIsOpen(false);
+        }
+        const onMove = () => place();
+        document.addEventListener('mousedown', onDown);
+        window.addEventListener('resize', onMove);
+        window.addEventListener('scroll', onMove, true);
+        return () => {
+            document.removeEventListener('mousedown', onDown);
+            window.removeEventListener('resize', onMove);
+            window.removeEventListener('scroll', onMove, true);
+        };
+    }, [isOpen, place]);
+
+    // Measure + place once mounted, then center each column on its selection.
+    useLayoutEffect(() => {
+        if (!isOpen) return;
+        place();
         const frame = requestAnimationFrame(() => {
             const center = (box: HTMLDivElement | null) => {
                 const el = box?.querySelector<HTMLElement>('[data-selected="true"]');
@@ -72,7 +85,7 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
             center(minutesRef.current);
         });
         return () => cancelAnimationFrame(frame);
-    }, [isOpen]);
+    }, [isOpen, place]);
 
     const setHour = (hour: number) => onChange(`${pad(hour)}:${pad(selMinute)}`);
     const setMinute = (minute: number) => onChange(`${pad(selHour)}:${pad(minute)}`);
@@ -85,12 +98,13 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
         }`;
 
     return (
-        <div className="relative" ref={containerRef}>
+        <>
             <button
+                ref={triggerRef}
                 type="button"
                 disabled={disabled}
                 aria-label={rest['aria-label']}
-                onClick={toggle}
+                onClick={() => setIsOpen((v) => !v)}
                 className="flex w-full items-center justify-between gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
             >
                 <span className="flex items-center gap-2">
@@ -105,15 +119,19 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
                 />
             </button>
 
-            <AnimatePresence>
-                {isOpen && (
+            {isOpen &&
+                createPortal(
                     <motion.div
+                        ref={popRef}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className={`absolute left-0 z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-3 overflow-hidden ${
-                            dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
-                        }`}
+                        style={{
+                            position: 'fixed',
+                            top: pos?.top ?? 0,
+                            left: pos?.left ?? 0,
+                            visibility: pos ? 'visible' : 'hidden',
+                        }}
+                        className="z-[70] w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-2xl p-3 overflow-hidden"
                     >
                         <div className="grid grid-cols-2 gap-2">
                             <div>
@@ -149,9 +167,9 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
                                 </div>
                             </div>
                         </div>
-                    </motion.div>
+                    </motion.div>,
+                    document.body,
                 )}
-            </AnimatePresence>
-        </div>
+        </>
     );
 }
