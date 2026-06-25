@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@shared/api/supabaseClient';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { notificationsService } from './notificationsService';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { ShiftAuditLog } from '@shared/types';
 
 const seenKey = (userId: string) => `notifications_seen_at:${userId}`;
@@ -16,6 +17,10 @@ function loadDismissed(userId: string): Set<string> {
         return new Set();
     }
 }
+
+// Global map so multiple <NotificationsBell /> instances (desktop + mobile)
+// don't create duplicate postgres_changes listeners on the same channel.
+const notificationChannels = new Map<string, { channel: RealtimeChannel; count: number }>();
 
 /**
  * --- useNotifications ---
@@ -40,16 +45,39 @@ export function useNotifications() {
 
     useEffect(() => {
         if (!userId) return;
-        const channel = supabase
-            .channel(`notifications_${userId}`)
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'shift_audit_log', filter: `target_user_id=eq.${userId}` },
-                () => qc.invalidateQueries({ queryKey: ['notifications', userId] }),
-            )
-            .subscribe();
+
+        const key = userId;
+        let entry = notificationChannels.get(key);
+
+        if (!entry) {
+            const channel = supabase
+                .channel(`notifications_${userId}`)
+                .on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'shift_audit_log', filter: `target_user_id=eq.${userId}` },
+                    () => qc.invalidateQueries({ queryKey: ['notifications', userId] }),
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        // channel ready
+                    }
+                });
+
+            entry = { channel, count: 0 };
+            notificationChannels.set(key, entry);
+        }
+
+        entry.count += 1;
+
         return () => {
-            supabase.removeChannel(channel);
+            const current = notificationChannels.get(key);
+            if (current) {
+                current.count -= 1;
+                if (current.count <= 0) {
+                    supabase.removeChannel(current.channel);
+                    notificationChannels.delete(key);
+                }
+            }
         };
     }, [userId, qc]);
 
