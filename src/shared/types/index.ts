@@ -55,7 +55,14 @@ export const NameChangeRequestSchema = z.object({
     .optional(),
 });
 
-/** 
+/** Lightweight worker profile embedded in joined shift rows (the live board). */
+export const ShiftProfileSchema = z.object({
+  username: z.string(),
+  first_name: z.string().nullable(),
+  last_name: z.string().nullable()
+});
+
+/**
  * ShiftSchema: Defines what a shift record looks like.
  */
 export const ShiftSchema = z.object({
@@ -67,13 +74,16 @@ export const ShiftSchema = z.object({
   started_at: z.string(), // ISO date string of when it started
   ended_at: z.string().nullable(), // ISO date string or null if still working
   role: z.string(), // The role they worked during this shift
-  isChangeLocation: z.boolean().optional(), // UI flag to indicate location change
-  // Optional profile info that we often "join" in the query
-  profiles: z.object({
-    username: z.string(),
-    first_name: z.string().nullable(),
-    last_name: z.string().nullable()
-  }).optional().nullable()
+  // Optional profile info that we often "join" in the query (own active shift omits it).
+  profiles: ShiftProfileSchema.optional().nullable()
+});
+
+/**
+ * Board rows (other colleagues' active shifts) always carry the joined profile,
+ * so we validate that the embed is present rather than leaving it optional.
+ */
+export const ShiftWithProfileSchema = ShiftSchema.extend({
+  profiles: ShiftProfileSchema.nullable()
 });
 
 /** 
@@ -174,6 +184,7 @@ export const ShiftAuditLogSchema = z.object({
 export type Profile = z.infer<typeof ProfileSchema>;
 export type ProfileDetail = Profile & { organizationName?: string | null };
 export type Shift = z.infer<typeof ShiftSchema>;
+export type ShiftWithProfile = z.infer<typeof ShiftWithProfileSchema>;
 export type Location = z.infer<typeof LocationSchema>;
 export type Organization = z.infer<typeof OrganizationSchema>;
 export type Role = z.infer<typeof RoleSchema>;

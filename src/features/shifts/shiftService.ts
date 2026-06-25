@@ -1,11 +1,16 @@
 import { supabase } from '@shared/api/supabaseClient';
-import { type Shift, type User, ShiftSchema } from '@shared/types';
+import { type Shift, type ShiftWithProfile, type User, ShiftSchema, ShiftWithProfileSchema } from '@shared/types';
 import { z } from 'zod';
 
 /**
  * --- SHIFT SERVICE ---
  * Handles all database operations related to worker shifts (Start, End, Fetch).
  */
+
+// A bare shift row (own active shift / history) vs. a board row that joins the
+// worker profile so colleague cards can render a name.
+const SHIFT_SELECT = '*';
+const SHIFT_WITH_PROFILE_SELECT = '*, profiles(username, first_name, last_name, role)';
 
 export const shiftService = {
   /**
@@ -14,7 +19,7 @@ export const shiftService = {
   async getActiveShift(userId: string): Promise<Shift | null> {
     const { data, error } = await supabase
       .from('shifts')
-      .select('*')
+      .select(SHIFT_SELECT)
       .eq('user_id', userId)
       .is('ended_at', null)
       .maybeSingle();
@@ -29,11 +34,11 @@ export const shiftService = {
    * Retrieves all active shifts in the whole organization.
    * Useful to see who else is working right now.
    */
-  async getAllActiveShifts(organizationId: string, isSuperAdmin: boolean): Promise<Shift[]> {
+  async getAllActiveShifts(organizationId: string, isSuperAdmin: boolean): Promise<ShiftWithProfile[]> {
 
     let query = supabase
       .from('shifts')
-      .select('*, profiles(username, first_name, last_name, role)')
+      .select(SHIFT_WITH_PROFILE_SELECT)
       .is('ended_at', null);
 
     if (!isSuperAdmin) {
@@ -45,7 +50,7 @@ export const shiftService = {
     if (error) throw error;
     if (!data) return [];
 
-    return z.array(ShiftSchema).parse(data);
+    return z.array(ShiftWithProfileSchema).parse(data);
   },
 
   /**
@@ -54,7 +59,7 @@ export const shiftService = {
   async getAllUserShifts(userId: string): Promise<Shift[]> {
     const { data, error } = await supabase
       .from('shifts')
-      .select("*")
+      .select(SHIFT_SELECT)
       .eq("user_id", userId);
 
     if (error) throw error;
