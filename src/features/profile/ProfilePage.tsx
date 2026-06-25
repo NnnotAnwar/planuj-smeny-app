@@ -1,16 +1,19 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { GearIcon } from '@phosphor-icons/react';
+import { GearIcon, PencilSimpleIcon, CheckIcon } from '@phosphor-icons/react';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { isSuperAdmin } from '@shared/auth/permissions';
 import { PageLoader } from '@shared/components/PageLoader';
 import type { ProfileDetail } from '@shared/types';
 import { profileService } from './profileService';
 import { ProfileView } from './components/ProfileView';
+import { ProfileEditor } from './components/ProfileEditor';
 
 export default function ProfilePage() {
   const { userId } = useParams();
   const { user: currentUser } = useAuthContext();
+  const [isEditing, setIsEditing] = useState(false);
 
   const targetId = userId ?? currentUser?.id;
   const isSelf = !!currentUser && targetId === currentUser.id;
@@ -53,21 +56,36 @@ export default function ProfilePage() {
           <h1 className="text-display text-gray-900 dark:text-white">{isSelf ? 'My profile' : 'Employee profile'}</h1>
         </div>
         {isSelf && (
-          <Link
-            to="/settings"
-            className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-small-strong text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/25 transition-colors"
-          >
-            <GearIcon weight="bold" className="w-4 h-4" />
-            Settings
-          </Link>
+          <div className="shrink-0 flex items-center gap-2">
+            <button
+              onClick={() => setIsEditing((v) => !v)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-small-strong text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/25 transition-colors"
+            >
+              {isEditing ? <CheckIcon weight="bold" className="w-4 h-4" /> : <PencilSimpleIcon weight="bold" className="w-4 h-4" />}
+              {isEditing ? 'Done' : 'Edit'}
+            </button>
+            {!isEditing && (
+              <Link
+                to="/settings"
+                aria-label="Settings"
+                className="flex items-center justify-center p-2 rounded-xl text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+              >
+                <GearIcon weight="bold" className="w-4 h-4" />
+              </Link>
+            )}
+          </div>
         )}
       </header>
 
-      <ProfileView
-        profile={profile}
-        organizationName={profile.organizationName}
-        showOrganization={showOrganization}
-      />
+      {isSelf && isEditing ? (
+        <ProfileEditor />
+      ) : (
+        <ProfileView
+          profile={profile}
+          organizationName={profile.organizationName}
+          showOrganization={showOrganization}
+        />
+      )}
     </div>
   );
 }
