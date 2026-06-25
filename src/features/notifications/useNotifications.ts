@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@shared/api/supabaseClient';
 import { useAuthContext } from '@features/auth/AuthContext';
@@ -43,37 +43,71 @@ export function useNotifications() {
         enabled: !!userId,
     });
 
+    // Ref for retry timeout to avoid memory leaks
+    const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     useEffect(() => {
         if (!userId) return;
 
         const key = userId;
-        let entry = notificationChannels.get(key);
 
-        if (!entry) {
-            const channel = supabase
-                .channel(`notifications_${userId}`)
-                .on(
-                    'postgres_changes',
-                    { event: 'INSERT', schema: 'public', table: 'shift_audit_log', filter: `target_user_id=eq.${userId}` },
-                    () => qc.invalidateQueries({ queryKey: ['notifications', userId] }),
-                )
-                .subscribe((status, err) => {
+        const ensureSubscription = () => {
+            let entry = notificationChannels.get(key);
+
+            if (entry) {
+                const ch = entry.channel;
+                // Recreate if channel is in bad state
+                if (ch.state !== 'joined' && ch.state !== 'joining') {
+                    supabase.removeChannel(ch);
+                    notificationChannels.delete(key);
+                    entry = undefined;
+                }
+            }
+
+            if (!entry) {
+                const channel = supabase
+                    .channel(`notifications_${userId}`)
+                    .on(
+                        'postgres_changes',
+                        { event: 'INSERT', schema: 'public', table: 'shift_audit_log', filter: `target_user_id=eq.${userId}` },
+                        () => qc.invalidateQueries({ queryKey: ['notifications', userId] }),
+                    );
+
+                channel.subscribe((status, err) => {
                     if (status === 'SUBSCRIBED') {
-                        // channel ready - no-op
+                        console.debug(`[notifications] Realtime subscribed for user ${userId}`);
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                        console.error(`[notifications] realtime subscription failed for user ${userId}:`, err);
+                        console.error(`[notifications] Realtime error for user ${userId}:`, err);
+                        // Auto-retry after backoff
+                        if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+                        retryTimeoutRef.current = setTimeout(() => {
+                            if (notificationChannels.has(key)) {
+                                const current = notificationChannels.get(key)!;
+                                supabase.removeChannel(current.channel);
+                                notificationChannels.delete(key);
+                                ensureSubscription();
+                            }
+                        }, 5000);
                     } else if (status === 'CLOSED') {
-                        console.warn(`[notifications] realtime channel closed for user ${userId}`);
+                        console.warn(`[notifications] Realtime channel closed for user ${userId}`);
                     }
                 });
 
-            entry = { channel, count: 0 };
-            notificationChannels.set(key, entry);
-        }
+                entry = { channel, count: 0 };
+                notificationChannels.set(key, entry);
+            }
 
-        entry.count += 1;
+            entry.count += 1;
+            return entry;
+        };
+
+        const entry = ensureSubscription();
 
         return () => {
+            if (retryTimeoutRef.current) {
+                clearTimeout(retryTimeoutRef.current);
+                retryTimeoutRef.current = null;
+            }
             const current = notificationChannels.get(key);
             if (current) {
                 current.count -= 1;
