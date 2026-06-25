@@ -33,11 +33,6 @@ function isoToTime(iso: string): string {
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** local "YYYY-MM-DD" + "HH:mm" -> ISO. */
-function combine(date: string, time: string): string {
-    return new Date(`${date}T${time}:00`).toISOString();
-}
-
 /** Human-readable fixed date, e.g. "Mon, 24 Jun 2026". */
 function prettyDate(date: string): string {
     return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
@@ -85,17 +80,23 @@ export function ShiftEditorModal({
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // End on/before start means the shift runs past midnight → ends next day.
+    const overnight = end <= start;
+
     const handleSubmit = async () => {
         setError(null);
         if (!locationId) return setError('Please choose a location.');
-        if (end <= start) return setError('The end time must be after the start time.');
+
+        const startDate = new Date(`${date}T${start}:00`);
+        let endDate = new Date(`${date}T${end}:00`);
+        if (endDate <= startDate) endDate = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
 
         setBusy(true);
         try {
             await onSubmit({
                 location_id: locationId,
-                started_at: combine(date, start),
-                ended_at: combine(date, end),
+                started_at: startDate.toISOString(),
+                ended_at: endDate.toISOString(),
             });
             onClose();
         } catch (err) {
@@ -145,6 +146,7 @@ export function ShiftEditorModal({
                     <div className="space-y-1.5">
                         <label className="text-label text-gray-400">End</label>
                         <TimePicker value={end} onChange={setEnd} aria-label="End time" />
+                        {overnight && <p className="text-micro text-amber-500">Ends next day (overnight)</p>}
                     </div>
                 </div>
 

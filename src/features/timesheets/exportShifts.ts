@@ -106,11 +106,12 @@ function triggerDownload(blob: Blob, filename: string) {
 // ---------------------------------------------------------------------
 // PDF
 // ---------------------------------------------------------------------
-function exportPDF(ctx: ExportContext) {
+/** Draw one employee's full timesheet (header → table → signature) on `doc`. */
+function drawTimesheetPDF(doc: jsPDF, ctx: ExportContext) {
     const { rows, totals } = build(ctx);
-    const doc = new jsPDF();
 
     doc.setFontSize(20);
+    doc.setTextColor(0);
     doc.text('Planuj Smeny', 14, 22);
     doc.setFontSize(11);
     doc.setTextColor(100);
@@ -165,7 +166,11 @@ function exportPDF(ctx: ExportContext) {
     doc.line(120, y, 190, y);
     doc.text('Employee signature', 14, y + 5);
     doc.text('Approved by', 120, y + 5);
+}
 
+function exportPDF(ctx: ExportContext) {
+    const doc = new jsPDF();
+    drawTimesheetPDF(doc, ctx);
     doc.save(`${fileStem(ctx)}.pdf`);
 }
 
@@ -250,4 +255,119 @@ export async function exportShifts(format: ExportFormat, ctx: ExportContext): Pr
     if (format === 'pdf') return exportPDF(ctx);
     if (format === 'csv') return exportCSV(ctx);
     return exportExcel(ctx);
+}
+
+// ---------------------------------------------------------------------
+// EXPORT ALL EMPLOYEES (one document for the whole team / month)
+// ---------------------------------------------------------------------
+export interface ExportAllContext {
+    /** Period as `YYYY-MM`, or "All time". */
+    periodLabel: string;
+    locationName: (id: string) => string;
+    groups: { employeeName: string; shifts: Shift[] }[];
+}
+
+function allFileStem(periodLabel: string): string {
+    return `Timesheets_${periodLabel}`.replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '') || 'timesheets';
+}
+
+/** PDF: each employee on their own page. */
+function exportAllPDF(ctx: ExportAllContext) {
+    const groups = ctx.groups.filter((g) => g.shifts.length > 0);
+    const doc = new jsPDF();
+    groups.forEach((g, i) => {
+        if (i > 0) doc.addPage();
+        drawTimesheetPDF(doc, {
+            employeeName: g.employeeName,
+            periodLabel: ctx.periodLabel,
+            shifts: g.shifts,
+            locationName: ctx.locationName,
+        });
+    });
+    doc.save(`${allFileStem(ctx.periodLabel)}.pdf`);
+}
+
+/** CSV: one file, with a leading Employee column and a per-employee total row. */
+function exportAllCSV(ctx: ExportAllContext) {
+    const header = ['Employee', 'Date', 'Day', 'Location', 'Start', 'End', 'Gross (h)', 'Break (h)', 'Net (h)'];
+    const lines: string[] = [];
+    lines.push(`Timesheets — ${ctx.periodLabel}`);
+    lines.push(BREAK_LEGEND);
+    lines.push('');
+    lines.push(header.map(csvCell).join(','));
+
+    for (const g of ctx.groups) {
+        const { rows, totals } = build({
+            employeeName: g.employeeName,
+            periodLabel: ctx.periodLabel,
+            shifts: g.shifts,
+            locationName: ctx.locationName,
+        });
+        if (rows.length === 0) continue;
+        for (const r of rows) {
+            lines.push(
+                [g.employeeName, r.date, r.day, r.location, r.start, r.end, round1(r.gross), round1(r.brk), round1(r.net)]
+                    .map(csvCell)
+                    .join(','),
+            );
+        }
+        lines.push(
+            [`${g.employeeName} — Total`, '', '', '', '', '', round1(totals.gross), round1(totals.brk), round1(totals.net)]
+                .map(csvCell)
+                .join(','),
+        );
+    }
+
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    triggerDownload(blob, `${allFileStem(ctx.periodLabel)}.csv`);
+}
+
+/** Excel: one workbook, one sheet per employee. */
+async function exportAllExcel(ctx: ExportAllContext) {
+    const XLSX = await import('xlsx');
+    const wb = XLSX.utils.book_new();
+
+    // Excel sheet names: ≤31 chars, no []:*?/\, and unique.
+    const used = new Set<string>();
+    const sheetName = (name: string) => {
+        const base = name.replace(/[[\]:*?/\\]/g, ' ').trim().slice(0, 28) || 'Sheet';
+        let candidate = base;
+        let i = 1;
+        while (used.has(candidate.toLowerCase())) candidate = `${base.slice(0, 25)} ${++i}`;
+        used.add(candidate.toLowerCase());
+        return candidate;
+    };
+
+    let any = false;
+    for (const g of ctx.groups) {
+        const { rows, totals } = build({
+            employeeName: g.employeeName,
+            periodLabel: ctx.periodLabel,
+            shifts: g.shifts,
+            locationName: ctx.locationName,
+        });
+        if (rows.length === 0) continue;
+        any = true;
+        const aoa: (string | number)[][] = [
+            [`Timesheet — ${g.employeeName} — ${ctx.periodLabel}`],
+            [BREAK_LEGEND],
+            [],
+            ['Date', 'Day', 'Location', 'Start', 'End', 'Gross (h)', 'Break (h)', 'Net (h)'],
+            ...rows.map((r) => [r.date, r.day, r.location, r.start, r.end, round1(r.gross), round1(r.brk), round1(r.net)]),
+            ['Total', '', '', '', '', round1(totals.gross), round1(totals.brk), round1(totals.net)],
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        ws['!cols'] = [{ wch: 16 }, { wch: 6 }, { wch: 22 }, { wch: 8 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
+        XLSX.utils.book_append_sheet(wb, ws, sheetName(g.employeeName));
+    }
+
+    if (!any) return;
+    XLSX.writeFile(wb, `${allFileStem(ctx.periodLabel)}.xlsx`);
+}
+
+export async function exportAllShifts(format: ExportFormat, ctx: ExportAllContext): Promise<void> {
+    if (!ctx.groups.some((g) => g.shifts.length > 0)) return;
+    if (format === 'pdf') return exportAllPDF(ctx);
+    if (format === 'csv') return exportAllCSV(ctx);
+    return exportAllExcel(ctx);
 }

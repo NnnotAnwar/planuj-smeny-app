@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -8,10 +8,12 @@ import {
     CaretLeftIcon,
     PlusIcon,
     DownloadSimpleIcon,
+    UsersThreeIcon,
     FilePdfIcon,
     FileXlsIcon,
     FileCsvIcon,
     ClockUserIcon,
+    type Icon,
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
@@ -26,8 +28,15 @@ import { type Shift, type Profile } from '@shared/types';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from '@features/shifts/shiftStats';
 
 import { timesheetService } from './timesheetService';
-import { exportShifts, type ExportFormat } from './exportShifts';
+import { exportShifts, exportAllShifts, type ExportFormat } from './exportShifts';
+import { useTimesheetRealtime } from './useTimesheetRealtime';
 import { ShiftEditorModal, type ShiftFormValues } from './components/ShiftEditorModal';
+
+const EXPORT_FORMATS = [
+    { fmt: 'pdf' as const, label: 'PDF', Icon: FilePdfIcon },
+    { fmt: 'excel' as const, label: 'Excel', Icon: FileXlsIcon },
+    { fmt: 'csv' as const, label: 'CSV', Icon: FileCsvIcon },
+];
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -40,6 +49,62 @@ function fmtTimeRange(s: Shift): string {
     const start = new Date(s.started_at).toLocaleTimeString(undefined, opts);
     const end = s.ended_at ? new Date(s.ended_at).toLocaleTimeString(undefined, opts) : '…';
     return `${start} – ${end}`;
+}
+
+/** Download button with a PDF/Excel/CSV dropdown, used for single + bulk export. */
+function ExportMenu({
+    open,
+    setOpen,
+    onPick,
+    disabled,
+    title,
+    Icon: TriggerIcon,
+    busy,
+}: {
+    open: boolean;
+    setOpen: (v: boolean) => void;
+    onPick: (fmt: ExportFormat) => void;
+    disabled?: boolean;
+    title: string;
+    Icon: Icon;
+    busy?: boolean;
+}) {
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setOpen(!open)}
+                disabled={disabled}
+                title={title}
+                className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
+            >
+                <TriggerIcon weight="bold" className={`w-4 h-4 ${busy ? 'animate-pulse' : ''}`} />
+            </button>
+            <AnimatePresence>
+                {open && (
+                    <>
+                        <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+                        <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 4, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                            className="absolute right-0 top-full z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-1.5 overflow-hidden"
+                        >
+                            {EXPORT_FORMATS.map(({ fmt, label, Icon: FmtIcon }) => (
+                                <button
+                                    key={fmt}
+                                    onClick={() => onPick(fmt)}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
+                                >
+                                    <FmtIcon weight="bold" className="w-4 h-4 text-emerald-500" />
+                                    {label}
+                                </button>
+                            ))}
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+        </div>
+    );
 }
 
 /**
@@ -58,8 +123,11 @@ export function TimesheetsPage() {
 function TimesheetsInner() {
     const { user } = useAuthContext();
     const qc = useQueryClient();
+    useTimesheetRealtime();
 
-    const [selectedId, setSelectedId] = useState<string | null>(null);
+    // Allow deep-linking a member (e.g. from the Activity Log: /timesheets?member=ID).
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('member'));
     const [search, setSearch] = useState('');
     const [month, setMonth] = useState<string | null>(() => {
         const now = new Date();
@@ -68,6 +136,13 @@ function TimesheetsInner() {
     const [editing, setEditing] = useState<{ shift: Shift | null } | null>(null);
     const [deleting, setDeleting] = useState<Shift | null>(null);
     const [exportOpen, setExportOpen] = useState(false);
+    const [exportAllOpen, setExportAllOpen] = useState(false);
+    const [exportingAll, setExportingAll] = useState(false);
+
+    const backToList = () => {
+        setSelectedId(null);
+        if (searchParams.has('member')) setSearchParams({}, { replace: true });
+    };
 
     const membersQ = useQuery({
         queryKey: ['timesheets', 'members'],
@@ -150,6 +225,37 @@ function TimesheetsInner() {
         if (!selected) return;
         exportShifts(fmt, { employeeName: memberName(selected), periodLabel, shifts, locationName });
         setExportOpen(false);
+    };
+
+    // Export every member's timesheet for the selected period in one document.
+    const doExportAll = async (fmt: ExportFormat) => {
+        setExportAllOpen(false);
+        setExportingAll(true);
+        try {
+            const [allShifts, allLocations] = await Promise.all([
+                timesheetService.getMonthShifts(month),
+                timesheetService.getAllLocations(),
+            ]);
+            const locMap = new Map(allLocations.map((l) => [l.id, l.name]));
+            const byUser = new Map<string, Shift[]>();
+            for (const s of allShifts) {
+                const arr = byUser.get(s.user_id) ?? [];
+                arr.push(s);
+                byUser.set(s.user_id, arr);
+            }
+            const groups = members
+                .map((m) => ({ employeeName: memberName(m), shifts: byUser.get(m.id) ?? [] }))
+                .filter((g) => g.shifts.length > 0)
+                .sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+
+            await exportAllShifts(fmt, {
+                periodLabel,
+                locationName: (id) => locMap.get(id) ?? 'Unknown',
+                groups,
+            });
+        } finally {
+            setExportingAll(false);
+        }
     };
 
     // -----------------------------------------------------------------
@@ -265,49 +371,29 @@ function TimesheetsInner() {
                     <p className="text-label text-emerald-500 text-left">Administration</p>
                     <h1 className="text-display text-gray-900 dark:text-white">Timesheets</h1>
                 </div>
-                {selected && (
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <button
-                                onClick={() => setExportOpen((v) => !v)}
-                                disabled={shifts.length === 0}
-                                className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
-                                title="Export timesheet"
-                            >
-                                <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
-                            </button>
-                            <AnimatePresence>
-                                {exportOpen && (
-                                    <>
-                                        <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                                            animate={{ opacity: 1, y: 4, scale: 1 }}
-                                            exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                                            className="absolute right-0 top-full z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-1.5 overflow-hidden"
-                                        >
-                                            {([
-                                                { fmt: 'pdf' as const, label: 'PDF', Icon: FilePdfIcon },
-                                                { fmt: 'excel' as const, label: 'Excel', Icon: FileXlsIcon },
-                                                { fmt: 'csv' as const, label: 'CSV', Icon: FileCsvIcon },
-                                            ]).map(({ fmt, label, Icon }) => (
-                                                <button
-                                                    key={fmt}
-                                                    onClick={() => doExport(fmt)}
-                                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
-                                                >
-                                                    <Icon weight="bold" className="w-4 h-4 text-emerald-500" />
-                                                    {label}
-                                                </button>
-                                            ))}
-                                        </motion.div>
-                                    </>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                        <MonthPicker value={month} onChange={setMonth} />
-                    </div>
-                )}
+                <div className="flex items-center gap-2">
+                    {selected ? (
+                        <ExportMenu
+                            open={exportOpen}
+                            setOpen={setExportOpen}
+                            onPick={doExport}
+                            disabled={shifts.length === 0}
+                            title="Export this timesheet"
+                            Icon={DownloadSimpleIcon}
+                        />
+                    ) : (
+                        <ExportMenu
+                            open={exportAllOpen}
+                            setOpen={setExportAllOpen}
+                            onPick={doExportAll}
+                            disabled={exportingAll || members.length === 0}
+                            title="Export all employees (selected month)"
+                            Icon={UsersThreeIcon}
+                            busy={exportingAll}
+                        />
+                    )}
+                    <MonthPicker value={month} onChange={setMonth} />
+                </div>
             </header>
 
             {/* MEMBER PICKER */}
@@ -357,7 +443,7 @@ function TimesheetsInner() {
                     {/* Selected member header */}
                     <div className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm">
                         <button
-                            onClick={() => setSelectedId(null)}
+                            onClick={backToList}
                             className="shrink-0 p-2 -ml-1 rounded-xl text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
                             aria-label="Back to employees"
                         >

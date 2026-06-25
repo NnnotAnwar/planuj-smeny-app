@@ -30,6 +30,23 @@ export interface ShiftInput {
     role?: string | null;
 }
 
+export interface AuditLogQuery {
+    targetUserId?: string | null;
+    action?: 'create' | 'update' | 'delete' | null;
+    sort?: 'asc' | 'desc';
+    limit?: number;
+    offset?: number;
+}
+
+/** UTC [start, end) ISO bounds for a `YYYY-MM` month (matches the UI's filter). */
+function monthBounds(month: string): { start: string; end: string } {
+    const [y, m] = month.split('-').map(Number);
+    return {
+        start: new Date(Date.UTC(y, m - 1, 1)).toISOString(),
+        end: new Date(Date.UTC(y, m, 1)).toISOString(),
+    };
+}
+
 export const timesheetService = {
     /**
      * Org members the caller can see (RLS scopes to their organization;
@@ -105,14 +122,42 @@ export const timesheetService = {
         if (error) throw new Error(error.message);
     },
 
-    /** Most recent administrative shift changes for the Activity Log (admins+). */
-    async getAuditLog(limit = 200): Promise<ShiftAuditLog[]> {
-        const { data, error } = await supabase
-            .from('shift_audit_log')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(limit);
+    /** All accessible locations (across orgs for Superadmin), for name resolution. */
+    async getAllLocations(): Promise<Location[]> {
+        const { data, error } = await supabase.from('locations').select('*');
+        if (error) throw error;
+        return z.array(LocationSchema).parse(data ?? []);
+    },
 
+    /**
+     * Every shift in a month (all members in the caller's org; Superadmin: all),
+     * for the "export everyone" action. `month` is `YYYY-MM`, or null for all-time.
+     */
+    async getMonthShifts(month: string | null): Promise<Shift[]> {
+        let query = supabase.from('shifts').select('*').order('started_at', { ascending: false });
+        if (month) {
+            const { start, end } = monthBounds(month);
+            query = query.gte('started_at', start).lt('started_at', end);
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        return z.array(ShiftSchema).parse(data ?? []);
+    },
+
+    /**
+     * Administrative shift changes for the Activity Log (admins+), with optional
+     * filters, sort and offset pagination.
+     */
+    async getAuditLog(q: AuditLogQuery = {}): Promise<ShiftAuditLog[]> {
+        const { targetUserId = null, action = null, sort = 'desc', limit = 50, offset = 0 } = q;
+        let query = supabase.from('shift_audit_log').select('*');
+        if (targetUserId) query = query.eq('target_user_id', targetUserId);
+        if (action) query = query.eq('action', action);
+        query = query
+            .order('created_at', { ascending: sort === 'asc' })
+            .range(offset, offset + limit - 1);
+
+        const { data, error } = await query;
         if (error) throw error;
         return z.array(ShiftAuditLogSchema).parse(data ?? []);
     },

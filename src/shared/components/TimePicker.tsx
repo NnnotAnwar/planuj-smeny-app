@@ -9,13 +9,11 @@ import { ClockIcon, CaretDownIcon } from '@phosphor-icons/react';
  * the shift editor instead of the native `datetime-local` so only the time of a
  * shift can be changed (the date is held fixed by the caller).
  *
- * `value` is a `"HH:mm"` string (24-hour). Minutes step in {@link STEP}-minute
- * increments.
+ * `value` is a `"HH:mm"` string (24-hour). Every minute (0–59) is selectable.
  */
 
-const STEP = 5; // minute granularity
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES = Array.from({ length: 60 / STEP }, (_, i) => i * STEP);
+const MINUTES = Array.from({ length: 60 }, (_, i) => i);
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -35,8 +33,7 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
 
     const [h, m] = value.split(':');
     const selHour = Number.isNaN(parseInt(h)) ? 0 : parseInt(h);
-    // Snap the current minute to the nearest step so it highlights a real cell.
-    const selMinute = Math.round((Number.isNaN(parseInt(m)) ? 0 : parseInt(m)) / STEP) * STEP % 60;
+    const selMinute = Number.isNaN(parseInt(m)) ? 0 : parseInt(m);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {

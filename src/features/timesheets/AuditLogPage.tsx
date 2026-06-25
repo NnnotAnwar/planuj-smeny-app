@@ -1,25 +1,33 @@
-import { Navigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import {
     PlusIcon,
     PencilSimpleIcon,
     TrashIcon,
     ClockCounterClockwiseIcon,
     ArrowRightIcon,
+    CaretRightIcon,
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { canManageEmployees } from '@features/admin/permissions';
-import { type ShiftAuditLog, type ShiftSnapshot } from '@shared/types';
-import { timesheetService } from './timesheetService';
+import { type ShiftAuditLog, type ShiftSnapshot, type Profile } from '@shared/types';
+import { timesheetService, type AuditLogQuery } from './timesheetService';
+import { useTimesheetRealtime } from './useTimesheetRealtime';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const PAGE = 50;
 
 const ACTION = {
     create: { label: 'Added', Icon: PlusIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
     update: { label: 'Edited', Icon: PencilSimpleIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
     delete: { label: 'Deleted', Icon: TrashIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
 } as const;
+
+function memberName(m: Profile): string {
+    return [m.first_name, m.last_name].filter(Boolean).join(' ') || m.username;
+}
 
 function fmtClock(iso?: string | null): string {
     return iso ? new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '…';
@@ -32,11 +40,14 @@ function fmtSnapshot(s?: ShiftSnapshot | null): string {
     return `${d.getDate()} ${MONTHS[d.getMonth()]} · ${fmtClock(s.started_at)}–${fmtClock(s.ended_at)} · ${s.location_name ?? 'Unknown'}`;
 }
 
+const selectClass =
+    'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-small text-gray-700 dark:text-gray-200 outline-none focus:border-emerald-500 transition-colors';
+
 /**
  * --- ACTIVITY LOG PAGE ---
- * An append-only feed of administrative shift changes (create / edit / delete),
- * for Admins and above (rank >= 30). Each entry snapshots who did what to whom,
- * with before/after values so it stays readable after the shift is gone.
+ * Append-only feed of administrative shift changes (create / edit / delete), for
+ * Admins and above (rank >= 30). Filter by employee/action, sort, paginate, and
+ * click an entry to jump to that member's timesheet. Live via realtime.
  */
 export function AuditLogPage() {
     const { user } = useAuthContext();
@@ -46,13 +57,35 @@ export function AuditLogPage() {
 
 function AuditLogInner() {
     const { user } = useAuthContext();
-    const { data, isLoading, error } = useQuery({
-        queryKey: ['timesheets', 'audit'],
-        queryFn: () => timesheetService.getAuditLog(),
+    const navigate = useNavigate();
+    useTimesheetRealtime();
+
+    const [targetUserId, setTargetUserId] = useState<string>('');
+    const [action, setAction] = useState<'' | 'create' | 'update' | 'delete'>('');
+    const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+
+    const membersQ = useQuery({
+        queryKey: ['timesheets', 'members'],
+        queryFn: () => timesheetService.getMembers(),
+        enabled: !!user,
+    });
+    const members = membersQ.data ?? [];
+
+    const filters: AuditLogQuery = {
+        targetUserId: targetUserId || null,
+        action: action || null,
+        sort,
+    };
+
+    const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+        queryKey: ['timesheets', 'audit', filters],
+        queryFn: ({ pageParam }) => timesheetService.getAuditLog({ ...filters, limit: PAGE, offset: pageParam }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage, allPages) => (lastPage.length === PAGE ? allPages.length * PAGE : undefined),
         enabled: !!user,
     });
 
-    const entries = data ?? [];
+    const entries = data?.pages.flat() ?? [];
 
     return (
         <div className="space-y-4 px-1 pb-10">
@@ -61,12 +94,29 @@ function AuditLogInner() {
                     <p className="text-label text-emerald-500 text-left">Administration</p>
                     <h1 className="text-display text-gray-900 dark:text-white">Activity Log</h1>
                 </div>
-                {entries.length > 0 && (
-                    <span className="flex items-center gap-1.5 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm text-xs font-black text-emerald-600 dark:text-emerald-400">
-                        {entries.length}
-                    </span>
-                )}
             </header>
+
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+                <select value={targetUserId} onChange={(e) => setTargetUserId(e.target.value)} className={selectClass}>
+                    <option value="">All employees</option>
+                    {members.map((m) => (
+                        <option key={m.id} value={m.id}>
+                            {memberName(m)}
+                        </option>
+                    ))}
+                </select>
+                <select value={action} onChange={(e) => setAction(e.target.value as typeof action)} className={selectClass}>
+                    <option value="">All actions</option>
+                    <option value="create">Added</option>
+                    <option value="update">Edited</option>
+                    <option value="delete">Deleted</option>
+                </select>
+                <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className={selectClass}>
+                    <option value="desc">Newest first</option>
+                    <option value="asc">Oldest first</option>
+                </select>
+            </div>
 
             <section className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
@@ -84,20 +134,40 @@ function AuditLogInner() {
                 ) : isLoading ? (
                     <div className="py-20 text-center text-label text-gray-400 animate-pulse">Loading activity…</div>
                 ) : entries.length === 0 ? (
-                    <div className="py-20 text-center text-label text-gray-400">No activity yet</div>
+                    <div className="py-20 text-center text-label text-gray-400">No activity found</div>
                 ) : (
-                    <div className="space-y-2">
-                        {entries.map((e) => (
-                            <AuditCard key={e.id} entry={e} />
-                        ))}
-                    </div>
+                    <>
+                        <div className="space-y-2">
+                            {entries.map((e) => (
+                                <AuditCard
+                                    key={e.id}
+                                    entry={e}
+                                    onOpen={
+                                        e.target_user_id
+                                            ? () => navigate(`/timesheets?member=${e.target_user_id}`)
+                                            : undefined
+                                    }
+                                />
+                            ))}
+                        </div>
+
+                        {hasNextPage && (
+                            <button
+                                onClick={() => fetchNextPage()}
+                                disabled={isFetchingNextPage}
+                                className="w-full py-2.5 rounded-xl text-label text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
+                            >
+                                {isFetchingNextPage ? 'Loading…' : 'Load more'}
+                            </button>
+                        )}
+                    </>
                 )}
             </section>
         </div>
     );
 }
 
-function AuditCard({ entry }: { entry: ShiftAuditLog }) {
+function AuditCard({ entry, onOpen }: { entry: ShiftAuditLog; onOpen?: () => void }) {
     const meta = ACTION[entry.action];
     const actor = entry.details.actor_name ?? 'Someone';
     const target = entry.details.target_name ?? 'a member';
@@ -109,7 +179,12 @@ function AuditCard({ entry }: { entry: ShiftAuditLog }) {
     });
 
     return (
-        <div className="flex gap-3 p-3 rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm">
+        <div
+            onClick={onOpen}
+            className={`flex gap-3 p-3 rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm transition-colors ${
+                onOpen ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5' : ''
+            }`}
+        >
             <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${meta.badge}`}>
                 <meta.Icon weight="bold" className="w-4 h-4" />
             </div>
@@ -134,6 +209,7 @@ function AuditCard({ entry }: { entry: ShiftAuditLog }) {
                     </p>
                 )}
             </div>
+            {onOpen && <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-300 self-center shrink-0" />}
         </div>
     );
 }
