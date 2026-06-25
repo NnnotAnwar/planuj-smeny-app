@@ -6,11 +6,11 @@ import type { Location, Shift, Profile } from '@shared/types';
 
 /**
  * --- SHIFT EDITOR MODAL ---
- * Create or edit a member's shift. Start/end *times* use a custom {@link TimePicker}.
- * When EDITING, the date is held fixed (you only correct the times of an existing
- * shift); when ADDING, the day is chosen with a custom {@link DatePicker} so an
- * admin can backdate a shift to the day actually worked. A shift always has a
- * start and an end. Times use the device's local timezone, converted to ISO.
+ * Create or edit a member's shift. The start day is chosen with a custom
+ * {@link DatePicker} and the start/end times with a custom {@link TimePicker}
+ * (no native pickers). An end time on/before the start is treated as an overnight
+ * shift (rolls to the next day). A shift always has a start and an end; times use
+ * the device's local timezone, converted to ISO.
  */
 
 export interface ShiftFormValues {
@@ -31,16 +31,6 @@ function isoToDate(iso: string): string {
 function isoToTime(iso: string): string {
     const d = new Date(iso);
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** Human-readable fixed date, e.g. "Mon, 24 Jun 2026". */
-function prettyDate(date: string): string {
-    return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-    });
 }
 
 const inputClass =
@@ -125,17 +115,9 @@ export function ShiftEditorModal({
                     </select>
                 </div>
 
-                {/* Editing: fixed date (only times change). Adding: pick the day. */}
                 <div className="space-y-1.5">
                     <label className="text-label text-gray-400">Date</label>
-                    {isEdit ? (
-                        <div className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-gray-800/50 px-3 py-2.5">
-                            <span className="text-small-strong text-gray-700 dark:text-gray-200">{prettyDate(date)}</span>
-                            <span className="text-micro text-gray-400">fixed</span>
-                        </div>
-                    ) : (
-                        <DatePicker value={date} onChange={setDate} aria-label="Shift date" />
-                    )}
+                    <DatePicker value={date} onChange={setDate} aria-label="Shift date" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
