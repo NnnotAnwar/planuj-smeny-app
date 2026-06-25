@@ -32,7 +32,7 @@ export interface ShiftInput {
 
 export interface AuditLogQuery {
     targetUserId?: string | null;
-    action?: 'create' | 'update' | 'delete' | null;
+    action?: string | null;
     sort?: 'asc' | 'desc';
     limit?: number;
     offset?: number;

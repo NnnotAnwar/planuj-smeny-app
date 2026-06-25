@@ -12,11 +12,15 @@ import { z } from 'zod';
 const SHIFT_SELECT = '*';
 const SHIFT_WITH_PROFILE_SELECT = '*, profiles(username, first_name, last_name, role)';
 
-// Raw row for the profile "currently working" lookup (location joined to-one).
+// Raw row for the profile "currently working" lookup. `shifts` has TWO FKs to
+// `locations` (location_id + previous_location_id), so the embed MUST name the
+// constraint or PostgREST errors on the ambiguity (which silently rendered
+// everyone as "off shift").
+const STATUS_SELECT = 'started_at, location_id, location:locations!shifts_location_id_fkey(name)';
 const ActiveShiftStatusRowSchema = z.object({
   started_at: z.string(),
   location_id: z.string(),
-  locations: z.object({ name: z.string() }).nullable(),
+  location: z.object({ name: z.string() }).nullable(),
 });
 
 /** Where and since when a user is currently clocked in, or null when off shift. */
@@ -51,7 +55,7 @@ export const shiftService = {
   async getActiveShiftStatus(userId: string): Promise<ActiveShiftStatus | null> {
     const { data, error } = await supabase
       .from('shifts')
-      .select('started_at, location_id, locations(name)')
+      .select(STATUS_SELECT)
       .eq('user_id', userId)
       .is('ended_at', null)
       .maybeSingle();
@@ -63,7 +67,7 @@ export const shiftService = {
     return {
       started_at: parsed.started_at,
       location_id: parsed.location_id,
-      location_name: parsed.locations?.name ?? null,
+      location_name: parsed.location?.name ?? null,
     };
   },
 

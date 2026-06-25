@@ -22,6 +22,7 @@ import { DataTable, type Column } from '@shared/components/DataTable';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { ActionButtons } from '@features/admin/components/ActionButtons';
 import { ConfirmDialog } from '@features/admin/components/Modal';
+import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
 import { getFullInitials } from '@shared/utils/getInitials';
 import { type Shift, type Profile } from '@shared/types';
@@ -138,6 +139,7 @@ function TimesheetsInner() {
     const [exportOpen, setExportOpen] = useState(false);
     const [exportAllOpen, setExportAllOpen] = useState(false);
     const [exportingAll, setExportingAll] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
 
     const backToList = () => {
         setSelectedId(null);
@@ -449,13 +451,19 @@ function TimesheetsInner() {
                         >
                             <CaretLeftIcon weight="bold" className="w-5 h-5" />
                         </button>
-                        <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-black shrink-0">
-                            {getFullInitials(selected.first_name, selected.last_name)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <p className="text-body-strong text-gray-900 dark:text-white truncate">{memberName(selected)}</p>
-                            <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{selected.username}</p>
-                        </div>
+                        <button
+                            onClick={() => setProfileOpen(true)}
+                            className="flex items-center gap-3 min-w-0 flex-1 text-left rounded-xl -m-1 p-1 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                            aria-label={`View ${memberName(selected)}'s profile`}
+                        >
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-black shrink-0">
+                                {getFullInitials(selected.first_name, selected.last_name)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-body-strong text-gray-900 dark:text-white truncate">{memberName(selected)}</p>
+                                <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{selected.username}</p>
+                            </div>
+                        </button>
                         <span className={`shrink-0 px-1.5 py-1 text-micro tracking-tight rounded-md whitespace-nowrap ${getRoleBadgeColor(selected.role.name)}`}>
                             {selected.role.name}
                         </span>
@@ -535,6 +543,9 @@ function TimesheetsInner() {
                         onConfirm={handleDelete}
                         onClose={() => setDeleting(null)}
                     />
+                )}
+                {profileOpen && selected && (
+                    <UserProfileModal userId={selected.id} onClose={() => setProfileOpen(false)} />
                 )}
             </AnimatePresence>
         </div>

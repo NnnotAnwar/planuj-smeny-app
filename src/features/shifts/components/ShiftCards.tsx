@@ -12,6 +12,7 @@ interface ShiftCardsProps {
   locationName: string;
   shifts: ShiftDisplayData[]; // Other workers.
   userShift?: ShiftDisplayData; // Your own shift.
+  onSelectUser?: (userId: string) => void; // Open a worker's profile modal.
 }
 
 // 2. ANIMATION: Define how cards should slide in and out.
@@ -21,7 +22,7 @@ const itemVariants: Variants = {
   exit: { opacity: 0, x: 20, height: 0, marginTop: 0 },
 };
 
-export function ShiftCards({ locationName, shifts, userShift }: ShiftCardsProps) {
+export function ShiftCards({ locationName, shifts, userShift, onSelectUser }: ShiftCardsProps) {
   const hasContent = shifts.length > 0 || userShift;
 
   return (
@@ -45,7 +46,7 @@ export function ShiftCards({ locationName, shifts, userShift }: ShiftCardsProps)
           {/* OWN SHIFT FIRST */}
           {userShift && (
             <motion.div key="user-active-shift" variants={itemVariants} initial="hidden" animate="show" exit="exit" layout>
-              <UserShiftCard userShift={userShift} />
+              <UserShiftCard userShift={userShift} onSelectUser={onSelectUser} />
             </motion.div>
           )}
 
@@ -55,7 +56,7 @@ export function ShiftCards({ locationName, shifts, userShift }: ShiftCardsProps)
               {shift.start === '--:--' ? (
                 <UnassignedShiftCard shift={shift} />
               ) : (
-                <AssignedShiftCard shift={shift} />
+                <AssignedShiftCard shift={shift} onSelectUser={onSelectUser} />
               )}
             </motion.div>
           ))}
@@ -68,8 +69,9 @@ export function ShiftCards({ locationName, shifts, userShift }: ShiftCardsProps)
 /**
  * UI for YOUR OWN active shift card.
  */
-function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['userShift']> }) {
+function UserShiftCard({ userShift, onSelectUser }: { userShift: NonNullable<ShiftCardsProps['userShift']>; onSelectUser?: (userId: string) => void }) {
   const isChange = !!userShift.isChangeLocation;
+  const clickable = !!(onSelectUser && userShift.userId);
 
   // Emerald/Green if standard, Yellow/Amber if location changed.
   const bg = isChange
@@ -85,7 +87,10 @@ function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['
     : 'text-emerald-700 dark:text-emerald-400';
 
   return (
-    <div className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center transition-all border backdrop-blur-sm ${bg}`}>
+    <div
+      onClick={clickable ? () => onSelectUser!(userShift.userId!) : undefined}
+      className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center transition-all border backdrop-blur-sm ${bg} ${clickable ? 'cursor-pointer hover:brightness-[0.98] active:scale-[0.99]' : ''}`}
+    >
       <div className={`flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 ${box}`}>
         <span className="text-metric-sm">{userShift.start ?? '--:--'}</span>
       </div>
@@ -107,8 +112,9 @@ function UserShiftCard({ userShift }: { userShift: NonNullable<ShiftCardsProps['
 /**
  * UI for a COLLEAGUE'S shift card.
  */
-function AssignedShiftCard({ shift }: { shift: ShiftDisplayData }) {
+function AssignedShiftCard({ shift, onSelectUser }: { shift: ShiftDisplayData; onSelectUser?: (userId: string) => void }) {
   const isChange = !!shift.isChangeLocation;
+  const clickable = !!(onSelectUser && shift.userId);
 
   // Colleagues are ALWAYS standard (white/gray) to avoid confusion with the user.
   const bg = 'bg-white/80 dark:bg-white/5 border-white dark:border-white/5';
@@ -116,7 +122,10 @@ function AssignedShiftCard({ shift }: { shift: ShiftDisplayData }) {
   const nameLabel = 'text-gray-800 dark:text-white';
 
   return (
-    <div className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center backdrop-blur-sm transition-all border ${bg}`}>
+    <div
+      onClick={clickable ? () => onSelectUser!(shift.userId!) : undefined}
+      className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center backdrop-blur-sm transition-all border ${bg} ${clickable ? 'cursor-pointer hover:brightness-[0.98] active:scale-[0.99]' : ''}`}
+    >
       <div className={`flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 text-white shadow-xs ${box}`}>
         <span className="text-metric-sm">{shift.start ?? '--:--'}</span>
       </div>

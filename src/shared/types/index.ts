@@ -154,9 +154,26 @@ export const ShiftSnapshotSchema = z.object({
 });
 
 /**
- * ShiftAuditLogSchema: one administrative change to a member's shift
- * (create/update/delete), recorded by the SECURITY DEFINER RPCs. Admins+ can
- * review these; `details` snapshots names + before/after values.
+ * Known audit-log action types. `action` is parsed as a plain string (not a
+ * strict enum) so that adding a new server-side action never breaks an older
+ * deployed client — the UI falls back to a generic row for anything it doesn't
+ * recognise.
+ */
+export const AUDIT_ACTIONS = [
+  'create',
+  'update',
+  'delete',
+  'username_change',
+  'name_request_approved',
+  'name_request_rejected',
+] as const;
+export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+
+/**
+ * ShiftAuditLogSchema: one administrative change recorded by the SECURITY
+ * DEFINER RPCs / triggers. Covers shift create/update/delete plus account events
+ * (username change, name-change request approve/reject). `details` carries the
+ * actor/target names and the relevant before/after values for that action.
  */
 export const ShiftAuditLogSchema = z.object({
   id: z.string(),
@@ -164,13 +181,19 @@ export const ShiftAuditLogSchema = z.object({
   shift_id: z.string().nullable(),
   actor_id: z.string().nullable(),
   target_user_id: z.string().nullable(),
-  action: z.enum(['create', 'update', 'delete']),
+  action: z.string(),
   details: z
     .object({
       actor_name: z.string().nullable().optional(),
       target_name: z.string().nullable().optional(),
       old: ShiftSnapshotSchema.nullable().optional(),
       new: ShiftSnapshotSchema.nullable().optional(),
+      // Account events (username change / name-change request review).
+      old_username: z.string().nullable().optional(),
+      new_username: z.string().nullable().optional(),
+      old_name: z.string().nullable().optional(),
+      new_name: z.string().nullable().optional(),
+      note: z.string().nullable().optional(),
     })
     .default({}),
   created_at: z.string(),
@@ -203,6 +226,7 @@ export type User = Profile;
 /** Simplified shift data used in the ShiftCards components */
 export type ShiftDisplayData = {
   id?: string;
+  userId?: string; // Who this shift belongs to — lets the card open their profile.
   name: string;
   role: string;
   start: string;

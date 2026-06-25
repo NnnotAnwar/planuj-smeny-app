@@ -6,10 +6,10 @@ import { SquaresFourIcon, ChartBarIcon, GearIcon, ShieldCheckIcon, UserCircleGea
 import { Clock } from '@shared/components/Clock';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
-import { useTheme } from '@app/providers/ThemeContext';
 import { LocationSelection } from '@features/locations/components/LocationSelection';
 import { usePermissions } from '@shared/auth/usePermissions';
 import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
+import { NotificationsBell } from '@features/notifications/NotificationsBell';
 
 /**
  * --- DASHBOARD COMPONENT ---
@@ -44,7 +44,6 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
     { name: 'Settings', icon: GearIcon, route: '/settings' }
   ];
 
-  const { setTheme, resolvedTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const currentRoute = useLocation();
 
@@ -66,27 +65,19 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
               <span className="hidden lg:block text-base font-black text-gray-800 dark:text-white tracking-tight">Planuj Směny</span>
             </div>
 
+            {/* Desktop: notifications bell (theme toggle lives in Settings). */}
             <div className="hidden md:block z-10">
-              <button onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')} className="p-2 rounded-xl hover:bg-emerald-500/5 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 transition-all cursor-pointer active:scale-90" aria-label="Toggle theme">
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div key={resolvedTheme} initial={{ y: -5, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 5, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
-                    {resolvedTheme === 'dark' ? <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M3 12h2.25m.386-6.364l-1.591 1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M3 12h2.25m.386-6.364l-1.591 1.591M12 7.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9z" /></svg> : <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>}
-                  </motion.div>
-                </AnimatePresence>
-              </button>
+              <NotificationsBell />
             </div>
 
             <div className="absolute inset-0 flex items-center justify-center md:hidden pointer-events-none">
               <div className="text-xl font-bold text-gray-800 dark:text-white tracking-tight"><Clock seconds={false} /></div>
             </div>
 
-            <button onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')} className="md:hidden -mr-2 p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-emerald-500/5 dark:hover:bg-white/5 transition-all cursor-pointer active:scale-90 z-10" aria-label="Toggle theme">
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div key={resolvedTheme} initial={{ y: -5, opacity: 0, rotate: -45 }} animate={{ y: 0, opacity: 1, rotate: 0 }} exit={{ y: 5, opacity: 0, rotate: 45 }} transition={{ duration: 0.2 }}>
-                  {resolvedTheme === 'dark' ? <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M3 12h2.25m.386-6.364l-1.591 1.591M12 7.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9z" /></svg> : <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7"><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>}
-                </motion.div>
-              </AnimatePresence>
-            </button>
+            {/* Mobile: notifications bell (theme toggle lives in the More menu / Settings). */}
+            <div className="md:hidden z-10">
+              <NotificationsBell />
+            </div>
           </div>
 
           {user && (
