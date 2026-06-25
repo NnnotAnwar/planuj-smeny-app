@@ -48,12 +48,18 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Scroll the selected hour/minute into view each time the popover opens.
+    // On open, center the selected hour/minute inside ITS OWN column only — set
+    // the column's scrollTop directly. (scrollIntoView would bubble up and shift
+    // the whole popover/modal, which looked like the popup "jumping".)
     useEffect(() => {
         if (!isOpen) return;
         const frame = requestAnimationFrame(() => {
-            hoursRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'center' });
-            minutesRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'center' });
+            const center = (box: HTMLDivElement | null) => {
+                const el = box?.querySelector<HTMLElement>('[data-selected="true"]');
+                if (box && el) box.scrollTop = el.offsetTop - box.clientHeight / 2 + el.clientHeight / 2;
+            };
+            center(hoursRef.current);
+            center(minutesRef.current);
         });
         return () => cancelAnimationFrame(frame);
     }, [isOpen]);

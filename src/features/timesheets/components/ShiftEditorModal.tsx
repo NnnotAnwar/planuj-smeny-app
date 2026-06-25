@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { Modal } from '@features/admin/components/Modal';
 import { TimePicker } from '@shared/components/TimePicker';
+import { DatePicker } from '@shared/components/DatePicker';
 import type { Location, Shift, Profile } from '@shared/types';
 
 /**
  * --- SHIFT EDITOR MODAL ---
- * Create or edit a member's shift. Only the start/end *time* is editable (via a
- * custom {@link TimePicker}); the calendar date is held fixed — the shift's own
- * date when editing, or today when adding. A shift always has a start and an
- * end. Times use the device's local timezone and are converted to ISO for the
- * API.
+ * Create or edit a member's shift. Start/end *times* use a custom {@link TimePicker}.
+ * When EDITING, the date is held fixed (you only correct the times of an existing
+ * shift); when ADDING, the day is chosen with a custom {@link DatePicker} so an
+ * admin can backdate a shift to the day actually worked. A shift always has a
+ * start and an end. Times use the device's local timezone, converted to ISO.
  */
 
 export interface ShiftFormValues {
@@ -70,9 +71,10 @@ export function ShiftEditorModal({
     // Active locations + keep the shift's current one even if it was archived.
     const pickable = locations.filter((l) => !l.archived_at || l.id === shift?.location_id);
 
-    // The date is fixed for the lifetime of the modal: the shift's own date when
-    // editing, otherwise today. Only the times below are editable.
-    const dateStr = shift ? isoToDate(shift.started_at) : isoToDate(new Date().toISOString());
+    // Editing keeps the shift's own date fixed; adding lets you pick the day.
+    const [date, setDate] = useState(() =>
+        shift ? isoToDate(shift.started_at) : isoToDate(new Date().toISOString()),
+    );
 
     const [locationId, setLocationId] = useState(shift?.location_id ?? pickable[0]?.id ?? '');
     const [start, setStart] = useState(() => (shift ? isoToTime(shift.started_at) : '08:00'));
@@ -92,8 +94,8 @@ export function ShiftEditorModal({
         try {
             await onSubmit({
                 location_id: locationId,
-                started_at: combine(dateStr, start),
-                ended_at: combine(dateStr, end),
+                started_at: combine(date, start),
+                ended_at: combine(date, end),
             });
             onClose();
         } catch (err) {
@@ -122,10 +124,17 @@ export function ShiftEditorModal({
                     </select>
                 </div>
 
-                {/* Fixed date — shown for context, not editable. */}
-                <div className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-gray-800/50 px-3 py-2.5">
-                    <span className="text-label text-gray-400">Date</span>
-                    <span className="text-small-strong text-gray-700 dark:text-gray-200">{prettyDate(dateStr)}</span>
+                {/* Editing: fixed date (only times change). Adding: pick the day. */}
+                <div className="space-y-1.5">
+                    <label className="text-label text-gray-400">Date</label>
+                    {isEdit ? (
+                        <div className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-gray-800/50 px-3 py-2.5">
+                            <span className="text-small-strong text-gray-700 dark:text-gray-200">{prettyDate(date)}</span>
+                            <span className="text-micro text-gray-400">fixed</span>
+                        </div>
+                    ) : (
+                        <DatePicker value={date} onChange={setDate} aria-label="Shift date" />
+                    )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
