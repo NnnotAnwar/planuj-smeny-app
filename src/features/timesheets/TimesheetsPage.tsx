@@ -17,7 +17,7 @@ import {
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
-import { canViewAdminPanel, canManageMember } from '@features/admin/permissions';
+import { canViewAdminPanel, canManageMember } from '@shared/auth/permissions';
 import { DataTable, type Column } from '@shared/components/DataTable';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { ActionButtons } from '@features/admin/components/ActionButtons';

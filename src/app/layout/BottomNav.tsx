@@ -18,7 +18,7 @@ import {
 } from '@phosphor-icons/react';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useTheme } from '@app/providers/ThemeContext';
-import { canViewAdminPanel, canManageEmployees } from '@features/admin/permissions';
+import { usePermissions } from '@shared/auth/usePermissions';
 import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
 
 function getInitials(firstName?: string | null, lastName?: string | null): string {
@@ -66,20 +66,19 @@ export function BottomNav() {
             ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim()
             : user?.username ?? '';
 
-    const isAdmin = !!user && canManageEmployees(user);
-    const canViewPanel = !!user && canViewAdminPanel(user);
+    const { canViewAdminPanel, canManageEmployees: isAdmin } = usePermissions();
     const pending = usePendingNameRequestCount();
 
     // Primary bar destinations.
     const items: NavItem[] = [
         { name: 'Home', icon: SquaresFourIcon, route: '/' },
         { name: 'Overview', icon: ChartBarIcon, route: '/overview' },
-        ...(user && canViewAdminPanel(user) ? [{ name: 'Admin', icon: ShieldCheckIcon, route: '/admin' }] : []),
+        ...(canViewAdminPanel ? [{ name: 'Admin', icon: ShieldCheckIcon, route: '/admin' }] : []),
     ];
 
     // Destinations that live inside the "More" sheet.
     const moreItems: NavItem[] = [
-        ...(canViewPanel ? [{ name: 'Timesheets', icon: ClockUserIcon, route: '/timesheets' }] : []),
+        ...(canViewAdminPanel ? [{ name: 'Timesheets', icon: ClockUserIcon, route: '/timesheets' }] : []),
         ...(isAdmin ? [{ name: 'Requests', icon: UserCircleGearIcon, route: '/requests' }] : []),
         ...(isAdmin ? [{ name: 'Activity Log', icon: ClockCounterClockwiseIcon, route: '/activity' }] : []),
         { name: 'Settings', icon: GearIcon, route: '/settings' },

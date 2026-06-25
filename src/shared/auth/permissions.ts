@@ -1,11 +1,15 @@
-import type { User, Profile, Role } from '@/shared/types';
+import type { User, Profile, Role } from '@shared/types';
 
 /**
- * --- ADMIN PERMISSIONS ---
+ * --- PERMISSIONS ---
  * Capability checks derived from the role hierarchy (rank). Mirrors the RLS
  * policies in the database so the UI only offers what the server will allow.
  *
  *   Superadmin 100 > Head Admin 40 > Admin 30 > Manager 20 > Supervisor 10 > Employee 0
+ *
+ * These are pure functions (no React) so they can be used in route guards and
+ * tests. For components, prefer the `usePermissions()` hook which wraps these
+ * with the current auth user.
  */
 
 export const RANK = {

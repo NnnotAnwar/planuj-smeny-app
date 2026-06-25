@@ -3,7 +3,7 @@ import { Modal } from './Modal';
 import { Field, TextInput, SelectInput, FormError, FormActions } from './FormControls';
 import { useAdminContext } from '../AdminContext';
 import { useAuthContext } from '@/features/auth/AuthContext';
-import { assignableRoles as getAssignableRoles } from '../permissions';
+import { assignableRoles as getAssignableRoles } from '@shared/auth/permissions';
 import type { Profile } from '@/shared/types';
 
 /**

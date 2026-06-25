@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthContext } from './AuthContext';
-import { canViewAdminPanel } from '@features/admin/permissions';
+import { canViewAdminPanel } from '@shared/auth/permissions';
 
 export function RoleGuard() {
     const { user, isLoading, isAuthChecking } = useAuthContext();

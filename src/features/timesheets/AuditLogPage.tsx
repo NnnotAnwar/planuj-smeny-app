@@ -11,7 +11,7 @@ import {
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
-import { canManageEmployees } from '@features/admin/permissions';
+import { canManageEmployees } from '@shared/auth/permissions';
 import { type ShiftAuditLog, type ShiftSnapshot, type Profile } from '@shared/types';
 import { timesheetService, type AuditLogQuery } from './timesheetService';
 import { useTimesheetRealtime } from './useTimesheetRealtime';

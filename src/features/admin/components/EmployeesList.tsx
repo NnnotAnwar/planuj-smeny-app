@@ -4,7 +4,7 @@ import type { Profile, User } from '@/shared/types';
 import { getRoleBadgeColor } from '@/shared/utils/roleColors';
 import { getFullInitials } from '@/shared/utils/getInitials';
 import { DataTable, type Column } from '@/shared/components/DataTable';
-import { canManageMember, RANK } from '../permissions';
+import { canManageMember, RANK } from '@shared/auth/permissions';
 import { ActionButtons } from './ActionButtons';
 import { LoadingState, EmptyState } from './AdminStateViews';
 

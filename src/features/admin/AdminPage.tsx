@@ -12,7 +12,7 @@ import type { Organization, Profile } from '@/shared/types';
 
 import { useAuthContext } from '@/features/auth/AuthContext';
 import { AdminProvider, useAdminContext } from './AdminContext';
-import { canManageEmployees, canManageLocations } from './permissions';
+import { canManageEmployees, canManageLocations } from '@shared/auth/permissions';
 import { ConfirmDialog } from './components/Modal';
 import { OrganizationForm } from './components/OrganizationForm';
 import { LocationForm, type LocationEditTarget } from './components/LocationForm';

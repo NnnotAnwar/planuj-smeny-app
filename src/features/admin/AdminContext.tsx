@@ -2,6 +2,7 @@ import { createContext, useContext, useCallback, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, type EmployeeUpdate, type EmployeeInvite } from './adminService';
 import { useAuthContext } from '@/features/auth/AuthContext';
+import { isSuperAdmin as checkSuperAdmin } from '@shared/auth/permissions';
 import type { Organization, Role, NameChangeRequest } from '@/shared/types';
 
 /**
@@ -51,7 +52,7 @@ const REQUESTS_KEY = ['admin', 'name-requests'] as const;
 
 export function AdminProvider({ children }: { children: ReactNode }) {
     const { user } = useAuthContext();
-    const isSuperAdmin = user?.role.name === 'Superadmin';
+    const isSuperAdmin = !!user && checkSuperAdmin(user);
     const queryClient = useQueryClient();
 
     const treeQuery = useQuery({

@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { GearIcon } from '@phosphor-icons/react';
 import { useAuthContext } from '@features/auth/AuthContext';
-import { isSuperAdmin } from '@features/admin/permissions';
+import { isSuperAdmin } from '@shared/auth/permissions';
 import { PageLoader } from '@shared/components/PageLoader';
 import type { ProfileDetail } from '@shared/types';
 import { profileService } from './profileService';

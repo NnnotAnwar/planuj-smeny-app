@@ -8,7 +8,7 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useTheme } from '@app/providers/ThemeContext';
 import { LocationSelection } from '@features/locations/components/LocationSelection';
-import { canViewAdminPanel, canManageEmployees } from '@features/admin/permissions';
+import { usePermissions } from '@shared/auth/usePermissions';
 import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
 
 /**
@@ -31,15 +31,16 @@ function getInitials(firstName?: string | null, lastName?: string | null): strin
 export function Dashboard({ onLocationSelect }: DashboardProps) {
   const { user, logout } = useAuthContext();
   const { locations, selectedLocationId } = useShiftContext();
+  const { canViewAdminPanel, canManageEmployees } = usePermissions();
 
   const pendingRequests = usePendingNameRequestCount();
   const navItems: { name: string; icon: Icon; route: string; badge?: number }[] = [
     { name: 'Dashboard', icon: SquaresFourIcon, route: '/' },
     { name: 'Overview', icon: ChartBarIcon, route: '/overview' },
-    ...(user && canViewAdminPanel(user) ? [{ name: 'Admin Panel', icon: ShieldCheckIcon, route: '/admin' }] : []),
-    ...(user && canViewAdminPanel(user) ? [{ name: 'Timesheets', icon: ClockUserIcon, route: '/timesheets' }] : []),
-    ...(user && canManageEmployees(user) ? [{ name: 'Requests', icon: UserCircleGearIcon, route: '/requests', badge: pendingRequests }] : []),
-    ...(user && canManageEmployees(user) ? [{ name: 'Activity Log', icon: ClockCounterClockwiseIcon, route: '/activity' }] : []),
+    ...(canViewAdminPanel ? [{ name: 'Admin Panel', icon: ShieldCheckIcon, route: '/admin' }] : []),
+    ...(canViewAdminPanel ? [{ name: 'Timesheets', icon: ClockUserIcon, route: '/timesheets' }] : []),
+    ...(canManageEmployees ? [{ name: 'Requests', icon: UserCircleGearIcon, route: '/requests', badge: pendingRequests }] : []),
+    ...(canManageEmployees ? [{ name: 'Activity Log', icon: ClockCounterClockwiseIcon, route: '/activity' }] : []),
     { name: 'Settings', icon: GearIcon, route: '/settings' }
   ];
 

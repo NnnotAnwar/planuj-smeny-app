@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { UserCircleGearIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@/features/auth/AuthContext';
-import { canManageEmployees } from '@/features/admin/permissions';
+import { canManageEmployees } from '@shared/auth/permissions';
 import { AdminProvider, useAdminContext } from '@/features/admin/AdminContext';
 import { NameChangeRequestsList } from '@/features/admin/components/NameChangeRequestsList';
 import { ErrorState } from '@/features/admin/components/AdminStateViews';
