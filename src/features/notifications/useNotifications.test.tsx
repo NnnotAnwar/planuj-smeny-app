@@ -25,21 +25,25 @@ vi.mock('@shared/api/supabaseClient', () => {
         }),
         state: 'joined',
     };
+    const mockedSupabase = {
+        channel: vi.fn(() => mockChannelInstance),
+        removeChannel: vi.fn(),
+    };
+    // Expose for test assertions without using require()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).__testSupabase = mockedSupabase;
     return {
-        supabase: {
-            channel: vi.fn(() => mockChannelInstance),
-            removeChannel: vi.fn(),
-        },
+        supabase: mockedSupabase,
     };
 });
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { notificationsService } from './notificationsService';
 
-// Helper to get the mocked channel for assertions (re-created per mock call)
+// Helper to get the mocked channel for assertions
 const getMockChannel = () => {
-    const supabase = require('@shared/api/supabaseClient').supabase;
-    return supabase.channel();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (globalThis as any).__testSupabase?.channel() || null;
 };
 
 const mockUser: User = {
@@ -72,7 +76,7 @@ function setup(initialUser = mockUser) {
     });
 
     const mockAuth = vi.mocked(useAuthContext);
-    mockAuth.mockReturnValue({ user: initialUser } as any);
+    mockAuth.mockReturnValue({ user: initialUser } as unknown as ReturnType<typeof useAuthContext>);
 
     vi.mocked(notificationsService.getMyNotifications).mockResolvedValue([mockAuditLog]);
 
