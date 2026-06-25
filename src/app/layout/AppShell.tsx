@@ -6,6 +6,7 @@ import { WarningCircleIcon, XIcon, MapPinIcon } from '@phosphor-icons/react';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useLocationManagement } from '@features/locations/hooks/useLocationManagement';
+import { useToasts, toastStore } from '@shared/toast/toastStore';
 
 import { Dashboard } from '@features/dashboard/Dashboard';
 import { BottomNav } from './BottomNav';
@@ -36,14 +37,11 @@ export interface AppOutletContext {
 
 export function AppShell() {
   const { user, isAuthChecking, isLoading: isAuthLoading } = useAuthContext();
-  const { activeShift, allActiveShifts, locations, selectedLocationId, setSelectedLocationId, handleChangeLocation, isChangingLocation, actionError, clearActionError } = useShiftContext();
+  const { activeShift, allActiveShifts, locations, selectedLocationId, setSelectedLocationId, handleChangeLocation, isChangingLocation } = useShiftContext();
 
-  // Auto-dismiss the shift-action error toast after a few seconds.
-  useEffect(() => {
-    if (!actionError) return;
-    const t = setTimeout(clearActionError, 5000);
-    return () => clearTimeout(t);
-  }, [actionError, clearActionError]);
+  // Failed shift actions (start/end/move) are surfaced via the toast store; the
+  // store auto-dismisses each entry.
+  const toasts = useToasts();
 
   // "You're already here" — a top push-style toast (auto-dismisses).
   const [hereToast, setHereToast] = useState<string | null>(null);
@@ -107,26 +105,28 @@ export function AppShell() {
       {/* MOBILE BOTTOM TAB BAR */}
       <BottomNav />
 
-      {/* ACTION ERROR TOAST — surfaces failed shift actions (start/end/move). */}
-      <AnimatePresence>
-        {actionError && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            role="alert"
-            className="fixed left-1/2 -translate-x-1/2 z-[200] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 w-[calc(100%-2rem)] max-w-md"
-          >
-            <div className="flex items-start gap-3 bg-red-500 text-white rounded-2xl px-4 py-3 shadow-2xl shadow-red-500/30">
-              <WarningCircleIcon weight="fill" className="w-5 h-5 shrink-0 mt-0.5" />
-              <p className="flex-1 text-sm font-bold leading-snug">{actionError}</p>
-              <button onClick={clearActionError} aria-label="Dismiss" className="shrink-0 -m-1 p-1 hover:bg-white/20 rounded-lg transition-colors">
-                <XIcon weight="bold" className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* ACTION ERROR TOASTS — surface failed shift actions (start/end/move). */}
+      <div className="fixed left-1/2 -translate-x-1/2 z-[200] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 w-[calc(100%-2rem)] max-w-md space-y-2">
+        <AnimatePresence>
+          {toasts.map((t) => (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              role="alert"
+            >
+              <div className="flex items-start gap-3 bg-red-500 text-white rounded-2xl px-4 py-3 shadow-2xl shadow-red-500/30">
+                <WarningCircleIcon weight="fill" className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="flex-1 text-sm font-bold leading-snug">{t.message}</p>
+                <button onClick={() => toastStore.dismiss(t.id)} aria-label="Dismiss" className="shrink-0 -m-1 p-1 hover:bg-white/20 rounded-lg transition-colors">
+                  <XIcon weight="bold" className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
       {/* "ALREADY HERE" TOAST — push-style, slides in from the top. */}
       <AnimatePresence>
