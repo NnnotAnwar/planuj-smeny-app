@@ -44,7 +44,7 @@ export function useNotifications() {
     });
 
     // Ref for retry timeout to avoid memory leaks
-    const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (!userId) return;
@@ -101,7 +101,7 @@ export function useNotifications() {
             return entry;
         };
 
-        const entry = ensureSubscription();
+        ensureSubscription();
 
         return () => {
             if (retryTimeoutRef.current) {
