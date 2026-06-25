@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarBlankIcon,
   MapPinIcon,
@@ -8,25 +8,21 @@ import {
   ChartBarIcon,
   TrendUpIcon,
   DownloadSimpleIcon,
+  FilePdfIcon,
+  FileXlsIcon,
+  FileCsvIcon,
 } from '@phosphor-icons/react';
 import { useShiftContext } from './ShiftContext';
+import { useAuthContext } from '@features/auth/AuthContext';
 import { type Shift } from '@shared/types';
 import { DataTable, type Column } from '@shared/components/DataTable';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from './shiftStats';
-
-// PDF Libraries
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { exportShifts, type ExportFormat } from '@features/timesheets/exportShifts';
 
 /**
  * --- CONSTANTS ---
  */
-const MONTHS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-];
-
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /**
@@ -44,11 +40,13 @@ function fmtTimeRange(s: Shift): string {
  */
 export default function OverviewPage() {
   const { userShifts, locations, isLoading } = useShiftContext();
+  const { user } = useAuthContext();
 
   const [selectedMonth, setSelectedMonth] = useState<string | null>(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [exportOpen, setExportOpen] = useState(false);
 
   const locationName = useMemo(() => {
     const map = new Map(locations.map((l) => [l.id, l.name]));
@@ -189,62 +187,21 @@ export default function OverviewPage() {
     },
   ];
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    const title = selectedMonth ? `Shifts Report - ${selectedMonth}` : 'Complete Shifts Report';
+  // Export uses the same builder as Timesheets, so the employee's own report is
+  // byte-for-byte identical in layout (header, totals, break legend, table,
+  // signature block) — just sourced from their own shifts.
+  const employeeName =
+    (user && [user.first_name, user.last_name].filter(Boolean).join(' ')) || user?.username || 'Me';
+  const periodLabel = selectedMonth ?? 'All time';
 
-    // Header
-    doc.setFontSize(20);
-    doc.text('Planuj Smeny', 14, 22);
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(title, 14, 30);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 36);
-
-    // Summary
-    doc.setTextColor(0);
-    doc.setFontSize(12);
-    doc.text(`Total Shifts: ${stats.count}`, 14, 48);
-    doc.text(
-      `Gross: ${fmtHours(stats.totalGross)}    Break: ${fmtHours(stats.totalBreak)}    Net: ${fmtHours(stats.totalHours)}`,
-      14,
-      54,
-    );
-    // Legend: how mandatory breaks are deducted.
-    doc.setFontSize(8);
-    doc.setTextColor(120);
-    doc.text('Mandatory breaks deducted: -30 min from 6h, -1h from 12h (per shift).', 14, 60);
-
-    // Table
-    const tableData = stats.shifts.map(s => {
-      const d = new Date(s.started_at);
-      const gross = shiftGrossHours(s);
-      const net = shiftHours(s);
-      const breakTime = shiftBreakHours(s);
-
-      return [
-        `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`,
-        WEEKDAYS[(d.getDay() + 6) % 7],
-        locationName(s.location_id),
-        fmtTimeRange(s),
-        fmtDuration(gross),
-        breakTime > 0 ? fmtDuration(breakTime) : '-',
-        fmtDuration(net)
-      ];
+  const doExport = (fmt: ExportFormat) => {
+    void exportShifts(fmt, {
+      employeeName,
+      periodLabel,
+      shifts: stats.shifts,
+      locationName,
     });
-
-    autoTable(doc, {
-      startY: 66,
-      head: [['Date', 'Day', 'Location', 'Time', 'Gross', 'Break', 'Net']],
-      body: tableData,
-      foot: [['', '', '', 'Total', fmtHours(stats.totalGross), fmtHours(stats.totalBreak), fmtHours(stats.totalHours)]],
-      theme: 'striped',
-      headStyles: { fillColor: [16, 185, 129] },
-      footStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: 'bold' },
-      styles: { fontSize: 8 },
-    });
-
-    doc.save(`Shifts_${selectedMonth || 'AllTime'}.pdf`);
+    setExportOpen(false);
   };
 
   const statCards = [
@@ -263,13 +220,44 @@ export default function OverviewPage() {
           <h1 className="text-display text-gray-900 dark:text-white">Overview</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={exportToPDF}
-            className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all"
-            title="Export to PDF"
-          >
-            <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setExportOpen((v) => !v)}
+              disabled={!stats.hasData}
+              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
+              title="Export"
+            >
+              <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
+            </button>
+            <AnimatePresence>
+              {exportOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 4, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    className="absolute right-0 top-full z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-1.5 overflow-hidden"
+                  >
+                    {([
+                      { fmt: 'pdf' as const, label: 'PDF', Icon: FilePdfIcon },
+                      { fmt: 'excel' as const, label: 'Excel', Icon: FileXlsIcon },
+                      { fmt: 'csv' as const, label: 'CSV', Icon: FileCsvIcon },
+                    ]).map(({ fmt, label, Icon }) => (
+                      <button
+                        key={fmt}
+                        onClick={() => doExport(fmt)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
+                      >
+                        <Icon weight="bold" className="w-4 h-4 text-emerald-500" />
+                        {label}
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
           <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
         </div>
       </header>

@@ -5,17 +5,17 @@ import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } f
 
 /**
  * --- SHIFT EXPORT ---
- * Builds a member's timesheet as a PDF (signable), an Excel spreadsheet
- * (SpreadsheetML — opens natively in Excel / Google Sheets / LibreOffice, no
- * extra dependency) or a CSV. Mandatory-break math mirrors the Overview export:
- * −30 min per started 6 h block (−30 min from 6 h, −1 h from 12 h).
+ * Builds a member's timesheet as a PDF (jsPDF — with a signature block), an
+ * Excel workbook (SheetJS / xlsx, loaded on demand) or a CSV. Mandatory-break
+ * math mirrors the Overview/Timesheets tables: −30 min per started 6 h block
+ * (−30 min from 6 h, −1 h from 12 h).
  */
 
 export type ExportFormat = 'pdf' | 'excel' | 'csv';
 
 export interface ExportContext {
     employeeName: string;
-    /** e.g. "Jun 2026" or "All time". */
+    /** Period as `YYYY-MM`, or "All time". */
     periodLabel: string;
     /** Shifts to include (any order — sorted oldest→newest for the document). */
     shifts: Shift[];
@@ -87,9 +87,9 @@ function build({ shifts, locationName }: ExportContext): Built {
     return { rows, totals: { gross, brk, net, count: rows.length } };
 }
 
-/** Safe, lowercase filename stem, e.g. "Anna Novak" + "Jun 2026" -> "Anna_Novak_Jun_2026". */
+/** Safe, lowercase filename stem, e.g. "Anna Novak" + "2026-06" -> "Anna_Novak_2026-06". */
 function fileStem(ctx: ExportContext): string {
-    return `${ctx.employeeName}_${ctx.periodLabel}`.replace(/[^\w]+/g, '_').replace(/^_+|_+$/g, '') || 'timesheet';
+    return `${ctx.employeeName}_${ctx.periodLabel}`.replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '') || 'timesheet';
 }
 
 function triggerDownload(blob: Blob, filename: string) {
@@ -204,84 +204,48 @@ function exportCSV(ctx: ExportContext) {
 }
 
 // ---------------------------------------------------------------------
-// EXCEL (SpreadsheetML 2003 — dependency-free, opens natively in Excel)
+// EXCEL (SheetJS — loaded on demand so it only ships when actually used)
 // ---------------------------------------------------------------------
-const xmlEsc = (v: string | number) =>
-    String(v)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-
-const strCell = (v: string, style?: string) =>
-    `<Cell${style ? ` ss:StyleID="${style}"` : ''}><Data ss:Type="String">${xmlEsc(v)}</Data></Cell>`;
-const numCell = (v: number, style?: string) =>
-    `<Cell${style ? ` ss:StyleID="${style}"` : ''}><Data ss:Type="Number">${round1(v)}</Data></Cell>`;
-const row = (cells: string) => `<Row>${cells}</Row>`;
-
-function exportExcel(ctx: ExportContext) {
+async function exportExcel(ctx: ExportContext) {
+    const XLSX = await import('xlsx');
     const { rows, totals } = build(ctx);
 
-    const header = row(
-        ['Date', 'Day', 'Location', 'Start', 'End', 'Gross (h)', 'Break (h)', 'Net (h)']
-            .map((h) => strCell(h, 'hdr'))
-            .join(''),
-    );
+    const aoa: (string | number)[][] = [
+        [`Timesheet — ${ctx.employeeName} — ${ctx.periodLabel}`],
+        [BREAK_LEGEND],
+        [],
+        ['Date', 'Day', 'Location', 'Start', 'End', 'Gross (h)', 'Break (h)', 'Net (h)'],
+        ...rows.map((r) => [
+            r.date,
+            r.day,
+            r.location,
+            r.start,
+            r.end,
+            round1(r.gross),
+            round1(r.brk),
+            round1(r.net),
+        ]),
+        ['Total', '', '', '', '', round1(totals.gross), round1(totals.brk), round1(totals.net)],
+    ];
 
-    const body = rows
-        .map((r) =>
-            row(
-                strCell(r.date) +
-                    strCell(r.day) +
-                    strCell(r.location) +
-                    strCell(r.start) +
-                    strCell(r.end) +
-                    numCell(r.gross) +
-                    numCell(r.brk) +
-                    numCell(r.net),
-            ),
-        )
-        .join('');
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [
+        { wch: 16 }, // Date
+        { wch: 6 }, // Day
+        { wch: 22 }, // Location
+        { wch: 8 }, // Start
+        { wch: 8 }, // End
+        { wch: 10 }, // Gross
+        { wch: 10 }, // Break
+        { wch: 10 }, // Net
+    ];
 
-    const totalRow = row(
-        strCell('Total', 'tot') +
-            strCell('', 'tot') +
-            strCell('', 'tot') +
-            strCell('', 'tot') +
-            strCell('', 'tot') +
-            numCell(totals.gross, 'tot') +
-            numCell(totals.brk, 'tot') +
-            numCell(totals.net, 'tot'),
-    );
-
-    const meta =
-        row(strCell(`Timesheet — ${ctx.employeeName} — ${ctx.periodLabel}`, 'tot')) +
-        row(strCell(BREAK_LEGEND)) +
-        row(strCell(''));
-
-    const xml = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
- <Styles>
-  <Style ss:ID="hdr"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#10B981" ss:Pattern="Solid"/></Style>
-  <Style ss:ID="tot"><Font ss:Bold="1"/></Style>
- </Styles>
- <Worksheet ss:Name="Timesheet">
-  <Table>
-   ${meta}
-   ${header}
-   ${body}
-   ${totalRow}
-  </Table>
- </Worksheet>
-</Workbook>`;
-
-    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    triggerDownload(blob, `${fileStem(ctx)}.xls`);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Timesheet');
+    XLSX.writeFile(wb, `${fileStem(ctx)}.xlsx`);
 }
 
-export function exportShifts(format: ExportFormat, ctx: ExportContext) {
+export async function exportShifts(format: ExportFormat, ctx: ExportContext): Promise<void> {
     if (ctx.shifts.length === 0) return;
     if (format === 'pdf') return exportPDF(ctx);
     if (format === 'csv') return exportCSV(ctx);

@@ -1,31 +1,50 @@
 import { useState } from 'react';
 import { Modal } from '@features/admin/components/Modal';
+import { TimePicker } from '@shared/components/TimePicker';
 import type { Location, Shift, Profile } from '@shared/types';
 
 /**
  * --- SHIFT EDITOR MODAL ---
- * Create or edit a member's shift. Times use the device's local timezone via
- * native datetime-local inputs and are converted to ISO for the API. An "open
- * shift" toggle leaves the end time unset (still running).
+ * Create or edit a member's shift. Only the start/end *time* is editable (via a
+ * custom {@link TimePicker}); the calendar date is held fixed — the shift's own
+ * date when editing, or today when adding. A shift always has a start and an
+ * end. Times use the device's local timezone and are converted to ISO for the
+ * API.
  */
 
 export interface ShiftFormValues {
     location_id: string;
     started_at: string; // ISO
-    ended_at: string | null; // ISO or null
+    ended_at: string | null; // ISO (always set — shifts are never left open here)
 }
 
-/** ISO -> "YYYY-MM-DDTHH:mm" in local time (for datetime-local inputs). */
-function isoToLocalInput(iso: string | null): string {
-    if (!iso) return '';
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** ISO -> local "YYYY-MM-DD". */
+function isoToDate(iso: string): string {
     const d = new Date(iso);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** "YYYY-MM-DDTHH:mm" (local) -> ISO. */
-function localInputToIso(local: string): string {
-    return new Date(local).toISOString();
+/** ISO -> local "HH:mm". */
+function isoToTime(iso: string): string {
+    const d = new Date(iso);
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** local "YYYY-MM-DD" + "HH:mm" -> ISO. */
+function combine(date: string, time: string): string {
+    return new Date(`${date}T${time}:00`).toISOString();
+}
+
+/** Human-readable fixed date, e.g. "Mon, 24 Jun 2026". */
+function prettyDate(date: string): string {
+    return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
 }
 
 const inputClass =
@@ -51,10 +70,15 @@ export function ShiftEditorModal({
     // Active locations + keep the shift's current one even if it was archived.
     const pickable = locations.filter((l) => !l.archived_at || l.id === shift?.location_id);
 
+    // The date is fixed for the lifetime of the modal: the shift's own date when
+    // editing, otherwise today. Only the times below are editable.
+    const dateStr = shift ? isoToDate(shift.started_at) : isoToDate(new Date().toISOString());
+
     const [locationId, setLocationId] = useState(shift?.location_id ?? pickable[0]?.id ?? '');
-    const [start, setStart] = useState(() => isoToLocalInput(shift?.started_at ?? null));
-    const [hasEnd, setHasEnd] = useState(() => (isEdit ? !!shift?.ended_at : true));
-    const [end, setEnd] = useState(() => isoToLocalInput(shift?.ended_at ?? null));
+    const [start, setStart] = useState(() => (shift ? isoToTime(shift.started_at) : '08:00'));
+    const [end, setEnd] = useState(() =>
+        shift?.ended_at ? isoToTime(shift.ended_at) : shift ? isoToTime(shift.started_at) : '16:00',
+    );
 
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -62,18 +86,14 @@ export function ShiftEditorModal({
     const handleSubmit = async () => {
         setError(null);
         if (!locationId) return setError('Please choose a location.');
-        if (!start) return setError('Please set a start time.');
-        if (hasEnd && !end) return setError('Please set an end time, or mark the shift as open.');
-        if (hasEnd && end && new Date(end) <= new Date(start)) {
-            return setError('The end time must be after the start time.');
-        }
+        if (end <= start) return setError('The end time must be after the start time.');
 
         setBusy(true);
         try {
             await onSubmit({
                 location_id: locationId,
-                started_at: localInputToIso(start),
-                ended_at: hasEnd && end ? localInputToIso(end) : null,
+                started_at: combine(dateStr, start),
+                ended_at: combine(dateStr, end),
             });
             onClose();
         } catch (err) {
@@ -83,11 +103,7 @@ export function ShiftEditorModal({
     };
 
     return (
-        <Modal
-            title={isEdit ? 'Edit shift' : 'Add shift'}
-            subtitle={memberName}
-            onClose={onClose}
-        >
+        <Modal title={isEdit ? 'Edit shift' : 'Add shift'} subtitle={memberName} onClose={onClose}>
             <div className="space-y-4">
                 <div className="space-y-1.5">
                     <label className="text-label text-gray-400">Location</label>
@@ -106,36 +122,21 @@ export function ShiftEditorModal({
                     </select>
                 </div>
 
-                <div className="space-y-1.5">
-                    <label className="text-label text-gray-400">Start</label>
-                    <input
-                        type="datetime-local"
-                        value={start}
-                        onChange={(e) => setStart(e.target.value)}
-                        className={inputClass}
-                    />
+                {/* Fixed date — shown for context, not editable. */}
+                <div className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-gray-800/50 px-3 py-2.5">
+                    <span className="text-label text-gray-400">Date</span>
+                    <span className="text-small-strong text-gray-700 dark:text-gray-200">{prettyDate(dateStr)}</span>
                 </div>
 
-                <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                        <label className="text-label text-gray-400">End</label>
-                        <label className="flex items-center gap-2 text-caption text-gray-500 dark:text-gray-400 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={!hasEnd}
-                                onChange={(e) => setHasEnd(!e.target.checked)}
-                                className="accent-emerald-500"
-                            />
-                            Open shift (no end)
-                        </label>
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                        <label className="text-label text-gray-400">Start</label>
+                        <TimePicker value={start} onChange={setStart} aria-label="Start time" />
                     </div>
-                    <input
-                        type="datetime-local"
-                        value={end}
-                        disabled={!hasEnd}
-                        onChange={(e) => setEnd(e.target.value)}
-                        className={`${inputClass} disabled:opacity-40`}
-                    />
+                    <div className="space-y-1.5">
+                        <label className="text-label text-gray-400">End</label>
+                        <TimePicker value={end} onChange={setEnd} aria-label="End time" />
+                    </div>
                 </div>
 
                 {error && (

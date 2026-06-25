@@ -29,7 +29,6 @@ import { timesheetService } from './timesheetService';
 import { exportShifts, type ExportFormat } from './exportShifts';
 import { ShiftEditorModal, type ShiftFormValues } from './components/ShiftEditorModal';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function memberName(m: Profile): string {
@@ -112,7 +111,8 @@ function TimesheetsInner() {
     }, [shifts]);
 
     const canEdit = !!(user && selected && canManageMember(user, selected));
-    const periodLabel = month ? `${MONTHS[+month.split('-')[1] - 1]} ${month.split('-')[0]}` : 'All time';
+    // Period for the exported document — `YYYY-MM`, or all-time.
+    const periodLabel = month ?? 'All time';
 
     const invalidate = () =>
         Promise.all([
@@ -287,7 +287,7 @@ function TimesheetsInner() {
                                             className="absolute right-0 top-full z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-1.5 overflow-hidden"
                                         >
                                             {([
-                                                { fmt: 'pdf' as const, label: 'PDF (for signing)', Icon: FilePdfIcon },
+                                                { fmt: 'pdf' as const, label: 'PDF', Icon: FilePdfIcon },
                                                 { fmt: 'excel' as const, label: 'Excel', Icon: FileXlsIcon },
                                                 { fmt: 'csv' as const, label: 'CSV', Icon: FileCsvIcon },
                                             ]).map(({ fmt, label, Icon }) => (
