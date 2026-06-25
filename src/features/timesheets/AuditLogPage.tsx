@@ -164,19 +164,26 @@ function AuditLogInner() {
     );
 }
 
-/** A name that opens the person's profile modal when we know their user id. */
-function PersonButton({ name, userId, onOpenUser, className = '' }: {
+/**
+ * A name that opens the person's profile modal when we know their user id.
+ * Clickable names are styled as emerald links (underlined) so it's obvious they
+ * can be tapped; unknown actors fall back to plain text.
+ */
+function PersonButton({ name, userId, onOpenUser, strong = false }: {
     name: string;
     userId: string | null;
     onOpenUser: (userId: string) => void;
-    className?: string;
+    strong?: boolean;
 }) {
-    if (!userId) return <span className={className}>{name}</span>;
+    const size = strong ? 'text-body-strong' : '';
+    if (!userId) {
+        return <span className={`${size} ${strong ? 'text-gray-900 dark:text-white' : ''}`}>{name}</span>;
+    }
     return (
         <button
             type="button"
             onClick={() => onOpenUser(userId)}
-            className={`text-left hover:underline underline-offset-2 decoration-emerald-400 ${className}`}
+            className={`${size} text-emerald-600 dark:text-emerald-400 font-semibold underline decoration-emerald-400/50 underline-offset-2 hover:decoration-emerald-500 transition-colors`}
         >
             {name}
         </button>
@@ -203,17 +210,11 @@ function AuditCard({ entry, onOpenUser }: { entry: ShiftAuditLog; onOpenUser: (u
                 {/* Action + who it was about (wraps instead of cramming on mobile). */}
                 <div className="flex flex-wrap items-baseline gap-x-1.5">
                     <span className="text-body-strong text-gray-900 dark:text-white">{meta.label} a shift ·</span>
-                    <PersonButton
-                        name={target}
-                        userId={entry.target_user_id}
-                        onOpenUser={onOpenUser}
-                        className="text-body-strong text-gray-900 dark:text-white"
-                    />
+                    <PersonButton name={target} userId={entry.target_user_id} onOpenUser={onOpenUser} strong />
                 </div>
                 {/* Who did it + when — own line so nothing gets squeezed off-screen. */}
                 <p className="text-micro text-gray-400">
-                    by{' '}
-                    <PersonButton name={actor} userId={entry.actor_id} onOpenUser={onOpenUser} className="text-gray-500 dark:text-gray-400" />
+                    by <PersonButton name={actor} userId={entry.actor_id} onOpenUser={onOpenUser} />
                     {' · '}
                     {when}
                 </p>

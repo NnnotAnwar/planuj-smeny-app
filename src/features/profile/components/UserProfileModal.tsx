@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowSquareOutIcon } from '@phosphor-icons/react';
+import { ArrowSquareOutIcon, ClockUserIcon } from '@phosphor-icons/react';
 import { Modal } from '@features/admin/components/Modal';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { isSuperAdmin } from '@shared/auth/permissions';
+import { usePermissions } from '@shared/auth/usePermissions';
 import { getFullName } from '@shared/utils/getInitials';
 import { profileService } from '../profileService';
 import { ProfileView } from './ProfileView';
@@ -18,6 +19,7 @@ import { ProfileView } from './ProfileView';
  */
 export function UserProfileModal({ userId, onClose }: { userId: string; onClose: () => void }) {
     const { user } = useAuthContext();
+    const { canViewAdminPanel } = usePermissions();
     const showOrganization = !!user && isSuperAdmin(user);
     const isSelf = user?.id === userId;
 
@@ -50,6 +52,17 @@ export function UserProfileModal({ userId, onClose }: { userId: string; onClose:
                         showOrganization={showOrganization}
                         showHeader={false}
                     />
+
+                    {canViewAdminPanel && (
+                        <Link
+                            to={`/timesheets?member=${profile.id}`}
+                            onClick={onClose}
+                            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-body-strong text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                        >
+                            <ClockUserIcon weight="bold" className="w-4 h-4" />
+                            View timesheets
+                        </Link>
+                    )}
 
                     {!isSelf && (
                         <Link
