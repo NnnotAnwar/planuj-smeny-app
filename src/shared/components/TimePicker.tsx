@@ -27,9 +27,22 @@ interface TimePickerProps {
 
 export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [dropUp, setDropUp] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const hoursRef = useRef<HTMLDivElement>(null);
     const minutesRef = useRef<HTMLDivElement>(null);
+
+    // Flip the popover above the trigger when there isn't room below it (keeps it
+    // on-screen inside the scrollable modal on phones).
+    const toggle = () => {
+        setIsOpen((prev) => {
+            if (!prev && containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                setDropUp(window.innerHeight - rect.bottom < 280);
+            }
+            return !prev;
+        });
+    };
 
     const [h, m] = value.split(':');
     const selHour = Number.isNaN(parseInt(h)) ? 0 : parseInt(h);
@@ -77,7 +90,7 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
                 type="button"
                 disabled={disabled}
                 aria-label={rest['aria-label']}
-                onClick={() => setIsOpen((v) => !v)}
+                onClick={toggle}
                 className="flex w-full items-center justify-between gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
             >
                 <span className="flex items-center gap-2">
@@ -95,10 +108,12 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 4, scale: 1 }}
-                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                        className="absolute left-0 top-full z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-3 overflow-hidden"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className={`absolute left-0 z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-3 overflow-hidden ${
+                            dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
+                        }`}
                     >
                         <div className="grid grid-cols-2 gap-2">
                             <div>

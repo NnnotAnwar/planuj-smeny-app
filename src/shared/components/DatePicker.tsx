@@ -24,7 +24,20 @@ interface DatePickerProps {
 
 export function DatePicker({ value, onChange, disabled, ...rest }: DatePickerProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [dropUp, setDropUp] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Flip above the trigger when there isn't room below (keeps the calendar
+    // on-screen inside the scrollable modal on phones).
+    const toggle = () => {
+        setIsOpen((prev) => {
+            if (!prev && containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                setDropUp(window.innerHeight - rect.bottom < 340);
+            }
+            return !prev;
+        });
+    };
 
     const initial = value ? new Date(value + 'T00:00:00') : new Date();
     const [viewY, setViewY] = useState(initial.getFullYear());
@@ -57,7 +70,7 @@ export function DatePicker({ value, onChange, disabled, ...rest }: DatePickerPro
                 type="button"
                 disabled={disabled}
                 aria-label={rest['aria-label']}
-                onClick={() => setIsOpen((v) => !v)}
+                onClick={toggle}
                 className="flex w-full items-center justify-between gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
             >
                 <span className="flex items-center gap-2">
@@ -70,10 +83,12 @@ export function DatePicker({ value, onChange, disabled, ...rest }: DatePickerPro
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 4, scale: 1 }}
-                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                        className="absolute left-0 top-full z-50 w-64 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-3"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className={`absolute left-0 z-50 w-64 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-3 ${
+                            dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
+                        }`}
                     >
                         <div className="flex items-center justify-between mb-2 px-1">
                             <button type="button" onClick={prev} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
