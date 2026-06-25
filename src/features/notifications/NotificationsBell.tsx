@@ -8,6 +8,7 @@ import {
     AtIcon,
     CheckCircleIcon,
     XCircleIcon,
+    XIcon,
     type Icon,
 } from '@phosphor-icons/react';
 import type { ShiftAuditLog, ShiftSnapshot } from '@shared/types';
@@ -50,23 +51,33 @@ function describe(entry: ShiftAuditLog): { Icon: Icon; tint: string; title: stri
 
 /**
  * --- NOTIFICATIONS BELL ---
- * Shows the current user's notifications (their own audit-log entries): shift
- * changes to their schedule, username changes, and name-change request
- * decisions. An unread badge tracks entries newer than the last time the panel
- * was opened. Closes on outside click / Escape.
+ * The current user's notifications (their own audit-log entries): shift changes
+ * to their schedule, username changes, and name-change request decisions.
+ *
+ * - Unread (arrived since the panel was last closed) are highlighted; read ones
+ *   are muted.
+ * - The badge counts unread and is hidden while the panel is open; closing the
+ *   panel commits the "seen" watermark so the badge clears.
+ * - Notifications can be dismissed individually or all at once (per device).
  */
 export function NotificationsBell() {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
-    const { notifications, unread, markSeen, isLoading } = useNotifications();
+    const { notifications, unread, isUnread, markSeen, dismiss, clearAll, isLoading } = useNotifications();
+
+    // Closing commits "seen" (so unread highlight persists while open).
+    const close = () => {
+        setOpen(false);
+        markSeen();
+    };
 
     useEffect(() => {
         if (!open) return;
         const onPointerDown = (e: PointerEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+            if (ref.current && !ref.current.contains(e.target as Node)) close();
         };
         const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') setOpen(false);
+            if (e.key === 'Escape') close();
         };
         document.addEventListener('pointerdown', onPointerDown);
         document.addEventListener('keydown', onKeyDown);
@@ -74,25 +85,19 @@ export function NotificationsBell() {
             document.removeEventListener('pointerdown', onPointerDown);
             document.removeEventListener('keydown', onKeyDown);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
-
-    const toggle = () => {
-        setOpen((v) => {
-            if (!v) markSeen(); // opening clears the unread badge
-            return !v;
-        });
-    };
 
     return (
         <div ref={ref} className="relative">
             <button
-                onClick={toggle}
+                onClick={() => (open ? close() : setOpen(true))}
                 aria-label="Notifications"
                 aria-expanded={open}
                 className="relative -mr-2 p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-emerald-500/5 dark:hover:bg-white/5 transition-all cursor-pointer active:scale-90"
             >
                 <BellIcon weight="bold" className="w-7 h-7 md:w-5 md:h-5" />
-                {unread > 0 && (
+                {!open && unread > 0 && (
                     <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-micro font-bold flex items-center justify-center leading-none">
                         {unread > 9 ? '9+' : unread}
                     </span>
@@ -110,8 +115,16 @@ export function NotificationsBell() {
                         aria-label="Notifications"
                         className="absolute right-0 top-full mt-2 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-2xl overflow-hidden"
                     >
-                        <div className="px-4 py-3 border-b border-gray-50 dark:border-white/5">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 dark:border-white/5">
                             <p className="text-body-strong text-gray-900 dark:text-white">Notifications</p>
+                            {notifications.length > 0 && (
+                                <button
+                                    onClick={clearAll}
+                                    className="text-caption font-semibold text-emerald-600 dark:text-emerald-400 hover:underline underline-offset-2"
+                                >
+                                    Clear all
+                                </button>
+                            )}
                         </div>
 
                         <div className="max-h-96 overflow-y-auto">
@@ -128,19 +141,34 @@ export function NotificationsBell() {
                             ) : (
                                 notifications.map((n) => {
                                     const { Icon, tint, title, detail } = describe(n);
+                                    const fresh = isUnread(n);
                                     return (
                                         <div
                                             key={n.id}
-                                            className="flex gap-3 px-4 py-3 border-b border-gray-50 dark:border-white/5 last:border-b-0"
+                                            className={`group flex gap-3 px-4 py-3 border-b border-gray-50 dark:border-white/5 last:border-b-0 transition-colors ${
+                                                fresh ? 'bg-emerald-50/60 dark:bg-emerald-900/10' : ''
+                                            }`}
                                         >
                                             <div className={`shrink-0 mt-0.5 ${tint}`}>
                                                 <Icon weight="bold" className="w-4 h-4" />
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-small-strong text-gray-900 dark:text-white">{title}</p>
+                                                <div className="flex items-center gap-1.5">
+                                                    {fresh && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" aria-label="Unread" />}
+                                                    <p className={`text-small-strong ${fresh ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}>
+                                                        {title}
+                                                    </p>
+                                                </div>
                                                 {detail && <p className="text-caption text-gray-500 dark:text-gray-400 truncate">{detail}</p>}
                                                 <p className="text-micro text-gray-400 mt-0.5">{fmtWhen(n.created_at)}</p>
                                             </div>
+                                            <button
+                                                onClick={() => dismiss(n.id)}
+                                                aria-label="Dismiss notification"
+                                                className="shrink-0 self-start -mr-1 -mt-0.5 p-1 rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 dark:text-gray-600 dark:hover:text-gray-300 dark:hover:bg-white/5 transition-colors"
+                                            >
+                                                <XIcon weight="bold" className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
                                     );
                                 })

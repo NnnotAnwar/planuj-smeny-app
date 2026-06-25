@@ -3,14 +3,29 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@shared/api/supabaseClient';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { notificationsService } from './notificationsService';
+import type { ShiftAuditLog } from '@shared/types';
 
 const seenKey = (userId: string) => `notifications_seen_at:${userId}`;
+const dismissedKey = (userId: string) => `notifications_dismissed:${userId}`;
+
+function loadDismissed(userId: string): Set<string> {
+    try {
+        const raw = localStorage.getItem(dismissedKey(userId));
+        return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+        return new Set();
+    }
+}
 
 /**
  * --- useNotifications ---
- * The current user's notification feed (their own audit-log entries), with a
- * locally-tracked "last seen" timestamp for the unread badge and a realtime
- * subscription so new entries arrive without a refresh.
+ * The current user's notification feed (their own audit-log entries), with:
+ *  - a per-device "last seen" watermark for the unread state (localStorage),
+ *  - per-device dismissals (the audit rows themselves are never deleted), and
+ *  - a realtime subscription so new entries arrive without a refresh.
+ *
+ * The seen watermark is committed by the caller (on panel close) so unread items
+ * stay highlighted while the panel is open.
  */
 export function useNotifications() {
     const { user } = useAuthContext();
@@ -23,7 +38,6 @@ export function useNotifications() {
         enabled: !!userId,
     });
 
-    // Live arrival: new audit rows targeting this user invalidate the feed.
     useEffect(() => {
         if (!userId) return;
         const channel = supabase
@@ -39,15 +53,16 @@ export function useNotifications() {
         };
     }, [userId, qc]);
 
-    // "Seen" watermark lives in localStorage (per device). The bell mounts only
-    // when a user is present, so reading it lazily here is safe.
-    const [seenAt, setSeenAt] = useState<string>(() =>
-        userId ? localStorage.getItem(seenKey(userId)) ?? '' : '',
-    );
+    // The bell mounts only when a user is present, so reading localStorage lazily
+    // here is safe.
+    const [seenAt, setSeenAt] = useState<string>(() => (userId ? localStorage.getItem(seenKey(userId)) ?? '' : ''));
+    const [dismissed, setDismissed] = useState<Set<string>>(() => (userId ? loadDismissed(userId) : new Set()));
 
-    const notifications = query.data ?? [];
+    const all = query.data ?? [];
+    const notifications = all.filter((n) => !dismissed.has(n.id));
     const seenMs = seenAt ? new Date(seenAt).getTime() : 0;
-    const unread = notifications.filter((n) => new Date(n.created_at).getTime() > seenMs).length;
+    const isUnread = (n: ShiftAuditLog) => new Date(n.created_at).getTime() > seenMs;
+    const unread = notifications.filter(isUnread).length;
 
     const markSeen = () => {
         if (!userId) return;
@@ -56,5 +71,20 @@ export function useNotifications() {
         setSeenAt(now);
     };
 
-    return { notifications, unread, markSeen, isLoading: query.isLoading };
+    const persistDismissed = (next: Set<string>) => {
+        if (userId) localStorage.setItem(dismissedKey(userId), JSON.stringify([...next]));
+        setDismissed(next);
+    };
+    const dismiss = (id: string) => {
+        const next = new Set(dismissed);
+        next.add(id);
+        persistDismissed(next);
+    };
+    const clearAll = () => {
+        const next = new Set(dismissed);
+        notifications.forEach((n) => next.add(n.id));
+        persistDismissed(next);
+    };
+
+    return { notifications, unread, isUnread, markSeen, dismiss, clearAll, isLoading: query.isLoading };
 }
