@@ -172,6 +172,7 @@ export const ShiftAuditLogSchema = z.object({
  * We use these throughout the app to get auto-completion and error checking.
  */
 export type Profile = z.infer<typeof ProfileSchema>;
+export type ProfileDetail = Profile & { organizationName?: string | null };
 export type Shift = z.infer<typeof ShiftSchema>;
 export type Location = z.infer<typeof LocationSchema>;
 export type Organization = z.infer<typeof OrganizationSchema>;

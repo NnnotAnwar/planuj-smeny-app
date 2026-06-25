@@ -89,6 +89,7 @@ export function EmployeesList({
     isLoading,
     currentUser,
     showOrganization = false,
+    onView,
     onEdit,
     onDelete,
 }: {
@@ -96,6 +97,7 @@ export function EmployeesList({
     isLoading: boolean;
     currentUser: User | null;
     showOrganization?: boolean;
+    onView: (emp: EmployeeRow) => void;
     onEdit: (emp: Profile) => void;
     onDelete: (emp: Profile) => void;
 }) {
@@ -138,6 +140,7 @@ export function EmployeesList({
             isLoading={isLoading}
             loadingState={<LoadingState label="employees" />}
             emptyState={<EmptyState label="employees" />}
+            onRowClick={onView}
         />
     );
 }

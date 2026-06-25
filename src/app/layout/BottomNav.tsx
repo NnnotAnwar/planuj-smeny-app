@@ -124,18 +124,21 @@ export function BottomNav() {
                         <div className="flex-1 overflow-y-auto p-4 space-y-4">
                             {/* Profile */}
                             {user && (
-                                <motion.div
-                                    variants={itemVariants}
-                                    className="flex items-center gap-3 p-4 rounded-2xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5"
-                                >
-                                    <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 shadow-md flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-title shrink-0">
-                                        {getInitials(user.first_name, user.last_name)}
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-body-strong text-gray-900 dark:text-white truncate">{fullName}</p>
-                                        <p className="text-caption text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
-                                        <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{user.username}</p>
-                                    </div>
+                                <motion.div variants={itemVariants}>
+                                    <Link
+                                        to="/profile"
+                                        onClick={() => setMenuOpen(false)}
+                                        className="flex items-center gap-3 p-4 rounded-2xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                                    >
+                                        <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 shadow-md flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-title shrink-0">
+                                            {getInitials(user.first_name, user.last_name)}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-body-strong text-gray-900 dark:text-white truncate">{fullName}</p>
+                                            <p className="text-caption text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                                            <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{user.username}</p>
+                                        </div>
+                                    </Link>
                                 </motion.div>
                             )}
 

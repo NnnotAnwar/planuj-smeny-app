@@ -22,6 +22,7 @@ import { StatCard, ErrorState } from './components/AdminStateViews';
 import { OrganizationsList } from './components/OrganizationsList';
 import { LocationsList, type LocationRow } from './components/LocationsList';
 import { EmployeesList, type EmployeeRow } from './components/EmployeesList';
+import { EmployeeProfileModal } from '@features/profile/components/EmployeeProfileModal';
 
 type TabType = 'employees' | 'locations' | 'organizations';
 
@@ -29,6 +30,7 @@ type ModalState =
     | { kind: 'org-form'; org?: Organization }
     | { kind: 'loc-form'; loc?: LocationEditTarget }
     | { kind: 'emp-form'; emp: Profile }
+    | { kind: 'emp-profile'; emp: EmployeeRow }
     | { kind: 'invite-emp' }
     | { kind: 'delete'; entity: TabType; id: string; label: string }
     | null;
@@ -272,6 +274,7 @@ function AdminPanel() {
                                     isLoading={isLoading}
                                     currentUser={user}
                                     showOrganization={isSuperAdmin}
+                                    onView={(emp) => setModal({ kind: 'emp-profile', emp })}
                                     onEdit={(emp) => setModal({ kind: 'emp-form', emp })}
                                     onDelete={(emp) =>
                                         setModal({
@@ -293,6 +296,15 @@ function AdminPanel() {
                 {modal?.kind === 'org-form' && <OrganizationForm org={modal.org} onClose={() => setModal(null)} />}
                 {modal?.kind === 'loc-form' && <LocationForm location={modal.loc} onClose={() => setModal(null)} />}
                 {modal?.kind === 'emp-form' && <EmployeeForm employee={modal.emp} onClose={() => setModal(null)} />}
+                {modal?.kind === 'emp-profile' && (
+                    <EmployeeProfileModal
+                        employee={modal.emp}
+                        organizationName={modal.emp.organizationName}
+                        showOrganization={isSuperAdmin}
+                        isSelf={modal.emp.id === user?.id}
+                        onClose={() => setModal(null)}
+                    />
+                )}
                 {modal?.kind === 'invite-emp' && <InviteEmployeeForm onClose={() => setModal(null)} />}
                 {modal?.kind === 'delete' && (
                     <ConfirmDialog

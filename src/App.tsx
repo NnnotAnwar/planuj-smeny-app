@@ -44,6 +44,7 @@ const RequestsPage = lazy(() => import('./features/requests/RequestsPage').then(
 const TimesheetsPage = lazy(() => import('./features/timesheets/TimesheetsPage').then((m) => ({ default: m.TimesheetsPage })));
 const AuditLogPage = lazy(() => import('./features/timesheets/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
+const ProfilePage = lazy(() => import('./features/profile/ProfilePage'));
 
 export default function App() {
   return (
@@ -77,6 +78,8 @@ export default function App() {
                       <Route path="activity" element={<AuditLogPage />} />
                     </Route>
                     <Route path="settings" element={<SettingsPage />} />
+                    <Route path="profile" element={<ProfilePage />} />
+                    <Route path="profile/:userId" element={<ProfilePage />} />
                   </Route>
                 </Route>
 

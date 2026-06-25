@@ -89,15 +89,18 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
           </div>
 
           {user && (
-            <div className="hidden md:flex items-center gap-3 p-3 mb-3 bg-white/50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-xl shadow-emerald-500/5 transition-all">
+            <Link
+              to="/profile"
+              className="hidden md:flex items-center gap-3 p-3 mb-3 bg-white/50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5 shadow-xl shadow-emerald-500/5 transition-all hover:bg-white/70 dark:hover:bg-white/10 hover:border-emerald-500/20"
+            >
               <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 shadow-md flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-black shrink-0">
                 {getInitials(user.first_name, user.last_name)}
               </div>
-              <div className="overflow-hidden">
+              <div className="overflow-hidden min-w-0">
                 <p className="text-body-strong text-gray-800 dark:text-white truncate">Dobrý den, {user.first_name || user.username}!</p>
                 <p className="text-micro text-emerald-600 dark:text-emerald-400 mt-0.5">{user.role.name}</p>
               </div>
-            </div>
+            </Link>
           )}
 
           <div className="flex-1 overflow-y-auto scrollbar-hide py-2 hidden md:flex md:flex-col gap-4">

@@ -22,6 +22,7 @@ old_migrations
 # Build artifacts & local tooling (never commit)
 *.tsbuildinfo
 .mcp.json
+.claude/
 
 # Yarn Berry (node-modules linker). Commit yarn.lock + config; ignore caches.
 .yarn/*
