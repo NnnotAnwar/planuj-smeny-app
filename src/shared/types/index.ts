@@ -203,6 +203,7 @@ export type User = Profile;
 /** Simplified shift data used in the ShiftCards components */
 export type ShiftDisplayData = {
   id?: string;
+  userId?: string; // Who this shift belongs to — lets the card open their profile.
   name: string;
   role: string;
   start: string;

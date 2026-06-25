@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import {
     PlusIcon,
@@ -7,11 +7,11 @@ import {
     TrashIcon,
     ClockCounterClockwiseIcon,
     ArrowRightIcon,
-    CaretRightIcon,
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { canManageEmployees } from '@shared/auth/permissions';
+import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { type ShiftAuditLog, type ShiftSnapshot, type Profile } from '@shared/types';
 import { timesheetService, type AuditLogQuery } from './timesheetService';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
@@ -57,12 +57,13 @@ export function AuditLogPage() {
 
 function AuditLogInner() {
     const { user } = useAuthContext();
-    const navigate = useNavigate();
     useTimesheetRealtime();
 
     const [targetUserId, setTargetUserId] = useState<string>('');
     const [action, setAction] = useState<'' | 'create' | 'update' | 'delete'>('');
     const [sort, setSort] = useState<'desc' | 'asc'>('desc');
+    // Which person's profile modal is open (from tapping a name in a log entry).
+    const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
     const membersQ = useQuery({
         queryKey: ['timesheets', 'members'],
@@ -139,15 +140,7 @@ function AuditLogInner() {
                     <>
                         <div className="space-y-2">
                             {entries.map((e) => (
-                                <AuditCard
-                                    key={e.id}
-                                    entry={e}
-                                    onOpen={
-                                        e.target_user_id
-                                            ? () => navigate(`/timesheets?member=${e.target_user_id}`)
-                                            : undefined
-                                    }
-                                />
+                                <AuditCard key={e.id} entry={e} onOpenUser={setProfileUserId} />
                             ))}
                         </div>
 
@@ -163,11 +156,34 @@ function AuditLogInner() {
                     </>
                 )}
             </section>
+
+            {profileUserId && (
+                <UserProfileModal userId={profileUserId} onClose={() => setProfileUserId(null)} />
+            )}
         </div>
     );
 }
 
-function AuditCard({ entry, onOpen }: { entry: ShiftAuditLog; onOpen?: () => void }) {
+/** A name that opens the person's profile modal when we know their user id. */
+function PersonButton({ name, userId, onOpenUser, className = '' }: {
+    name: string;
+    userId: string | null;
+    onOpenUser: (userId: string) => void;
+    className?: string;
+}) {
+    if (!userId) return <span className={className}>{name}</span>;
+    return (
+        <button
+            type="button"
+            onClick={() => onOpenUser(userId)}
+            className={`text-left hover:underline underline-offset-2 decoration-emerald-400 ${className}`}
+        >
+            {name}
+        </button>
+    );
+}
+
+function AuditCard({ entry, onOpenUser }: { entry: ShiftAuditLog; onOpenUser: (userId: string) => void }) {
     const meta = ACTION[entry.action];
     const actor = entry.details.actor_name ?? 'Someone';
     const target = entry.details.target_name ?? 'a member';
@@ -179,37 +195,42 @@ function AuditCard({ entry, onOpen }: { entry: ShiftAuditLog; onOpen?: () => voi
     });
 
     return (
-        <div
-            onClick={onOpen}
-            className={`flex gap-3 p-3 rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm transition-colors ${
-                onOpen ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5' : ''
-            }`}
-        >
+        <div className="flex gap-3 p-3 rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm">
             <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${meta.badge}`}>
                 <meta.Icon weight="bold" className="w-4 h-4" />
             </div>
-            <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                    <p className="text-body-strong text-gray-900 dark:text-white truncate">
-                        {meta.label} a shift · {target}
-                    </p>
-                    <span className="shrink-0 text-micro text-gray-400 whitespace-nowrap">{when}</span>
+            <div className="min-w-0 flex-1 space-y-1">
+                {/* Action + who it was about (wraps instead of cramming on mobile). */}
+                <div className="flex flex-wrap items-baseline gap-x-1.5">
+                    <span className="text-body-strong text-gray-900 dark:text-white">{meta.label} a shift ·</span>
+                    <PersonButton
+                        name={target}
+                        userId={entry.target_user_id}
+                        onOpenUser={onOpenUser}
+                        className="text-body-strong text-gray-900 dark:text-white"
+                    />
                 </div>
-                <p className="text-micro text-gray-400 mt-0.5">by {actor}</p>
+                {/* Who did it + when — own line so nothing gets squeezed off-screen. */}
+                <p className="text-micro text-gray-400">
+                    by{' '}
+                    <PersonButton name={actor} userId={entry.actor_id} onOpenUser={onOpenUser} className="text-gray-500 dark:text-gray-400" />
+                    {' · '}
+                    {when}
+                </p>
 
+                {/* Before/after: stacked on mobile, inline with an arrow on sm+. */}
                 {entry.action === 'update' ? (
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-caption tabular-nums">
-                        <span className="text-gray-400 line-through">{fmtSnapshot(entry.details.old)}</span>
-                        <ArrowRightIcon weight="bold" className="w-3 h-3 text-gray-300 shrink-0" />
-                        <span className="text-gray-700 dark:text-gray-200">{fmtSnapshot(entry.details.new)}</span>
+                    <div className="text-caption tabular-nums space-y-0.5 sm:space-y-0 sm:flex sm:flex-wrap sm:items-center sm:gap-1.5">
+                        <span className="block sm:inline text-gray-400 line-through">{fmtSnapshot(entry.details.old)}</span>
+                        <ArrowRightIcon weight="bold" className="hidden sm:block w-3 h-3 text-gray-300 shrink-0" />
+                        <span className="block sm:inline text-gray-700 dark:text-gray-200">{fmtSnapshot(entry.details.new)}</span>
                     </div>
                 ) : (
-                    <p className="mt-1.5 text-caption tabular-nums text-gray-700 dark:text-gray-200">
+                    <p className="text-caption tabular-nums text-gray-700 dark:text-gray-200">
                         {fmtSnapshot(entry.action === 'create' ? entry.details.new : entry.details.old)}
                     </p>
                 )}
             </div>
-            {onOpen && <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-300 self-center shrink-0" />}
         </div>
     );
 }

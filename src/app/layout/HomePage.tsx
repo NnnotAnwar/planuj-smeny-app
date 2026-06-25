@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { type AppOutletContext } from './AppShell';
 
@@ -5,6 +6,7 @@ import { ActiveShift } from '@features/shifts/components/ActiveShift';
 import { CheckIn } from '@features/shifts/components/CheckIn';
 import { ShiftCards } from '@features/shifts/components/ShiftCards';
 import { LocationSelection } from '@features/locations/components/LocationSelection';
+import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { Clock } from '@shared/components/Clock';
 import { type ShiftDisplayData } from '@shared/types';
 import { formatTime } from '@shared/utils/date';
@@ -18,6 +20,9 @@ import { formatTime } from '@shared/utils/date';
 export function HomePage() {
   // Get data from the AppShell parent context.
   const { user, activeShift, allActiveShifts, locations, selectedLocationId, handleLocationSelect } = useOutletContext<AppOutletContext>();
+
+  // Which worker's profile modal is open (from tapping an active-shift card).
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
   if (!user) return null;
 
@@ -61,6 +66,7 @@ export function HomePage() {
               const prevLoc = s.previous_location_id ? locations.find(l => l.id === s.previous_location_id) : null;
               return {
                 id: s.id,
+                userId: s.user_id,
                 start: formatTime(s.started_at),
                 name: `${s.profiles?.first_name || 'Employee'} ${s.profiles?.last_name || ''}`.trim(),
                 role: s.role,
@@ -75,6 +81,7 @@ export function HomePage() {
           if (activeShift && location.id === activeShift.location_id) {
             const prevLoc = activeShift.previous_location_id ? locations.find(l => l.id === activeShift.previous_location_id) : null;
             userCard = {
+              userId: user.id,
               name: userFullName,
               role: role,
               start: formatTime(activeShift.started_at),
@@ -90,11 +97,16 @@ export function HomePage() {
                 locationName={location.name}
                 shifts={colleagues}
                 userShift={userCard}
+                onSelectUser={setProfileUserId}
               />
             </section>
           );
         })}
       </div>
+
+      {profileUserId && (
+        <UserProfileModal userId={profileUserId} onClose={() => setProfileUserId(null)} />
+      )}
     </>
   );
 }
