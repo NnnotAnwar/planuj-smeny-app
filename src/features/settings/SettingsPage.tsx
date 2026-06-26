@@ -12,7 +12,7 @@ import { useShiftContext } from '@features/shifts/ShiftContext';
 import { LANGUAGES } from '@shared/i18n/translations';
 
 const APP_NAME = 'Planuj Směny';
-const APP_VERSION = '1.6.4';
+const APP_VERSION = '1.6.5';
 const SUPPORT_EMAIL = 'anuarkairulla@gmail.com';
 
 /**

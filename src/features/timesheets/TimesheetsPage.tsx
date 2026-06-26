@@ -510,7 +510,7 @@ function TimesheetsInner() {
                                 onClick={() => setEditing({ shift: null })}
                                 className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-white text-label shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 active:scale-95 transition-all"
                             >
-                                <PlusIcon weight="bold" className="w-4 h-4" /> Add
+                                <PlusIcon weight="bold" className="w-4 h-4" /> {t('ts.addShift')}
                             </button>
                         )}
                     </div>

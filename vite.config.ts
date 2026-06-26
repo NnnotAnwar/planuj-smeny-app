@@ -10,6 +10,22 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Split big, rarely-changing vendor libs into their own cacheable
+        // chunks instead of one ~800 KB app bundle. (jsPDF / xlsx / html2canvas
+        // already code-split via the on-demand export module.)
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'query-vendor': ['@tanstack/react-query'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+          'motion-vendor': ['framer-motion'],
+          'icons-vendor': ['@phosphor-icons/react'],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

@@ -60,6 +60,7 @@ export const en = {
     'common.pickDate': 'Pick a date',
     'month.allTime': 'All Time',
     'ts.netExplainFull': 'Net = Gross − mandatory breaks: −30 min from 6 h, −1 h from 12 h.',
+    'ts.addShift': 'Add',
 
     // Overview
     'overview.titleMonthly': 'Monthly Analytics',
@@ -379,6 +380,7 @@ export const cs: Record<TranslationKey, string> = {
     'common.pickDate': 'Vyberte datum',
     'month.allTime': 'Celé období',
     'ts.netExplainFull': 'Čistý = hrubý − povinné přestávky: −30 min od 6 h, −1 h od 12 h.',
+    'ts.addShift': 'Přidat',
 
     'overview.titleMonthly': 'Měsíční přehled',
     'overview.titleAll': 'Celkový přehled',
