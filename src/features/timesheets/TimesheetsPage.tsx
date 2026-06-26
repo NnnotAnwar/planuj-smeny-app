@@ -28,6 +28,7 @@ import { getFullInitials } from '@shared/utils/getInitials';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type Shift, type Profile } from '@shared/types';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from '@features/shifts/shiftStats';
+import { formatClock } from '@shared/utils/date';
 
 import { timesheetService } from './timesheetService';
 import { exportShifts, exportAllShifts, type ExportFormat } from './exportShifts';
@@ -47,9 +48,8 @@ function memberName(m: Profile): string {
 }
 
 function fmtTimeRange(s: Shift): string {
-    const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
-    const start = new Date(s.started_at).toLocaleTimeString(undefined, opts);
-    const end = s.ended_at ? new Date(s.ended_at).toLocaleTimeString(undefined, opts) : '…';
+    const start = formatClock(s.started_at);
+    const end = formatClock(s.ended_at);
     return `${start} – ${end}`;
 }
 

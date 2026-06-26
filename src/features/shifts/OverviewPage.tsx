@@ -19,6 +19,7 @@ import { type Shift } from '@shared/types';
 import { DataTable, type Column } from '@shared/components/DataTable';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from './shiftStats';
+import { formatClock } from '@shared/utils/date';
 import { exportShifts, type ExportFormat } from '@features/timesheets/exportShifts';
 
 /**
@@ -30,10 +31,7 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
  * --- HELPERS ---
  */
 function fmtTimeRange(s: Shift): string {
-  const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
-  const start = new Date(s.started_at).toLocaleTimeString(undefined, opts);
-  const end = s.ended_at ? new Date(s.ended_at).toLocaleTimeString(undefined, opts) : '…';
-  return `${start} – ${end}`;
+  return `${formatClock(s.started_at)} – ${formatClock(s.ended_at)}`;
 }
 
 /**

@@ -16,6 +16,7 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { canManageEmployees } from '@shared/auth/permissions';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { type ShiftAuditLog, type ShiftSnapshot, type Profile } from '@shared/types';
+import { formatClock } from '@shared/utils/date';
 import { timesheetService, type AuditLogQuery } from './timesheetService';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
@@ -42,7 +43,7 @@ function memberName(m: Profile): string {
 }
 
 function fmtClock(iso?: string | null): string {
-    return iso ? new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '…';
+    return formatClock(iso);
 }
 
 /** "12 Jun · 09:00–17:00 · Main St" from a stored snapshot. */

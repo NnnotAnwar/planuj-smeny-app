@@ -34,6 +34,24 @@ export function formatTime(isoString: string | null | undefined): string {
 }
 
 /**
+ * Like formatTime, but with a caller-chosen fallback for empty values — used in
+ * time ranges (e.g. "08:00 – …" for an ongoing shift). Honours the 12h/24h
+ * preference too, so every clock in the app stays consistent.
+ */
+export function formatClock(isoString: string | null | undefined, fallback = '…'): string {
+  if (!isoString) return fallback;
+  try {
+    return new Date(isoString).toLocaleTimeString(timeFormat === '12h' ? 'en-US' : 'en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: timeFormat === '12h',
+    });
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * Formats an ISO date string into a readable date (D. Month).
  * Example: '2026-03-19' -> '19 Mar'
  */

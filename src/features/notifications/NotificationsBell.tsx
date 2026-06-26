@@ -12,6 +12,7 @@ import {
     type Icon,
 } from '@phosphor-icons/react';
 import type { ShiftAuditLog, ShiftSnapshot } from '@shared/types';
+import { formatClock } from '@shared/utils/date';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import type { TranslationKey } from '@shared/i18n/translations';
 import { useNotifications } from './useNotifications';
@@ -19,7 +20,7 @@ import { useNotifications } from './useNotifications';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function fmtClock(iso?: string | null): string {
-    return iso ? new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '…';
+    return formatClock(iso);
 }
 function fmtSnapshot(s?: ShiftSnapshot | null): string {
     if (!s || !s.started_at) return '';

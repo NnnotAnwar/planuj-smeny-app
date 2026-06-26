@@ -103,8 +103,8 @@ function UserShiftCard({ userShift, onSelectUser }: { userShift: NonNullable<Shi
       onClick={clickable ? () => onSelectUser!(userShift.userId!) : undefined}
       className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center transition-all border backdrop-blur-sm bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-500/20 ${isChange ? MOVED_STRIPE : ''} ${clickable ? 'cursor-pointer hover:brightness-[0.98] active:scale-[0.99]' : ''}`}
     >
-      <div className="flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 bg-emerald-600 text-white shadow-md">
-        <span className="text-metric-sm">{userShift.start ?? '--:--'}</span>
+      <div className="flex items-center justify-center shrink-0 rounded-lg min-w-12 px-1.5 h-10 md:h-11 bg-emerald-600 text-white shadow-md">
+        <span className="text-metric-sm whitespace-nowrap">{userShift.start ?? '--:--'}</span>
       </div>
 
       <div className="flex flex-1 items-center justify-between min-w-0">
@@ -138,8 +138,8 @@ function AssignedShiftCard({ shift, onSelectUser }: { shift: ShiftDisplayData; o
       onClick={clickable ? () => onSelectUser!(shift.userId!) : undefined}
       className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center backdrop-blur-sm transition-all border bg-white/80 dark:bg-white/5 border-white dark:border-white/5 ${isChange ? MOVED_STRIPE : ''} ${clickable ? 'cursor-pointer hover:brightness-[0.98] active:scale-[0.99]' : ''}`}
     >
-      <div className="flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 text-white shadow-xs bg-linear-to-br from-gray-400 to-gray-500 dark:from-gray-700 dark:to-gray-800">
-        <span className="text-metric-sm">{shift.start ?? '--:--'}</span>
+      <div className="flex items-center justify-center shrink-0 rounded-lg min-w-12 px-1.5 h-10 md:h-11 text-white shadow-xs bg-linear-to-br from-gray-400 to-gray-500 dark:from-gray-700 dark:to-gray-800">
+        <span className="text-metric-sm whitespace-nowrap">{shift.start ?? '--:--'}</span>
       </div>
 
       <div className="flex flex-1 items-center justify-between min-w-0">

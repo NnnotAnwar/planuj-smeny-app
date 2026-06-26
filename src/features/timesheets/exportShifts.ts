@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { type Shift } from '@shared/types';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from '@features/shifts/shiftStats';
+import { formatClock } from '@shared/utils/date';
 
 /**
  * --- SHIFT EXPORT ---
@@ -29,7 +30,7 @@ const BREAK_LEGEND = 'Mandatory breaks deducted: -30 min from 6h, -1h from 12h (
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 function timeOnly(iso: string): string {
-    return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    return formatClock(iso);
 }
 
 interface Row {
