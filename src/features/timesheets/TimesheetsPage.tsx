@@ -414,33 +414,49 @@ function TimesheetsInner() {
                         />
                     </div>
 
-                    {membersQ.isLoading ? (
-                        <div className="py-20 text-center text-label text-gray-400 animate-pulse">{t('state.loading', { label: t('admin.nounEmployees') })}</div>
-                    ) : filteredMembers.length === 0 ? (
-                        <div className="py-20 text-center text-label text-gray-400">{t('state.empty', { label: t('admin.nounEmployees') })}</div>
-                    ) : (
-                        <div className="rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-                            {filteredMembers.map((m, i) => (
-                                <button
-                                    key={m.id}
-                                    onClick={() => { setSelectedId(m.id); setSearch(''); }}
-                                    className={`w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-left ${i > 0 ? 'border-t border-gray-50 dark:border-gray-800/50' : ''}`}
-                                >
-                                    <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-micro shrink-0">
-                                        {getFullInitials(m.first_name, m.last_name)}
+                    <DataTable
+                        rows={filteredMembers}
+                        rowKey={(m) => m.id}
+                        isLoading={membersQ.isLoading}
+                        loadingState={<div className="py-20 text-center text-label text-gray-400 animate-pulse">{t('state.loading', { label: t('admin.nounEmployees') })}</div>}
+                        emptyState={<div className="py-20 text-center text-label text-gray-400">{t('state.empty', { label: t('admin.nounEmployees') })}</div>}
+                        onRowClick={(m) => { setSelectedId(m.id); setSearch(''); }}
+                        columns={[
+                            {
+                                key: 'employee',
+                                header: t('admin.colEmployee'),
+                                render: (m) => (
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-micro shrink-0">
+                                            {getFullInitials(m.first_name, m.last_name)}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-body-strong text-gray-900 dark:text-white truncate">{memberName(m)}</p>
+                                            <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{m.username}</p>
+                                        </div>
                                     </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-body-strong text-gray-900 dark:text-white truncate">{memberName(m)}</p>
-                                        <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{m.username}</p>
-                                    </div>
-                                    <span className={`shrink-0 px-1.5 py-1 text-micro tracking-tight rounded-md whitespace-nowrap ${getRoleBadgeColor(m.role.name)}`}>
+                                ),
+                            },
+                            {
+                                key: 'role',
+                                header: t('profile.field.role'),
+                                align: 'right',
+                                width: 'w-24 sm:w-32',
+                                render: (m) => (
+                                    <span className={`inline-block px-1.5 py-1 text-micro tracking-tight rounded-md whitespace-nowrap ${getRoleBadgeColor(m.role.name)}`}>
                                         {m.role.name}
                                     </span>
-                                    <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-300 shrink-0" />
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                                ),
+                            },
+                            {
+                                key: 'caret',
+                                header: '',
+                                align: 'right',
+                                width: 'w-8',
+                                render: () => <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-300 inline" />,
+                            },
+                        ]}
+                    />
                 </div>
             ) : (
                 <div className="space-y-4">
