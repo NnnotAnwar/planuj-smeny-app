@@ -51,6 +51,7 @@ locations, people and requests — on the web or as a native Android/iOS app.
 - **Light / Dark / System** themes with native status-bar sync.
 - **Capacitor** native wrapper: safe-area handling, haptics, app-lifecycle
   listeners, keyboard/splash/status-bar plugins.
+- **PWA-ready**: installable directly from browsers via web app manifest (Add to Home Screen on mobile/desktop).
 
 ---
 
