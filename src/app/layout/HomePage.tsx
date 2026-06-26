@@ -5,7 +5,7 @@ import { type AppOutletContext } from './AppShell';
 import { ActiveShift } from '@features/shifts/components/ActiveShift';
 import { CheckIn } from '@features/shifts/components/CheckIn';
 import { ShiftCards } from '@features/shifts/components/ShiftCards';
-import { LocationSelection } from '@features/locations/components/LocationSelection';
+import { MobileLocationField } from '@features/locations/components/MobileLocationField';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { Clock } from '@shared/components/Clock';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
@@ -89,10 +89,11 @@ export function HomePage() {
       <CheckIn />
 
       {/* 4. MOBILE LOCATION PICKER */}
-      <div className="md:hidden mb-6 -mx-3 px-3">
-        <LocationSelection
+      <div className="md:hidden mb-6">
+        <MobileLocationField
           locations={activeLocations}
           selectedLocationId={selectedLocationId}
+          isOnShift={!!activeShift}
           onLocationSelect={handleLocationSelect}
         />
       </div>
