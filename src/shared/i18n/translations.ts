@@ -319,7 +319,7 @@ export const en = {
 export type TranslationKey = keyof typeof en;
 
 export const cs: Record<TranslationKey, string> = {
-    'nav.dashboard': 'Přehled',
+    'nav.dashboard': 'Nástěnka',
     'nav.home': 'Domů',
     'nav.overview': 'Přehled',
     'nav.admin': 'Správa',

@@ -100,7 +100,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
           <div className="flex-1 overflow-y-auto scrollbar-hide py-2 hidden md:flex md:flex-col gap-4">
             <nav className="flex flex-col gap-0.5">
               {navItems.map((item) => (
-                <Link to={item?.route || '/'} key={item.name} className={`flex items-center p-2 gap-3 w-full rounded-xl transition-all duration-200 cursor-pointer 
+                <Link to={item?.route || '/'} key={item.route} className={`flex items-center p-2 gap-3 w-full rounded-xl transition-all duration-200 cursor-pointer
                 ${item.route === currentRoute.pathname
                     ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold'
                     : 'hover:bg-emerald-500/5 text-gray-500 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-gray-200'}`
