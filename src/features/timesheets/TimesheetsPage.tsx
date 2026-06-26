@@ -31,7 +31,8 @@ import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } f
 import { formatClock, monthShort, weekdayShort } from '@shared/utils/date';
 
 import { timesheetService } from './timesheetService';
-import { exportShifts, exportAllShifts, type ExportFormat } from './exportShifts';
+import { exportAllShifts, type ExportFormat } from './exportShifts';
+import { shareOrExport } from '@shared/utils/shareExport';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
 import { ShiftEditorModal, type ShiftFormValues } from './components/ShiftEditorModal';
 
@@ -226,7 +227,7 @@ function TimesheetsInner() {
 
     const doExport = (fmt: ExportFormat) => {
         if (!selected) return;
-        exportShifts(fmt, { employeeName: memberName(selected), periodLabel, shifts, locationName });
+        shareOrExport({ employeeName: memberName(selected), periodLabel, shifts, locationName }, fmt);
         setExportOpen(false);
     };
 

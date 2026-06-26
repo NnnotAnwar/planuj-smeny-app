@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { XIcon, WarningIcon } from '@phosphor-icons/react';
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
 
 /**
  * --- MODAL ---
@@ -34,9 +36,19 @@ export function Modal({
         // Move focus into the dialog.
         panelRef.current?.focus();
 
+        // On native, hide the on-screen keyboard when user taps the backdrop or closes.
+        const hideNativeKeyboard = async () => {
+            if (Capacitor.isNativePlatform()) {
+                try {
+                    await Keyboard.hide();
+                } catch {}
+            }
+        };
+
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 onClose();
+                hideNativeKeyboard();
                 return;
             }
             if (e.key !== 'Tab') return;
@@ -57,9 +69,19 @@ export function Modal({
         };
 
         document.addEventListener('keydown', onKeyDown);
+
+        // Tap on backdrop also hides native keyboard
+        const handleBackdrop = (e: MouseEvent) => {
+            if ((e.target as HTMLElement).closest('.backdrop')) {
+                hideNativeKeyboard();
+            }
+        };
+        document.addEventListener('mousedown', handleBackdrop as any, true);
+
         return () => {
             document.body.style.overflow = prevOverflow;
             document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('mousedown', handleBackdrop as any, true);
         };
     }, [onClose]);
 

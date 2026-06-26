@@ -136,6 +136,15 @@ if (typeof document !== 'undefined') {
     const isDark = resolveTheme(readTheme()) === 'dark';
     document.documentElement.classList.toggle('dark', isDark);
     applyCombo(readCombo(), isDark);
+
+    // Hide splash as soon as the correct theme background is applied.
+    // This makes the launch splash respect light/dark theme (splash images were
+    // generated with matching backgrounds).
+    if (Capacitor.isNativePlatform()) {
+        import('@capacitor/splash-screen').then(({ SplashScreen }) => {
+            SplashScreen.hide({ fadeOutDuration: 150 });
+        }).catch(() => {});
+    }
 }
 
 // --- Provider ---------------------------------------------------------------

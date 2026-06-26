@@ -9,6 +9,8 @@ import {
 } from '@phosphor-icons/react';
 import { useProfileEditing } from '../hooks/useProfileEditing';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
 
 /**
  * Inline self-profile editor used on the Profile page. Shares all rules with
@@ -37,7 +39,15 @@ export function ProfileEditor() {
     return (
         <div className="space-y-4">
             {/* USERNAME */}
-            <form onSubmit={saveUsername} className="space-y-2">
+            <form
+              onSubmit={async (e) => {
+                if (Capacitor.isNativePlatform()) {
+                  try { await Keyboard.hide(); } catch {}
+                }
+                await saveUsername(e);
+              }}
+              className="space-y-2"
+            >
                 <h3 className="px-1 text-label text-gray-400">{t('profile.editor.username')}</h3>
                 <div className={`${cardClass} p-5 space-y-4`}>
                     <div>
@@ -91,7 +101,15 @@ export function ProfileEditor() {
                 <h3 className="px-1 text-label text-gray-400">{t('profile.editor.name')}</h3>
 
                 {!isStaff ? (
-                    <form onSubmit={saveName} className={`${cardClass} p-5 space-y-4`}>
+                    <form
+                      onSubmit={async (e) => {
+                        if (Capacitor.isNativePlatform()) {
+                          try { await Keyboard.hide(); } catch {}
+                        }
+                        await saveName(e);
+                      }}
+                      className={`${cardClass} p-5 space-y-4`}
+                    >
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="text-small-strong text-gray-600 dark:text-gray-300 mb-1.5 block">{t('profile.field.firstName')}</label>

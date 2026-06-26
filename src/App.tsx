@@ -1,6 +1,8 @@
-import { lazy, Suspense } from 'react';
-import { Route, Routes, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 // Providers (Global State)
 import { AuthProvider } from './features/auth/AuthContext';
@@ -47,6 +49,30 @@ const AuditLogPage = lazy(() => import('./features/timesheets/AuditLogPage').the
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 const ProfilePage = lazy(() => import('./features/profile/ProfilePage'));
 
+/** Handles Android hardware back button: go back in history or exit app. */
+function BackButtonHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let listener: any;
+    CapacitorApp.addListener('backButton', () => {
+      if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        CapacitorApp.exitApp();
+      }
+    }).then((l) => { listener = l; });
+
+    return () => {
+      if (listener?.remove) listener.remove();
+    };
+  }, [navigate]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -55,6 +81,7 @@ export default function App() {
         <AuthProvider>
          <PreferencesProvider>
           <ShiftProvider>
+            <BackButtonHandler />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* PUBLIC: invite acceptance manages its own session (no guard). */}

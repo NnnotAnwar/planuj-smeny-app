@@ -10,9 +10,11 @@ import { useTheme, COMBO_LIST } from '@app/providers/ThemeContext';
 import { usePreferences } from '@shared/preferences/PreferencesContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { LANGUAGES } from '@shared/i18n/translations';
+import { useEffect, useState } from 'react';
+import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 const APP_NAME = 'Planuj Směny';
-const APP_VERSION = '1.7.0';
 const SUPPORT_EMAIL = 'anuarkairulla@gmail.com';
 
 /**
@@ -69,6 +71,21 @@ function Setting({ label, hint, children }: { label: string; hint?: string; chil
   );
 }
 
+/** Dynamic app version from Capacitor (native) or fallback. */
+function useAppVersion() {
+  const [version, setVersion] = useState('1.7.0');
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      App.getInfo()
+        .then((info) => setVersion(info.version || '1.7.0'))
+        .catch(() => {});
+    }
+  }, []);
+
+  return version;
+}
+
 /** A tappable row that opens an external link (or mailto) in the system browser. */
 function LinkRow({ icon, label, href }: { icon: React.ReactNode; label: string; href: string }) {
   return (
@@ -105,6 +122,7 @@ export default function SettingsPage() {
     usePreferences();
   const { locations } = useShiftContext();
   const isDark = resolvedTheme === 'dark';
+  const appVersion = useAppVersion();
 
   const activeLabel = COMBO_LIST.find((o) => o.key === comboKey)?.label;
   const pickableLocations = locations.filter((l) => !l.archived_at);
@@ -234,7 +252,7 @@ export default function SettingsPage() {
             </div>
             <div className="min-w-0">
               <p className="text-body-strong text-gray-900 dark:text-white">{APP_NAME}</p>
-              <p className="text-micro text-gray-400">{t('settings.version', { version: APP_VERSION, year: 2026 })}</p>
+              <p className="text-micro text-gray-400">{t('settings.version', { version: appVersion, year: 2026 })}</p>
             </div>
           </div>
 

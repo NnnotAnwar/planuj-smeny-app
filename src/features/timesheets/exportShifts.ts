@@ -167,9 +167,12 @@ function drawTimesheetPDF(doc: jsPDF, ctx: ExportContext) {
     doc.text('Approved by', 120, y + 5);
 }
 
-function exportPDF(ctx: ExportContext) {
+function exportPDF(ctx: ExportContext, opts: ExportOptions = {}) {
     const doc = new jsPDF();
     drawTimesheetPDF(doc, ctx);
+    if (opts.returnData) {
+        return { base64: doc.output('datauristring').split(',')[1] };
+    }
     doc.save(`${fileStem(ctx)}.pdf`);
 }
 
@@ -181,7 +184,7 @@ const csvCell = (v: string | number) => {
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-function exportCSV(ctx: ExportContext) {
+function exportCSV(ctx: ExportContext, opts: ExportOptions = {}) {
     const { rows, totals } = build(ctx);
     const header = ['Date', 'Day', 'Location', 'Start', 'End', 'Gross (h)', 'Break (h)', 'Net (h)'];
     const lines: string[] = [];
@@ -203,14 +206,18 @@ function exportCSV(ctx: ExportContext) {
     );
 
     // UTF-8 BOM so Excel reads accented names correctly.
-    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const csv = '﻿' + lines.join('\r\n');
+    if (opts.returnData) {
+        return { text: csv };
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     triggerDownload(blob, `${fileStem(ctx)}.csv`);
 }
 
 // ---------------------------------------------------------------------
 // EXCEL (SheetJS — loaded on demand so it only ships when actually used)
 // ---------------------------------------------------------------------
-async function exportExcel(ctx: ExportContext) {
+async function exportExcel(ctx: ExportContext, opts: ExportOptions = {}) {
     const XLSX = await import('xlsx');
     const { rows, totals } = build(ctx);
 
@@ -246,14 +253,30 @@ async function exportExcel(ctx: ExportContext) {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Timesheet');
+    if (opts.returnData) {
+      const buffer = XLSX.write(wb, { type: 'array' });
+      const b64 = btoa(
+        new Uint8Array(buffer as ArrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+      return { base64: b64 };
+    }
     XLSX.writeFile(wb, `${fileStem(ctx)}.xlsx`);
 }
 
-export async function exportShifts(format: ExportFormat, ctx: ExportContext): Promise<void> {
+export interface ExportOptions {
+  /** Return base64/text instead of downloading (for native share) */
+  returnData?: boolean;
+}
+
+export async function exportShifts(
+  format: ExportFormat,
+  ctx: ExportContext,
+  opts: ExportOptions = {}
+): Promise<{ base64?: string; text?: string } | void> {
     if (ctx.shifts.length === 0) return;
-    if (format === 'pdf') return exportPDF(ctx);
-    if (format === 'csv') return exportCSV(ctx);
-    return exportExcel(ctx);
+    if (format === 'pdf') return exportPDF(ctx, opts);
+    if (format === 'csv') return exportCSV(ctx, opts);
+    return exportExcel(ctx, opts);
 }
 
 // ---------------------------------------------------------------------

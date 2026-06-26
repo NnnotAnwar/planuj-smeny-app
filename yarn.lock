@@ -379,6 +379,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@capacitor/filesystem@npm:^8.1.2":
+  version: 8.1.2
+  resolution: "@capacitor/filesystem@npm:8.1.2"
+  dependencies:
+    "@capacitor/synapse": "npm:^1.0.4"
+  peerDependencies:
+    "@capacitor/core": ">=8.0.0"
+  checksum: 10c0/09e21108f9ef7d106719a4e927bab0657b004aeb7f2c894113339026c620bbe023ac48233fdfb9fd0cde07c30c84e0634e438a06466c3f19b16700682a7c3c3c
+  languageName: node
+  linkType: hard
+
 "@capacitor/haptics@npm:^8.0.1":
   version: 8.0.2
   resolution: "@capacitor/haptics@npm:8.0.2"
@@ -415,6 +426,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@capacitor/share@npm:^8.0.1":
+  version: 8.0.1
+  resolution: "@capacitor/share@npm:8.0.1"
+  peerDependencies:
+    "@capacitor/core": ">=8.0.0"
+  checksum: 10c0/a615b85c79bbd3bfeb5e2ee2ac119e7ba8b8184ebcaad3b019467103e4ffc24130e1c1af42910498342fb495e0e297edf72169fa801963e34883d8bd4a42e514
+  languageName: node
+  linkType: hard
+
 "@capacitor/splash-screen@npm:^8.0.1":
   version: 8.0.1
   resolution: "@capacitor/splash-screen@npm:8.0.1"
@@ -430,6 +450,13 @@ __metadata:
   peerDependencies:
     "@capacitor/core": ">=8.0.0"
   checksum: 10c0/2e27cf6629666b9e3078ac26e68a13d211a442b24ce64e40510ca9741666abe72c64c0be05b2645ebfcd297413a2f5238812218649e74b906d11893378a15231
+  languageName: node
+  linkType: hard
+
+"@capacitor/synapse@npm:^1.0.4":
+  version: 1.0.4
+  resolution: "@capacitor/synapse@npm:1.0.4"
+  checksum: 10c0/83f37d06ebdb4234596f123417043aae8b0fd3b5905d399fe8bb7f1d7c3352c8449bef093793b01a0b3c4a59208ac27aec5b1ed7cf5e399c5c3004cc0ca74646
   languageName: node
   linkType: hard
 
@@ -7412,10 +7439,12 @@ __metadata:
     "@capacitor/assets": "npm:^3.0.5"
     "@capacitor/cli": "npm:^8.1.0"
     "@capacitor/core": "npm:^8.1.0"
+    "@capacitor/filesystem": "npm:^8.1.2"
     "@capacitor/haptics": "npm:^8.0.1"
     "@capacitor/ios": "npm:^8.1.0"
     "@capacitor/keyboard": "npm:^8.0.1"
     "@capacitor/preferences": "npm:^8.0.1"
+    "@capacitor/share": "npm:^8.0.1"
     "@capacitor/splash-screen": "npm:^8.0.1"
     "@capacitor/status-bar": "npm:^8.0.1"
     "@eslint/js": "npm:^9.39.1"

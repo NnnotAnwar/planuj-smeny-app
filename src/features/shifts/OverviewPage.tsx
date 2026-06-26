@@ -20,7 +20,8 @@ import { DataTable, type Column } from '@shared/components/DataTable';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from './shiftStats';
 import { formatClock, monthShort, weekdayShort, weekdayShortLabels } from '@shared/utils/date';
-import { exportShifts, type ExportFormat } from '@features/timesheets/exportShifts';
+import { type ExportFormat } from '@features/timesheets/exportShifts';
+import { shareOrExport } from '@shared/utils/shareExport';
 
 /**
  * --- CONSTANTS ---
@@ -198,12 +199,12 @@ export default function OverviewPage() {
   const periodLabel = selectedMonth ?? t('overview.allTime');
 
   const doExport = (fmt: ExportFormat) => {
-    void exportShifts(fmt, {
+    void shareOrExport({
       employeeName,
       periodLabel,
       shifts: stats.shifts,
       locationName,
-    });
+    }, fmt);
     setExportOpen(false);
   };
 
