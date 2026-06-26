@@ -12,7 +12,7 @@ import { useShiftContext } from '@features/shifts/ShiftContext';
 import { LANGUAGES } from '@shared/i18n/translations';
 
 const APP_NAME = 'Planuj Směny';
-const APP_VERSION = '1.6.6';
+const APP_VERSION = '1.7.0';
 const SUPPORT_EMAIL = 'anuarkairulla@gmail.com';
 
 /**
@@ -46,11 +46,10 @@ function Segmented<T extends string>({
             key={o.value}
             onClick={() => onChange(o.value)}
             aria-pressed={active}
-            className={`flex-1 px-3 py-1.5 rounded-lg text-small-strong transition-colors ${
-              active
+            className={`flex-1 px-3 py-1.5 rounded-lg text-small-strong transition-colors ${active
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-            }`}
+              }`}
           >
             {o.label}
           </button>
@@ -150,11 +149,10 @@ export default function SettingsPage() {
                     onClick={() => setComboKey(key)}
                     title={label}
                     aria-pressed={isActive}
-                    className={`group rounded-2xl p-1 transition-all focus:outline-none ${
-                      isActive
+                    className={`group rounded-2xl p-1 transition-all focus:outline-none ${isActive
                         ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900'
                         : 'hover:scale-[1.02]'
-                    }`}
+                      }`}
                   >
                     <div
                       className="relative h-20 rounded-xl overflow-hidden border border-black/5 dark:border-white/10"
