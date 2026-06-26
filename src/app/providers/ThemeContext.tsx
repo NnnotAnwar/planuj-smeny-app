@@ -42,29 +42,35 @@ export const COMBOS: Record<ComboKey, Combo> = {
         },
         gradient: { light: ['#f8fafc', '#f1f5f9', '#e0e7ff'], dark: ['#020617', '#0f172a', '#1e2937'] },
     },
+    // Turquoise — bright sparkle kept in the light shades (300/400), while the
+    // action shade (500) is a deep teal-turquoise that holds white text (~3.8:1).
     'cyan-obsidian': {
         label: 'Cyan Obsidian',
         accent: {
-            '50': '#ecfeff', '100': '#cffafe', '200': '#a5f3fc', '300': '#67e8f9', '400': '#22d3ee',
-            '500': '#00F5D4', '600': '#00b8a0', '700': '#008f7a', '800': '#006b5c', '900': '#004d44', '950': '#002e2a',
+            '50': '#f0fdfa', '100': '#ccfbf1', '200': '#99f6e4', '300': '#5eead4', '400': '#2dd4bf',
+            '500': '#0d9488', '600': '#0a7d72', '700': '#0c645c', '800': '#0d4f49', '900': '#0b3e3a', '950': '#042a27',
         },
-        gradient: { light: ['#e0f2fe', '#f0f9ff', '#dbeafe'], dark: ['#0D0E15', '#12131A', '#1C1D25'] },
+        gradient: { light: ['#f0fdfa', '#e6fbf6', '#d7f5ee'], dark: ['#08120f', '#0b1714', '#10211c'] },
     },
+    // Orange — warm pumpkin/amber. Action shade (500) deepened so white reads
+    // (~3.6:1 on bold) instead of the old neon-yellow that washed out.
     'amber-obsidian': {
         label: 'Amber Chocolate',
         accent: {
-            '50': '#fffbeb', '100': '#fff3d1', '200': '#ffe9a8', '300': '#ffdc72', '400': '#ffcf3d',
-            '500': '#FFB703', '600': '#e69c00', '700': '#c27f00', '800': '#9c6500', '900': '#714a00', '950': '#3f2900',
+            '50': '#fff7ed', '100': '#ffedd5', '200': '#fdd9b5', '300': '#fbbe85', '400': '#f99c4e',
+            '500': '#ea580c', '600': '#cf4a09', '700': '#ab3c0c', '800': '#87310f', '900': '#6e2912', '950': '#401405',
         },
-        gradient: { light: ['#f8f1e3', '#f5e9d8', '#f0e1cc'], dark: ['#161412', '#1b1714', '#211d19'] },
+        gradient: { light: ['#fff7ed', '#fff1e0', '#ffe8cf'], dark: ['#1a120b', '#1f160d', '#2a1c10'] },
     },
+    // Violet — royal "ink" purple. Action shade (500) is rich and white-readable
+    // (~5.7:1) with soft pearl tints for badges/hover.
     'violet-graphite-pearl': {
         label: 'Violet Ink',
         accent: {
-            '50': '#f5f0ff', '100': '#ede0ff', '200': '#e0c8ff', '300': '#c89eff', '400': '#b57ae8',
-            '500': '#9D4EDD', '600': '#7c3bb8', '700': '#5e2a8f', '800': '#4a216f', '900': '#381b54', '950': '#221035',
+            '50': '#f5f3ff', '100': '#ede9fe', '200': '#ddd6fe', '300': '#c4b5fd', '400': '#a78bfa',
+            '500': '#7c3aed', '600': '#6d28d9', '700': '#5b21b6', '800': '#4c1d95', '900': '#3b1576', '950': '#250d4d',
         },
-        gradient: { light: ['#f5f0ff', '#f0e8ff', '#e9d9ff'], dark: ['#0F0C1B', '#13101F', '#1A1629'] },
+        gradient: { light: ['#faf5ff', '#f5edff', '#ece0ff'], dark: ['#120c1f', '#171026', '#201634'] },
     },
 };
 
