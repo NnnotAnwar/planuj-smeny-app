@@ -1,4 +1,5 @@
 import { useShiftContext } from '../ShiftContext';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 
@@ -10,6 +11,7 @@ import { Capacitor } from '@capacitor/core';
 
 export function CheckIn() {
   const { selectedLocationId, activeShift, handleStartShift, isStarting } = useShiftContext();
+  const t = useTranslation();
 
   // If a shift is already running, we don't show the check-in button.
   if (activeShift) return null;
@@ -53,7 +55,7 @@ export function CheckIn() {
                   <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
                 </svg>
               )}
-              {isStarting ? 'Starting...' : 'Start Shift'}
+              {isStarting ? t('shifts.starting') : t('shifts.start')}
             </span>
           </button>
         </div>
@@ -74,12 +76,12 @@ export function CheckIn() {
                 <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
               </svg>
             )}
-            {isStarting ? 'Starting...' : 'Start Shift'}
+            {isStarting ? t('shifts.starting') : t('shifts.start')}
           </span>
         </button>
         {!selectedLocationId && !isStarting && (
           <p className="mt-2 text-center text-xs text-gray-500 dark:text-gray-300 font-medium">
-            Select a location to start
+            {t('shifts.selectLocation')}
           </p>
         )}
       </div>

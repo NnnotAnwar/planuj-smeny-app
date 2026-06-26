@@ -1,6 +1,7 @@
 import { LiveClockIcon } from '@shared/components/LiveClockIcon';
 import { useAuthContext } from '../../auth/AuthContext';
 import { useShiftContext } from '../ShiftContext';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 
@@ -15,6 +16,7 @@ import { formatTime } from '@shared/utils/date';
 export function ActiveShift() {
     const { user } = useAuthContext();
     const { activeShift, handleEndShift, locations, isEnding } = useShiftContext();
+    const t = useTranslation();
 
     // 1. Logic to disable the button while ending or if no shift is active.
     const isDisabled = !activeShift || isEnding
@@ -41,7 +43,7 @@ export function ActiveShift() {
 
     const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
     const location = locations.find(l => l.id === activeShift?.location_id);
-    const locationName = location?.name || 'Unknown Location';
+    const locationName = location?.name || t('shifts.unknownLocation');
     const previousLocation = activeShift?.previous_location_id ? locations.find(l => l.id === activeShift.previous_location_id) : null;
 
     // RENDER: If no shift is active, show a small status badge.
@@ -50,7 +52,7 @@ export function ActiveShift() {
             <div className="mb-6 flex justify-center">
                 <div className="flex items-center gap-1.5 rounded-full bg-gray-200/50 dark:bg-gray-800/50 px-3 py-1 text-body text-gray-500 dark:text-gray-400">
                     <LiveClockIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" isActive={false} />
-                    No Active Shift
+                    {t('shifts.noActive')}
                 </div>
             </div>
         );
@@ -62,13 +64,13 @@ export function ActiveShift() {
             <div className="mb-6 flex flex-col items-center md:hidden">
                 <div className="flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 text-body text-emerald-700 dark:text-emerald-400">
                     <LiveClockIcon className="h-4 w-4" isActive={true} />
-                    Active Shift: {startTime}
+                    {t('shifts.active')}: {startTime}
                 </div>
                 {/* Make it obvious WHERE you're clocked in (esp. on phone). */}
                 <p className="mt-2 text-body-strong text-gray-900 dark:text-white text-center">{locationName}</p>
                 {previousLocation && (
                     <div className="mt-2 flex items-center gap-1 text-micro text-amber-600 dark:text-amber-500">
-                        <span>Moved from {previousLocation.name}</span>
+                        <span>{t('shifts.movedFrom', { location: previousLocation.name })}</span>
                     </div>
                 )}
             </div>
@@ -82,15 +84,13 @@ export function ActiveShift() {
                     </div>
                     <div>
                         <div className="mb-1 flex items-center gap-2">
-                            <span className="text-label text-emerald-600 dark:text-emerald-400">
-                                Active Shift
-                            </span>
+                            <span className="text-label text-emerald-600 dark:text-emerald-400">{t('shifts.active')}</span>
                             {previousLocation && (
                                 <span className="flex items-center gap-1 text-micro text-amber-600 dark:text-amber-500">
                                     <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                                     </svg>
-                                    Moved from {previousLocation.name}
+                                    {t('shifts.movedFrom', { location: previousLocation.name })}
                                 </span>
                             )}
                         </div>
@@ -98,7 +98,7 @@ export function ActiveShift() {
                             {userName} <span className="ml-1 text-body text-gray-500 dark:text-gray-400">({user.role.name})</span>
                         </h3>
                         <p className="mt-0.5 text-body text-gray-500 dark:text-gray-400">
-                            {locationName} • Started at {startTime}
+                            {locationName} • {t('shifts.startedAt', { time: startTime })}
                         </p>
                     </div>
                 </div>
@@ -114,7 +114,7 @@ export function ActiveShift() {
                             (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
                                 <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
                             </svg>)}
-                        <span>{isEnding ? 'Ending...' : 'End Shift'}</span>
+                        <span>{isEnding ? t('shifts.ending') : t('shifts.end')}</span>
                     </button>
                 </div>
             </div>
@@ -133,7 +133,7 @@ export function ActiveShift() {
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
                                 <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
                             </svg>)}
-                    <span>{isEnding ? 'Ending...' : 'End Shift'}</span>
+                    <span>{isEnding ? t('shifts.ending') : t('shifts.end')}</span>
                 </button>
             </div>
         </>

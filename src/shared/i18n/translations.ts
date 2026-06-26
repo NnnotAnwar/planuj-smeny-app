@@ -66,6 +66,20 @@ export const en = {
     'auth.signIn': 'Sign in',
     'auth.signingIn': 'Signing in…',
 
+    // Shifts / Home
+    'shifts.start': 'Start Shift',
+    'shifts.starting': 'Starting…',
+    'shifts.selectLocation': 'Select a location to start',
+    'shifts.end': 'End Shift',
+    'shifts.ending': 'Ending…',
+    'shifts.active': 'Active Shift',
+    'shifts.noActive': 'No Active Shift',
+    'shifts.yourShift': 'Your shift',
+    'shifts.moved': 'Moved',
+    'shifts.movedFrom': 'Moved from {location}',
+    'shifts.startedAt': 'Started at {time}',
+    'shifts.unknownLocation': 'Unknown location',
+
     // About / Support / Legal
     'settings.about': 'About',
     'settings.about.app': 'App',
@@ -137,6 +151,19 @@ export const cs: Record<TranslationKey, string> = {
     'auth.invalidCredentials': 'Neplatný e-mail/uživatelské jméno nebo heslo.',
     'auth.signIn': 'Přihlásit se',
     'auth.signingIn': 'Přihlašování…',
+
+    'shifts.start': 'Začít směnu',
+    'shifts.starting': 'Spouštění…',
+    'shifts.selectLocation': 'Pro zahájení vyberte místo',
+    'shifts.end': 'Ukončit směnu',
+    'shifts.ending': 'Ukončování…',
+    'shifts.active': 'Aktivní směna',
+    'shifts.noActive': 'Žádná aktivní směna',
+    'shifts.yourShift': 'Vaše směna',
+    'shifts.moved': 'Přesunuto',
+    'shifts.movedFrom': 'Přesunuto z {location}',
+    'shifts.startedAt': 'Začátek v {time}',
+    'shifts.unknownLocation': 'Neznámé místo',
 };
 
 export const translations = { en, cs };

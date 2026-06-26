@@ -2,6 +2,7 @@ import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { ArrowBendUpLeftIcon } from '@phosphor-icons/react';
 import { type ShiftDisplayData } from '@shared/types';
 import { getRoleBadgeColor } from '@/shared/utils/roleColors';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * --- SHIFT CARDS COMPONENT ---
@@ -35,10 +36,11 @@ const itemVariants: Variants = {
 
 /** "↪ Moved from X" chip — the single, consistent location-change indicator. */
 function MovedFrom({ from }: { from?: string }) {
+  const t = useTranslation();
   return (
     <span className="inline-flex items-center gap-1 text-micro font-bold text-gray-900 dark:text-white mb-0.5 normal-case tracking-normal">
       <ArrowBendUpLeftIcon weight="bold" className="w-3 h-3 shrink-0" />
-      <span className="truncate">{from ? `Moved from ${from}` : 'Moved'}</span>
+      <span className="truncate">{from ? t('shifts.movedFrom', { location: from }) : t('shifts.moved')}</span>
     </span>
   );
 }
@@ -92,6 +94,7 @@ export function ShiftCards({ locationName, shifts, userShift, onSelectUser }: Sh
  * stripe + chip instead of recolouring the whole card.
  */
 function UserShiftCard({ userShift, onSelectUser }: { userShift: NonNullable<ShiftCardsProps['userShift']>; onSelectUser?: (userId: string) => void }) {
+  const t = useTranslation();
   const isChange = !!userShift.isChangeLocation;
   const clickable = !!(onSelectUser && userShift.userId);
 
@@ -109,7 +112,7 @@ function UserShiftCard({ userShift, onSelectUser }: { userShift: NonNullable<Shi
           {isChange ? (
             <MovedFrom from={userShift.previousLocationName} />
           ) : (
-            <p className="text-micro mb-0.5 text-emerald-700 dark:text-emerald-400">Your shift</p>
+            <p className="text-micro mb-0.5 text-emerald-700 dark:text-emerald-400">{t('shifts.yourShift')}</p>
           )}
           <p className="truncate text-body-strong text-gray-900 dark:text-white leading-tight">{userShift.name}</p>
         </div>
