@@ -125,6 +125,18 @@ export const en = {
     'location.alreadyHere': "You're already here",
     'location.workingAt': 'Working at {location}',
 
+    // Admin / requests / timesheets (shared)
+    'admin.administration': 'Administration',
+    'requests.pending': '{count} pending',
+    'requests.nameChanges': 'Name changes',
+    'state.loading': 'Loading {label}…',
+    'state.empty': 'No {label} found',
+    'state.error': 'Something went wrong',
+    'admin.nounEmployees': 'employees',
+    'admin.nounLocations': 'locations',
+    'admin.nounOrganizations': 'organizations',
+    'admin.nounRequests': 'requests',
+
     // Notifications
     'notif.title': 'Notifications',
     'notif.clearAll': 'Clear all',
@@ -314,6 +326,17 @@ export const cs: Record<TranslationKey, string> = {
     'location.showLess': 'Zobrazit méně',
     'location.alreadyHere': 'Už jste tady',
     'location.workingAt': 'Pracujete na {location}',
+
+    'admin.administration': 'Administrace',
+    'requests.pending': '{count} čeká',
+    'requests.nameChanges': 'Změny jména',
+    'state.loading': 'Načítání: {label}…',
+    'state.empty': 'Nenalezeno: {label}',
+    'state.error': 'Něco se pokazilo',
+    'admin.nounEmployees': 'zaměstnanci',
+    'admin.nounLocations': 'místa',
+    'admin.nounOrganizations': 'organizace',
+    'admin.nounRequests': 'žádosti',
 
     'notif.title': 'Oznámení',
     'notif.clearAll': 'Vymazat vše',

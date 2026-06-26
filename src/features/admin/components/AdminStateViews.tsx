@@ -1,4 +1,5 @@
 import type { Icon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /** Small presentational helpers shared across the admin panel. */
 
@@ -33,23 +34,26 @@ export function StatCard({
 }
 
 export function LoadingState({ label }: { label: string }) {
+    const t = useTranslation();
     return (
         <div className="py-20 text-center text-label text-gray-400 animate-pulse">
-            Loading {label}…
+            {t('state.loading', { label })}
         </div>
     );
 }
 
 export function EmptyState({ label }: { label: string }) {
+    const t = useTranslation();
     return (
-        <div className="py-20 text-center text-label text-gray-400">No {label} found</div>
+        <div className="py-20 text-center text-label text-gray-400">{t('state.empty', { label })}</div>
     );
 }
 
 export function ErrorState({ message }: { message: string }) {
+    const t = useTranslation();
     return (
         <div className="py-16 text-center space-y-1">
-            <p className="text-label text-red-500">Something went wrong</p>
+            <p className="text-label text-red-500">{t('state.error')}</p>
             <p className="text-small text-gray-400">{message}</p>
         </div>
     );
