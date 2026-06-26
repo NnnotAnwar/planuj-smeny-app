@@ -1,3 +1,18 @@
+-- =====================================================================
+-- LOCAL DEVELOPMENT SEED — DO NOT USE IN ANY SHARED/PUBLIC ENVIRONMENT.
+--
+-- The demo Superadmin (admin@admin.com) ships with NO usable password:
+-- its hash has been replaced by a placeholder so this public repo never
+-- carries a working credential. After a local `supabase db reset`, set a
+-- throwaway local password before signing in, e.g.:
+--
+--   update auth.users
+--      set encrypted_password = crypt('admin', gen_salt('bf'))
+--    where email = 'admin@admin.com';
+--
+-- Never reuse this account or password on preprod/prod.
+-- =====================================================================
+
 SET session_replication_role = replica;
 
 --
@@ -45,7 +60,7 @@ SET row_security = off;
 
 INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at", "is_anonymous") VALUES
 	('00000000-0000-0000-0000-000000000000', '0efd87f8-9309-4d40-8d2d-1882e21365da', 'authenticated', 'authenticated', 'mario@pizza.com', '$2a$10$INPst58ZJo6QuyTfTWGUwOJNlOD2U2EFk86tB0HJzjOOmEnVi97v.', '2026-02-25 17:00:11.661134+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-03-04 23:04:31.830358+00', '{"provider": "email", "providers": ["email"]}', '{"email_verified": true}', NULL, '2026-02-25 17:00:11.644747+00', '2026-03-04 23:04:31.836825+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false),
-	('00000000-0000-0000-0000-000000000000', 'e09fdc4c-b0ef-42cf-bded-82d5e9d52347', 'authenticated', 'authenticated', 'admin@admin.com', '$2a$10$70S9GVG8By6lPWjMgQzuw.Zs5jricPsP8PEVY4LnWPnv8w4K7Dw72', '2026-02-23 15:23:27.459049+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-03-24 01:51:55.750786+00', '{"provider": "email", "providers": ["email"]}', '{"email_verified": true}', NULL, '2026-02-23 15:23:27.412948+00', '2026-03-24 12:14:11.978443+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false),
+	('00000000-0000-0000-0000-000000000000', 'e09fdc4c-b0ef-42cf-bded-82d5e9d52347', 'authenticated', 'authenticated', 'admin@admin.com', 'PLACEHOLDER_SET_A_LOCAL_PASSWORD_AFTER_SEEDING', '2026-02-23 15:23:27.459049+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-03-24 01:51:55.750786+00', '{"provider": "email", "providers": ["email"]}', '{"email_verified": true}', NULL, '2026-02-23 15:23:27.412948+00', '2026-03-24 12:14:11.978443+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false),
 	('00000000-0000-0000-0000-000000000000', 'e3f94804-80d2-4d13-8dc8-ca19328fa004', 'authenticated', 'authenticated', 'anuarkairulla@gmail.com', '$2a$10$A5a3q/rjwn9D5vSko.mBvOK5FiqUT6s5ZpsV5RrzFkDZwEQvOPmg2', '2026-02-23 22:05:49.66033+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-03-23 23:45:08.074799+00', '{"provider": "email", "providers": ["email"]}', '{"email_verified": true}', NULL, '2026-02-23 22:05:49.635377+00', '2026-03-23 23:45:08.077608+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
 
 
