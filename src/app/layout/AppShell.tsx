@@ -9,7 +9,7 @@ import { useLocationManagement } from '@features/locations/hooks/useLocationMana
 import { useToasts, toastStore } from '@shared/toast/toastStore';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 
-import { Dashboard } from '@features/dashboard/Dashboard';
+import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { LocationPopup, type LocationPopupVariant } from '@features/locations/components/LocationPopup';
 import { type User, type Shift, type Location } from '@shared/types';
@@ -17,8 +17,8 @@ import { type User, type Shift, type Location } from '@shared/types';
 /**
  * --- APP SHELL (Main Layout) ---
  * This component defines the structure for all logged-in pages.
- * It contains the Sidebar (Dashboard) and the Main content area (Outlet).
- * 
+ * It contains the persistent Sidebar and the Main content area (Outlet).
+ *
  * Logic:
  * It also manages global popups like the Location Confirmation modal.
  */
@@ -95,8 +95,8 @@ export function AppShell() {
 
   return (
     <div className="App min-h-dvh w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
-      {/* SIDEBAR NAVIGATION */}
-      <Dashboard onLocationSelect={handleLocationSelect} />
+      {/* SIDEBAR — persistent dispatch board / navigation (desktop) + header (mobile) */}
+      <Sidebar onLocationSelect={handleLocationSelect} />
 
       {/* MAIN CONTENT AREA — bottom padding clears the mobile tab bar (+ the
           floating check-in button on Home); md+ uses the sidebar instead. */}
@@ -117,6 +117,7 @@ export function AppShell() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               role="alert"
+              className="w-full"
             >
               <div className="flex items-start gap-3 bg-red-500 text-white rounded-2xl px-4 py-3 shadow-2xl shadow-red-500/30">
                 <WarningCircleIcon weight="fill" className="w-5 h-5 shrink-0 mt-0.5" />
