@@ -6,8 +6,8 @@ import {
     UsersIcon,
     PlusIcon,
     PaperPlaneTiltIcon,
-    MagnifyingGlassIcon,
 } from '@phosphor-icons/react';
+import { SearchInput } from '@shared/components/SearchInput';
 import type { Organization, Profile } from '@/shared/types';
 
 import { useAuthContext } from '@/features/auth/AuthContext';
@@ -217,16 +217,14 @@ function AdminPanel() {
                     })}
                 </div>
 
-                <div className="relative w-full md:w-64">
-                    <input
-                        type="text"
-                        placeholder={t('admin.search', { what: safeTab === 'employees' ? t('admin.nounEmployees') : safeTab === 'locations' ? t('admin.nounLocations') : t('admin.nounOrganizations') })}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 focus:border-emerald-500/50 rounded-xl py-2 pl-9 pr-4 text-micro outline-none transition-all dark:text-white"
-                    />
-                    <MagnifyingGlassIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                </div>
+                <SearchInput
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder={t('admin.search', { what: safeTab === 'employees' ? t('admin.nounEmployees') : safeTab === 'locations' ? t('admin.nounLocations') : t('admin.nounOrganizations') })}
+                    className="w-full md:w-64"
+                    inputClassName="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 focus:border-emerald-500/50 rounded-xl py-2 pl-9 pr-4 text-micro outline-none transition-all dark:text-white"
+                    iconClassName="left-3 top-2.5"
+                />
             </div>
 
             {/* --- CONTENT AREA --- */}
