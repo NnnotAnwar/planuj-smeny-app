@@ -1,11 +1,20 @@
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { ArrowBendUpLeftIcon } from '@phosphor-icons/react';
 import { type ShiftDisplayData } from '@shared/types';
 import { getRoleBadgeColor } from '@/shared/utils/roleColors';
 
 /**
  * --- SHIFT CARDS COMPONENT ---
- * Displays a list of shifts for a specific location. 
+ * Displays a list of shifts for a specific location.
  * Shows your own shift at the top if you're there.
+ *
+ * Colour language:
+ *  - Your own active shift is always tinted in the app accent (the themeable
+ *    `emerald-*` utilities), so it re-tints with the chosen colour scheme.
+ *  - A location change ("moved") is flagged with a fixed amber accent — a left
+ *    stripe + a "Moved from …" chip — rather than recolouring the whole card.
+ *    Amber stays meaningful and distinct in every theme without fighting the
+ *    accent hue.
  */
 
 interface ShiftCardsProps {
@@ -15,12 +24,24 @@ interface ShiftCardsProps {
   onSelectUser?: (userId: string) => void; // Open a worker's profile modal.
 }
 
-// 2. ANIMATION: Define how cards should slide in and out.
+// Amber left stripe applied to any card representing a just-moved shift.
+const MOVED_STRIPE = 'border-l-4 border-l-amber-400 dark:border-l-amber-500';
+
 const itemVariants: Variants = {
   hidden: { opacity: 0, x: -20, height: 0, marginTop: 0 },
   show: { opacity: 1, x: 0, height: 'auto', marginTop: 8 },
   exit: { opacity: 0, x: 20, height: 0, marginTop: 0 },
 };
+
+/** "↪ Moved from X" chip — the single, consistent location-change indicator. */
+function MovedFrom({ from }: { from?: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-micro font-bold text-amber-600 dark:text-amber-400 mb-0.5 normal-case tracking-normal">
+      <ArrowBendUpLeftIcon weight="bold" className="w-3 h-3 shrink-0" />
+      <span className="truncate">{from ? `Moved from ${from}` : 'Moved'}</span>
+    </span>
+  );
+}
 
 export function ShiftCards({ locationName, shifts, userShift, onSelectUser }: ShiftCardsProps) {
   const hasContent = shifts.length > 0 || userShift;
@@ -33,7 +54,7 @@ export function ShiftCards({ locationName, shifts, userShift, onSelectUser }: Sh
         opacity: hasContent ? 1 : 0,
         height: hasContent ? 'auto' : 0,
         marginBottom: hasContent ? 16 : 0,
-        display: hasContent ? 'block' : 'none'
+        display: hasContent ? 'block' : 'none',
       }}
       className="rounded-xl bg-white/40 dark:bg-white/5 backdrop-blur-md p-0 md:p-4 border border-emerald-500/10 dark:border-white/5 overflow-hidden shadow-xl shadow-emerald-500/5"
     >
@@ -67,37 +88,29 @@ export function ShiftCards({ locationName, shifts, userShift, onSelectUser }: Sh
 }
 
 /**
- * UI for YOUR OWN active shift card.
+ * UI for YOUR OWN active shift card — always accent-tinted; a move adds the amber
+ * stripe + chip instead of recolouring the whole card.
  */
 function UserShiftCard({ userShift, onSelectUser }: { userShift: NonNullable<ShiftCardsProps['userShift']>; onSelectUser?: (userId: string) => void }) {
   const isChange = !!userShift.isChangeLocation;
   const clickable = !!(onSelectUser && userShift.userId);
 
-  // Emerald/Green if standard, Yellow/Amber if location changed.
-  const bg = isChange
-    ? 'bg-linear-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/30 dark:to-amber-900/30 border-yellow-200 dark:border-yellow-500/20'
-    : 'bg-linear-to-r from-emerald-50 to-emerald-50 dark:from-emerald-900/30 dark:to-emerald-900/30 border-emerald-200 dark:border-emerald-500/20';
-
-  const box = isChange
-    ? 'bg-yellow-500 text-white shadow-md'
-    : 'bg-emerald-600 text-white shadow-md';
-
-  const label = isChange
-    ? 'text-yellow-700 dark:text-yellow-400'
-    : 'text-emerald-700 dark:text-emerald-400';
-
   return (
     <div
       onClick={clickable ? () => onSelectUser!(userShift.userId!) : undefined}
-      className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center transition-all border backdrop-blur-sm ${bg} ${clickable ? 'cursor-pointer hover:brightness-[0.98] active:scale-[0.99]' : ''}`}
+      className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center transition-all border backdrop-blur-sm bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-500/20 ${isChange ? MOVED_STRIPE : ''} ${clickable ? 'cursor-pointer hover:brightness-[0.98] active:scale-[0.99]' : ''}`}
     >
-      <div className={`flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 ${box}`}>
+      <div className="flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 bg-emerald-600 text-white shadow-md">
         <span className="text-metric-sm">{userShift.start ?? '--:--'}</span>
       </div>
 
       <div className="flex flex-1 items-center justify-between min-w-0">
         <div className="flex flex-col min-w-0">
-          <p className={`text-micro mb-0.5 ${label}`}>Your shift</p>
+          {isChange ? (
+            <MovedFrom from={userShift.previousLocationName} />
+          ) : (
+            <p className="text-micro mb-0.5 text-emerald-700 dark:text-emerald-400">Your shift</p>
+          )}
           <p className="truncate text-body-strong text-gray-900 dark:text-white leading-tight">{userShift.name}</p>
         </div>
 
@@ -110,40 +123,26 @@ function UserShiftCard({ userShift, onSelectUser }: { userShift: NonNullable<Shi
 }
 
 /**
- * UI for a COLLEAGUE'S shift card.
+ * UI for a COLLEAGUE'S shift card — neutral surface (never accent, to avoid being
+ * mistaken for your own), with the same amber move indicator.
  */
 function AssignedShiftCard({ shift, onSelectUser }: { shift: ShiftDisplayData; onSelectUser?: (userId: string) => void }) {
-  const isChange = !!shift.isChangeLocation;
+  const isChange = !!(shift.isChangeLocation || shift.previousLocationName);
   const clickable = !!(onSelectUser && shift.userId);
-
-  // Colleagues are ALWAYS standard (white/gray) to avoid confusion with the user.
-  const bg = 'bg-white/80 dark:bg-white/5 border-white dark:border-white/5';
-  const box = 'bg-linear-to-br from-gray-400 to-gray-500 dark:from-gray-700 dark:to-gray-800';
-  const nameLabel = 'text-gray-800 dark:text-white';
 
   return (
     <div
       onClick={clickable ? () => onSelectUser!(shift.userId!) : undefined}
-      className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center backdrop-blur-sm transition-all border ${bg} ${clickable ? 'cursor-pointer hover:brightness-[0.98] active:scale-[0.99]' : ''}`}
+      className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center backdrop-blur-sm transition-all border bg-white/80 dark:bg-white/5 border-white dark:border-white/5 ${isChange ? MOVED_STRIPE : ''} ${clickable ? 'cursor-pointer hover:brightness-[0.98] active:scale-[0.99]' : ''}`}
     >
-      <div className={`flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 text-white shadow-xs ${box}`}>
+      <div className="flex items-center justify-center shrink-0 rounded-lg w-12 h-10 md:h-11 text-white shadow-xs bg-linear-to-br from-gray-400 to-gray-500 dark:from-gray-700 dark:to-gray-800">
         <span className="text-metric-sm">{shift.start ?? '--:--'}</span>
       </div>
 
       <div className="flex flex-1 items-center justify-between min-w-0">
         <div className="flex flex-col min-w-0">
-          {shift.previousLocationName && (
-            <div className="flex items-center flex-wrap gap-1 text-micro text-amber-600 dark:text-amber-500 mb-0.5">
-              <svg className="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M11 17l-5-5 5-5" />
-              </svg>
-              <span>{shift.previousLocationName}</span>
-            </div>
-          )}
-          {!shift.previousLocationName && isChange && (
-            <span className="text-micro text-emerald-600 dark:text-emerald-400 mb-0.5">Moved</span>
-          )}
-          <p className={`truncate text-body-strong leading-tight ${nameLabel}`}>{shift.name}</p>
+          {isChange && <MovedFrom from={shift.previousLocationName} />}
+          <p className="truncate text-body-strong leading-tight text-gray-800 dark:text-white">{shift.name}</p>
         </div>
 
         <div className={`shrink-0 ml-2 rounded-full px-2.5 py-1 text-micro shadow-xs ${getRoleBadgeColor(shift.role)}`}>
