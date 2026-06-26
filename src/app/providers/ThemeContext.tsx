@@ -23,8 +23,6 @@ type Gradient = readonly [from: string, via: string, to: string];
 
 interface Combo {
     label: string;
-    /** Swatch colours for the picker preview (accent | main bg | light bg). */
-    swatch: { accent: string; main: string; light: string };
     /** 11-shade accent palette that overrides `--color-emerald-*`. */
     accent: Palette;
     gradient: { light: Gradient; dark: Gradient };
@@ -37,7 +35,6 @@ interface Combo {
 export const COMBOS: Record<ComboKey, Combo> = {
     'emerald-slate-snow': {
         label: 'Emerald Slate Snow',
-        swatch: { accent: '#10b981', main: '#475569', light: '#f8fafc' },
         accent: {
             '50': '#ecfdf5', '100': '#d1fae5', '200': '#a7f3d0', '300': '#6ee7b7', '400': '#34d399',
             '500': '#10b981', '600': '#059669', '700': '#047857', '800': '#065f46', '900': '#064e3b', '950': '#022c22',
@@ -46,7 +43,6 @@ export const COMBOS: Record<ComboKey, Combo> = {
     },
     'cyan-obsidian': {
         label: 'Cyan Obsidian',
-        swatch: { accent: '#00F5D4', main: '#0D0E15', light: '#e0f2fe' },
         accent: {
             '50': '#ecfeff', '100': '#cffafe', '200': '#a5f3fc', '300': '#67e8f9', '400': '#22d3ee',
             '500': '#00F5D4', '600': '#00b8a0', '700': '#008f7a', '800': '#006b5c', '900': '#004d44', '950': '#002e2a',
@@ -55,7 +51,6 @@ export const COMBOS: Record<ComboKey, Combo> = {
     },
     'amber-obsidian': {
         label: 'Amber Chocolate',
-        swatch: { accent: '#FFB703', main: '#161412', light: '#f8f1e3' },
         accent: {
             '50': '#fffbeb', '100': '#fff3d1', '200': '#ffe9a8', '300': '#ffdc72', '400': '#ffcf3d',
             '500': '#FFB703', '600': '#e69c00', '700': '#c27f00', '800': '#9c6500', '900': '#714a00', '950': '#3f2900',
@@ -64,7 +59,6 @@ export const COMBOS: Record<ComboKey, Combo> = {
     },
     'violet-graphite-pearl': {
         label: 'Violet Ink',
-        swatch: { accent: '#9D4EDD', main: '#0F0C1B', light: '#f5f0ff' },
         accent: {
             '50': '#f5f0ff', '100': '#ede0ff', '200': '#e0c8ff', '300': '#c89eff', '400': '#b57ae8',
             '500': '#9D4EDD', '600': '#7c3bb8', '700': '#5e2a8f', '800': '#4a216f', '900': '#381b54', '950': '#221035',
@@ -73,10 +67,12 @@ export const COMBOS: Record<ComboKey, Combo> = {
     },
 };
 
+/** Picker metadata derived from COMBOS: label, accent colour and both gradients. */
 export const COMBO_LIST = (Object.keys(COMBOS) as ComboKey[]).map((key) => ({
     key,
     label: COMBOS[key].label,
-    swatch: COMBOS[key].swatch,
+    accent: COMBOS[key].accent['500'],
+    gradient: COMBOS[key].gradient,
 }));
 
 const DEFAULT_COMBO: ComboKey = 'emerald-slate-snow';

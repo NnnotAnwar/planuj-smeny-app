@@ -1,4 +1,4 @@
-import { PaletteIcon } from '@phosphor-icons/react';
+import { PaletteIcon, CheckIcon } from '@phosphor-icons/react';
 import { useTheme, COMBO_LIST } from '@app/providers/ThemeContext';
 
 /**
@@ -48,39 +48,56 @@ export default function SettingsPage() {
 
           <div className="border-t border-gray-100 dark:border-gray-800" />
 
-          {/* Color combinations: accent + main bg + light bg (4 variants) */}
+          {/* Color scheme — live mini-previews of each accent + background. */}
           <div className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-body-strong text-gray-900 dark:text-white">Color combo</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-body-strong text-gray-900 dark:text-white">Color scheme</p>
               <span className="text-micro text-gray-400">{activeLabel}</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              {COMBO_LIST.map(({ key, label, swatch }) => {
+            <div className="grid grid-cols-2 gap-3">
+              {COMBO_LIST.map(({ key, label, accent, gradient }) => {
                 const isActive = comboKey === key;
+                const [from, via, to] = isDark ? gradient.dark : gradient.light;
                 return (
                   <button
                     key={key}
                     onClick={() => setComboKey(key)}
-                    className="group flex flex-col items-center gap-1 focus:outline-none"
                     title={label}
                     aria-pressed={isActive}
+                    className={`group rounded-2xl p-1 transition-all focus:outline-none ${
+                      isActive
+                        ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900'
+                        : 'hover:scale-[1.02]'
+                    }`}
                   >
+                    {/* Preview tile: the scheme's real gradient + a faux card and accent button. */}
                     <div
-                      className={`w-full h-8 rounded-2xl overflow-hidden flex border border-black/5 dark:border-white/10 shadow-sm transition-all ${isActive ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ring-emerald-500' : 'group-hover:scale-[1.02]'}`}
+                      className="relative h-20 rounded-xl overflow-hidden border border-black/5 dark:border-white/10"
+                      style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${via}, ${to})` }}
                     >
-                      <div className="flex-1" style={{ backgroundColor: swatch.accent }} />
-                      <div className="flex-1" style={{ backgroundColor: swatch.main }} />
-                      <div className="flex-1" style={{ backgroundColor: swatch.light }} />
+                      <div className="absolute inset-2 rounded-lg bg-white/75 dark:bg-white/10 backdrop-blur-sm p-2 flex flex-col gap-1.5">
+                        <span className="h-1.5 w-7 rounded-full" style={{ backgroundColor: accent }} />
+                        <span className="h-1 w-11 rounded-full bg-gray-400/40" />
+                        <span className="mt-auto h-3 w-9 rounded-md" style={{ backgroundColor: accent }} />
+                      </div>
+                      {isActive && (
+                        <span
+                          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white shadow-md"
+                          style={{ backgroundColor: accent }}
+                        >
+                          <CheckIcon weight="bold" className="w-3 h-3" />
+                        </span>
+                      )}
                     </div>
-                    <span className={`text-micro text-center ${isActive ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-400 group-hover:text-gray-500'}`}>
+                    <span className={`block mt-1.5 text-center text-micro ${isActive ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-gray-400 group-hover:text-gray-500'}`}>
                       {label}
                     </span>
                   </button>
                 );
               })}
             </div>
-            <p className="mt-2 text-caption text-gray-400">Changes accent + bg gradient for the app.</p>
+            <p className="mt-3 text-caption text-gray-400">Sets the accent color and background across the app.</p>
           </div>
         </div>
       </div>
