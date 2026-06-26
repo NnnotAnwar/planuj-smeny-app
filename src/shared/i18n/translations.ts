@@ -145,6 +145,10 @@ export const en = {
     'location.showLess': 'Show Less',
     'location.alreadyHere': "You're already here",
     'location.workingAt': 'Working at {location}',
+    'location.recent': 'Recent',
+    'location.allPosts': 'All locations',
+    'location.change': 'Change location',
+    'location.select': 'Select a location',
 
     // Admin / requests / timesheets (shared)
     'admin.administration': 'Administration',
@@ -475,6 +479,10 @@ export const cs: Record<TranslationKey, string> = {
     'location.showLess': 'Zobrazit méně',
     'location.alreadyHere': 'Už jste tady',
     'location.workingAt': 'Pracujete na {location}',
+    'location.recent': 'Nedávné',
+    'location.allPosts': 'Všechna místa',
+    'location.change': 'Změnit místo',
+    'location.select': 'Vyberte místo',
 
     'admin.administration': 'Administrace',
     'requests.pending': '{count} čeká',
