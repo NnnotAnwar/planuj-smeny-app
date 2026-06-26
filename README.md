@@ -5,7 +5,7 @@ and out by location in real time; managers and admins oversee organizations,
 locations, people and requests — on the web or as a native Android/iOS app.
 
 > **Status: active development (beta).** Features and UI change frequently.
-> _Last updated: June 24, 2026._
+> _Last updated: June 26, 2026._
 
 ---
 
