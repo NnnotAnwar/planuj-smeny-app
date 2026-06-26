@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { shiftService } from '../shiftService';
 import { toast } from '@shared/toast/toastStore';
-import { type Shift, type ShiftWithProfile, type User } from '@shared/types';
+import { type Shift, type ShiftWithProfile, type User, type Location } from '@shared/types';
 import { shiftKeys } from '../shiftKeys';
 import type { ActiveShiftStatus } from '../shiftService';
 
@@ -58,8 +58,8 @@ export function useShiftMutations(user: User | null) {
             // Optimistic status for profile badges (with location name from cache if available)
             let locName: string | null = null;
             if (locationsKey) {
-                const locs = qc.getQueryData<any[]>(locationsKey) || [];
-                const found = locs.find((l: any) => l.id === locationId);
+                const locs = qc.getQueryData<Location[] | undefined>(locationsKey) || [];
+                const found = locs.find((l: Location) => l.id === locationId);
                 locName = found?.name ?? null;
             }
             const optimisticStatus = {
@@ -142,8 +142,8 @@ export function useShiftMutations(user: User | null) {
             if (user && prevStatus) {
                 let locName: string | null = prevStatus.location_name;
                 if (locationsKey) {
-                    const locs = qc.getQueryData<any[]>(locationsKey) || [];
-                    const found = locs.find((l: any) => l.id === newLocationId);
+                    const locs = qc.getQueryData<Location[] | undefined>(locationsKey) || [];
+                    const found = locs.find((l: Location) => l.id === newLocationId);
                     locName = found?.name ?? locName;
                 }
                 qc.setQueryData(['shift-status', user.id], {
