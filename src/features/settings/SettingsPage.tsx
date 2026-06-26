@@ -1,8 +1,23 @@
-import { CheckIcon } from '@phosphor-icons/react';
+import {
+  CheckIcon,
+  InfoIcon,
+  LifebuoyIcon,
+  ShieldCheckIcon,
+  FileTextIcon,
+  ArrowSquareOutIcon,
+} from '@phosphor-icons/react';
 import { useTheme, COMBO_LIST } from '@app/providers/ThemeContext';
 import { usePreferences } from '@shared/preferences/PreferencesContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { LANGUAGES } from '@shared/i18n/translations';
+
+const APP_NAME = 'Planuj Směny';
+const APP_VERSION = '1.5.0';
+
+// TODO: replace with the real support address and published policy URLs.
+const SUPPORT_EMAIL = 'support@planujsmeny.app';
+const PRIVACY_URL = 'https://planujsmeny.app/privacy';
+const TERMS_URL = 'https://planujsmeny.app/terms';
 
 /**
  * --- SETTINGS PAGE ---
@@ -56,6 +71,24 @@ function Setting({ label, hint, children }: { label: string; hint?: string; chil
       {children}
       {hint && <p className="text-caption text-gray-400">{hint}</p>}
     </div>
+  );
+}
+
+/** A tappable row that opens an external link (or mailto) in the system browser. */
+function LinkRow({ icon, label, href }: { icon: React.ReactNode; label: string; href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+    >
+      <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
+        {icon}
+      </div>
+      <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{label}</span>
+      <ArrowSquareOutIcon weight="bold" className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" />
+    </a>
   );
 }
 
@@ -185,10 +218,36 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="pt-2 text-center">
-        <p className="text-micro text-gray-300 dark:text-gray-600">
-          {t('settings.version', { version: '1.5.0', year: 2026 })}
-        </p>
+      {/* ABOUT — app info, support & legal */}
+      <div className="space-y-2">
+        <h3 className="px-1 text-label text-gray-400">{t('settings.about')}</h3>
+        <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
+          <div className="flex items-center gap-3 p-4">
+            <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
+              <InfoIcon weight="bold" className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-body-strong text-gray-900 dark:text-white">{APP_NAME}</p>
+              <p className="text-micro text-gray-400">{t('settings.version', { version: APP_VERSION, year: 2026 })}</p>
+            </div>
+          </div>
+
+          <LinkRow
+            icon={<LifebuoyIcon weight="bold" className="w-4 h-4" />}
+            label={t('settings.support')}
+            href={`mailto:${SUPPORT_EMAIL}`}
+          />
+          <LinkRow
+            icon={<ShieldCheckIcon weight="bold" className="w-4 h-4" />}
+            label={t('settings.privacy')}
+            href={PRIVACY_URL}
+          />
+          <LinkRow
+            icon={<FileTextIcon weight="bold" className="w-4 h-4" />}
+            label={t('settings.terms')}
+            href={TERMS_URL}
+          />
+        </div>
       </div>
     </div>
   );

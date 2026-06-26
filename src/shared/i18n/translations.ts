@@ -46,6 +46,14 @@ export const en = {
     'settings.defaultLocation.none': 'No default',
     'settings.defaultLocation.hint': 'Pre-selected when you open the app to start a shift.',
     'settings.version': 'Version {version} • {year}',
+
+    // About / Support / Legal
+    'settings.about': 'About',
+    'settings.about.app': 'App',
+    'settings.support': 'Contact support',
+    'settings.support.hint': 'Questions or problems? We usually reply within a day.',
+    'settings.privacy': 'Privacy Policy',
+    'settings.terms': 'Terms of Service',
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -86,6 +94,13 @@ export const cs: Record<TranslationKey, string> = {
     'settings.defaultLocation.none': 'Bez výchozího',
     'settings.defaultLocation.hint': 'Předvybráno při otevření aplikace pro zahájení směny.',
     'settings.version': 'Verze {version} • {year}',
+
+    'settings.about': 'O aplikaci',
+    'settings.about.app': 'Aplikace',
+    'settings.support': 'Kontaktovat podporu',
+    'settings.support.hint': 'Dotazy nebo potíže? Obvykle odpovídáme do jednoho dne.',
+    'settings.privacy': 'Zásady ochrany osobních údajů',
+    'settings.terms': 'Podmínky použití',
 };
 
 export const translations = { en, cs };
