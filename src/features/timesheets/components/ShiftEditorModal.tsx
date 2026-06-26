@@ -4,6 +4,7 @@ import { TimePicker } from '@shared/components/TimePicker';
 import { DatePicker } from '@shared/components/DatePicker';
 import type { Location, Shift, Profile } from '@shared/types';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { buildShiftDates } from '../shiftTimes';
 
 /**
  * --- SHIFT EDITOR MODAL ---
@@ -79,9 +80,7 @@ export function ShiftEditorModal({
         setError(null);
         if (!locationId) return setError(t('shiftEditor.chooseLocation'));
 
-        const startDate = new Date(`${date}T${start}:00`);
-        let endDate = new Date(`${date}T${end}:00`);
-        if (endDate <= startDate) endDate = new Date(endDate.getTime() + 24 * 60 * 60 * 1000);
+        const { startDate, endDate } = buildShiftDates(date, start, end);
 
         setBusy(true);
         try {
