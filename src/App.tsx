@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './features/auth/AuthContext';
 import { ShiftProvider } from './features/shifts/ShiftContext';
 import { ThemeProvider } from './app/providers/ThemeContext';
+import { PreferencesProvider } from './shared/preferences/PreferencesContext';
 
 // Single shared React Query client (caching, dedupe, retries for server state).
 const queryClient = new QueryClient({
@@ -51,6 +52,7 @@ export default function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
        <ThemeProvider>
+        <PreferencesProvider>
         <AuthProvider>
           <ShiftProvider>
             <Suspense fallback={<PageLoader />}>
@@ -89,6 +91,7 @@ export default function App() {
             </Suspense>
           </ShiftProvider>
         </AuthProvider>
+        </PreferencesProvider>
        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>

@@ -1,0 +1,92 @@
+import React, { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState } from 'react';
+import { translations, type Language, type TranslationKey } from '@shared/i18n/translations';
+import { setTimeFormatPreference, type TimeFormat } from '@shared/utils/date';
+
+/**
+ * --- PREFERENCES CONTEXT ---
+ * Device-level user preferences that aren't visual theme: UI language, time
+ * format and the default clock-in location. Persisted in localStorage and
+ * exposes `t()` for translations.
+ */
+
+interface PreferencesContextType {
+    language: Language;
+    setLanguage: (lang: Language) => void;
+    timeFormat: TimeFormat;
+    setTimeFormat: (format: TimeFormat) => void;
+    defaultLocationId: string | null;
+    setDefaultLocationId: (id: string | null) => void;
+    /** Translate a key, with optional `{placeholder}` interpolation. */
+    t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
+}
+
+const STORAGE = { language: 'language', timeFormat: 'time-format', defaultLocation: 'default-location-id' } as const;
+
+function readLanguage(): Language {
+    const v = localStorage.getItem(STORAGE.language);
+    return v === 'en' || v === 'cs' ? v : 'en';
+}
+function readTimeFormat(): TimeFormat {
+    return localStorage.getItem(STORAGE.timeFormat) === '12h' ? '12h' : '24h';
+}
+
+const PreferencesContext = createContext<PreferencesContextType | undefined>(undefined);
+
+export function PreferencesProvider({ children }: { children: React.ReactNode }) {
+    const [language, setLanguageState] = useState<Language>(readLanguage);
+    const [timeFormat, setTimeFormatState] = useState<TimeFormat>(readTimeFormat);
+    const [defaultLocationId, setDefaultLocationIdState] = useState<string | null>(
+        () => localStorage.getItem(STORAGE.defaultLocation),
+    );
+
+    // Keep the formatTime module preference in sync (before paint).
+    useLayoutEffect(() => {
+        setTimeFormatPreference(timeFormat);
+    }, [timeFormat]);
+
+    const setLanguage = useCallback((lang: Language) => {
+        localStorage.setItem(STORAGE.language, lang);
+        setLanguageState(lang);
+    }, []);
+
+    const setTimeFormat = useCallback((format: TimeFormat) => {
+        localStorage.setItem(STORAGE.timeFormat, format);
+        setTimeFormatState(format);
+    }, []);
+
+    const setDefaultLocationId = useCallback((id: string | null) => {
+        if (id) localStorage.setItem(STORAGE.defaultLocation, id);
+        else localStorage.removeItem(STORAGE.defaultLocation);
+        setDefaultLocationIdState(id);
+    }, []);
+
+    const t = useCallback<PreferencesContextType['t']>(
+        (key, vars) => {
+            const dict = translations[language] ?? translations.en;
+            let str: string = dict[key] ?? translations.en[key] ?? key;
+            if (vars) {
+                for (const [k, v] of Object.entries(vars)) str = str.replaceAll(`{${k}}`, String(v));
+            }
+            return str;
+        },
+        [language],
+    );
+
+    const value = useMemo(
+        () => ({ language, setLanguage, timeFormat, setTimeFormat, defaultLocationId, setDefaultLocationId, t }),
+        [language, setLanguage, timeFormat, setTimeFormat, defaultLocationId, setDefaultLocationId, t],
+    );
+
+    return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
+}
+
+export function usePreferences() {
+    const ctx = useContext(PreferencesContext);
+    if (ctx === undefined) throw new Error('usePreferences must be used within a PreferencesProvider');
+    return ctx;
+}
+
+/** Convenience hook for components that only need translation. */
+export function useTranslation() {
+    return usePreferences().t;
+}

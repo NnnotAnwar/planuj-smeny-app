@@ -19,6 +19,7 @@ import {
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useTheme } from '@app/providers/ThemeContext';
 import { usePermissions } from '@shared/auth/usePermissions';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
 
 function getInitials(firstName?: string | null, lastName?: string | null): string {
@@ -67,21 +68,22 @@ export function BottomNav() {
             : user?.username ?? '';
 
     const { canViewAdminPanel, canManageEmployees: isAdmin } = usePermissions();
+    const t = useTranslation();
     const pending = usePendingNameRequestCount();
 
     // Primary bar destinations.
     const items: NavItem[] = [
-        { name: 'Home', icon: SquaresFourIcon, route: '/' },
-        { name: 'Overview', icon: ChartBarIcon, route: '/overview' },
-        ...(canViewAdminPanel ? [{ name: 'Admin', icon: ShieldCheckIcon, route: '/admin' }] : []),
+        { name: t('nav.home'), icon: SquaresFourIcon, route: '/' },
+        { name: t('nav.overview'), icon: ChartBarIcon, route: '/overview' },
+        ...(canViewAdminPanel ? [{ name: t('nav.admin'), icon: ShieldCheckIcon, route: '/admin' }] : []),
     ];
 
     // Destinations that live inside the "More" sheet.
     const moreItems: NavItem[] = [
-        ...(canViewAdminPanel ? [{ name: 'Timesheets', icon: ClockUserIcon, route: '/timesheets' }] : []),
-        ...(isAdmin ? [{ name: 'Requests', icon: UserCircleGearIcon, route: '/requests' }] : []),
-        ...(isAdmin ? [{ name: 'Activity Log', icon: ClockCounterClockwiseIcon, route: '/activity' }] : []),
-        { name: 'Settings', icon: GearIcon, route: '/settings' },
+        ...(canViewAdminPanel ? [{ name: t('nav.timesheets'), icon: ClockUserIcon, route: '/timesheets' }] : []),
+        ...(isAdmin ? [{ name: t('nav.requests'), icon: UserCircleGearIcon, route: '/requests' }] : []),
+        ...(isAdmin ? [{ name: t('nav.activity'), icon: ClockCounterClockwiseIcon, route: '/activity' }] : []),
+        { name: t('nav.settings'), icon: GearIcon, route: '/settings' },
     ];
 
     // When the sheet is open only "More" is lit; otherwise it's lit on its routes.
@@ -110,7 +112,7 @@ export function BottomNav() {
                     >
                         {/* Header — just "Menu", no logo */}
                         <div className="flex justify-between items-center px-5 h-14 shrink-0 border-b border-gray-200/70 dark:border-white/5">
-                            <h2 className="text-title text-gray-900 dark:text-white">Menu</h2>
+                            <h2 className="text-title text-gray-900 dark:text-white">{t('nav.menu')}</h2>
                             <button
                                 onClick={() => setMenuOpen(false)}
                                 aria-label="Close menu"
@@ -190,7 +192,7 @@ export function BottomNav() {
                                 className="flex w-full items-center justify-center gap-2 py-3.5 rounded-2xl text-body-strong text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/20 active:scale-[0.99] transition-all"
                             >
                                 <SignOutIcon weight="bold" className="w-5 h-5" />
-                                Log out
+                                {t('nav.logout')}
                             </button>
                         </motion.div>
                     </motion.div>
@@ -227,13 +229,13 @@ export function BottomNav() {
                     <button
                         onClick={() => setMenuOpen((v) => !v)}
                         aria-expanded={menuOpen}
-                        aria-label="More"
+                        aria-label={t('nav.more')}
                         className={`relative flex flex-col items-center justify-center gap-1 flex-1 min-w-0 active:scale-95 transition-transform ${
                             moreActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'
                         }`}
                     >
                         <DotsThreeOutlineIcon weight={moreActive ? 'fill' : 'regular'} className="w-6 h-6" />
-                        <span className="text-caption">More</span>
+                        <span className="text-caption">{t('nav.more')}</span>
                         {!menuOpen && moreBadge > 0 && (
                             <span className="absolute top-1.5 right-[calc(50%-1.25rem)] min-w-4 h-4 px-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">
                                 {moreBadge}

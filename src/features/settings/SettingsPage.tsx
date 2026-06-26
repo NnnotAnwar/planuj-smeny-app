@@ -1,57 +1,101 @@
-import { PaletteIcon, CheckIcon } from '@phosphor-icons/react';
+import { CheckIcon } from '@phosphor-icons/react';
 import { useTheme, COMBO_LIST } from '@app/providers/ThemeContext';
+import { usePreferences } from '@shared/preferences/PreferencesContext';
+import { useShiftContext } from '@features/shifts/ShiftContext';
+import { LANGUAGES } from '@shared/i18n/translations';
 
 /**
  * --- SETTINGS PAGE ---
- * Appearance only: dark mode + colour-scheme picker. Each scheme overrides the
- * accent palette and the background gradient (see ThemeContext for the source
- * of truth — including the swatch colours rendered below).
+ * Device preferences: appearance (theme + colour scheme), language, time format
+ * and the default clock-in location. Profile editing lives on the Profile page.
  */
 
 const cardClass =
   'bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm';
 
+const fieldClass =
+  'w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none text-gray-900 dark:text-white transition-colors';
+
+/** iOS-style segmented control for small, mutually exclusive choices. */
+function Segmented<T extends string>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string }[];
+}) {
+  return (
+    <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
+      {options.map((o) => {
+        const active = o.value === value;
+        return (
+          <button
+            key={o.value}
+            onClick={() => onChange(o.value)}
+            aria-pressed={active}
+            className={`flex-1 px-3 py-1.5 rounded-lg text-small-strong transition-colors ${
+              active
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Setting({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="p-4 space-y-2">
+      <p className="text-body-strong text-gray-900 dark:text-white">{label}</p>
+      {children}
+      {hint && <p className="text-caption text-gray-400">{hint}</p>}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
-  const { resolvedTheme, setTheme, comboKey, setComboKey } = useTheme();
+  const { theme, setTheme, resolvedTheme, comboKey, setComboKey } = useTheme();
+  const { language, setLanguage, timeFormat, setTimeFormat, defaultLocationId, setDefaultLocationId, t } =
+    usePreferences();
+  const { locations } = useShiftContext();
   const isDark = resolvedTheme === 'dark';
+
   const activeLabel = COMBO_LIST.find((o) => o.key === comboKey)?.label;
+  const pickableLocations = locations.filter((l) => !l.archived_at);
 
   return (
     <div className="space-y-4 px-1 pb-10">
       <header className="pt-2 space-y-0.5">
-        <p className="text-label text-emerald-500 text-left">Preferences</p>
-        <h1 className="text-display text-gray-900 dark:text-white">Settings</h1>
+        <p className="text-label text-emerald-500 text-left">{t('settings.preferences')}</p>
+        <h1 className="text-display text-gray-900 dark:text-white">{t('settings.title')}</h1>
       </header>
 
-      {/* APPEARANCE — only section. Dark mode + accent color picker */}
+      {/* APPEARANCE — theme + colour scheme */}
       <div className="space-y-2">
-        <h3 className="px-1 text-label text-gray-400">Appearance</h3>
-        <div className={`${cardClass} overflow-hidden`}>
-          {/* Dark mode toggle */}
-          <button
-            onClick={() => setTheme(isDark ? 'light' : 'dark')}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-left"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
-                <PaletteIcon weight="bold" className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-body-strong text-gray-900 dark:text-white">Dark mode</p>
-                <p className="text-micro text-gray-400">{isDark ? 'Enabled' : 'Disabled'}</p>
-              </div>
-            </div>
-            <span className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${isDark ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${isDark ? 'translate-x-5' : ''}`} />
-            </span>
-          </button>
-
-          <div className="border-t border-gray-100 dark:border-gray-800" />
+        <h3 className="px-1 text-label text-gray-400">{t('settings.appearance')}</h3>
+        <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
+          <Setting label={t('settings.theme')}>
+            <Segmented
+              value={theme}
+              onChange={setTheme}
+              options={[
+                { value: 'system', label: t('settings.theme.system') },
+                { value: 'light', label: t('settings.theme.light') },
+                { value: 'dark', label: t('settings.theme.dark') },
+              ]}
+            />
+          </Setting>
 
           {/* Color scheme — live mini-previews of each accent + background. */}
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-body-strong text-gray-900 dark:text-white">Color scheme</p>
+              <p className="text-body-strong text-gray-900 dark:text-white">{t('settings.colorScheme')}</p>
               <span className="text-micro text-gray-400">{activeLabel}</span>
             </div>
 
@@ -71,7 +115,6 @@ export default function SettingsPage() {
                         : 'hover:scale-[1.02]'
                     }`}
                   >
-                    {/* Preview tile: the scheme's real gradient + a faux card and accent button. */}
                     <div
                       className="relative h-20 rounded-xl overflow-hidden border border-black/5 dark:border-white/10"
                       style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${via}, ${to})` }}
@@ -97,13 +140,55 @@ export default function SettingsPage() {
                 );
               })}
             </div>
-            <p className="mt-3 text-caption text-gray-400">Sets the accent color and background across the app.</p>
+            <p className="mt-3 text-caption text-gray-400">{t('settings.colorScheme.hint')}</p>
           </div>
         </div>
       </div>
 
+      {/* GENERAL — language, time format, default location */}
+      <div className="space-y-2">
+        <h3 className="px-1 text-label text-gray-400">{t('settings.preferences')}</h3>
+        <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
+          <Setting label={t('settings.language')}>
+            <Segmented
+              value={language}
+              onChange={setLanguage}
+              options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
+            />
+          </Setting>
+
+          <Setting label={t('settings.timeFormat')} hint={t('settings.timeFormat.hint')}>
+            <Segmented
+              value={timeFormat}
+              onChange={setTimeFormat}
+              options={[
+                { value: '24h', label: t('settings.timeFormat.24h') },
+                { value: '12h', label: t('settings.timeFormat.12h') },
+              ]}
+            />
+          </Setting>
+
+          <Setting label={t('settings.defaultLocation')} hint={t('settings.defaultLocation.hint')}>
+            <select
+              value={defaultLocationId ?? ''}
+              onChange={(e) => setDefaultLocationId(e.target.value || null)}
+              className={fieldClass}
+            >
+              <option value="">{t('settings.defaultLocation.none')}</option>
+              {pickableLocations.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </Setting>
+        </div>
+      </div>
+
       <div className="pt-2 text-center">
-        <p className="text-micro text-gray-300 dark:text-gray-600">Version 1.0.5 • 2026</p>
+        <p className="text-micro text-gray-300 dark:text-gray-600">
+          {t('settings.version', { version: '1.5.0', year: 2026 })}
+        </p>
       </div>
     </div>
   );

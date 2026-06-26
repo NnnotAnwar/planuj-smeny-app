@@ -8,6 +8,7 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { LocationSelection } from '@features/locations/components/LocationSelection';
 import { usePermissions } from '@shared/auth/usePermissions';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
 import { NotificationsBell } from '@features/notifications/NotificationsBell';
 
@@ -32,16 +33,17 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
   const { user, logout } = useAuthContext();
   const { locations, selectedLocationId } = useShiftContext();
   const { canViewAdminPanel, canManageEmployees } = usePermissions();
+  const t = useTranslation();
 
   const pendingRequests = usePendingNameRequestCount();
   const navItems: { name: string; icon: Icon; route: string; badge?: number }[] = [
-    { name: 'Dashboard', icon: SquaresFourIcon, route: '/' },
-    { name: 'Overview', icon: ChartBarIcon, route: '/overview' },
-    ...(canViewAdminPanel ? [{ name: 'Admin Panel', icon: ShieldCheckIcon, route: '/admin' }] : []),
-    ...(canViewAdminPanel ? [{ name: 'Timesheets', icon: ClockUserIcon, route: '/timesheets' }] : []),
-    ...(canManageEmployees ? [{ name: 'Requests', icon: UserCircleGearIcon, route: '/requests', badge: pendingRequests }] : []),
-    ...(canManageEmployees ? [{ name: 'Activity Log', icon: ClockCounterClockwiseIcon, route: '/activity' }] : []),
-    { name: 'Settings', icon: GearIcon, route: '/settings' }
+    { name: t('nav.dashboard'), icon: SquaresFourIcon, route: '/' },
+    { name: t('nav.overview'), icon: ChartBarIcon, route: '/overview' },
+    ...(canViewAdminPanel ? [{ name: t('nav.adminPanel'), icon: ShieldCheckIcon, route: '/admin' }] : []),
+    ...(canViewAdminPanel ? [{ name: t('nav.timesheets'), icon: ClockUserIcon, route: '/timesheets' }] : []),
+    ...(canManageEmployees ? [{ name: t('nav.requests'), icon: UserCircleGearIcon, route: '/requests', badge: pendingRequests }] : []),
+    ...(canManageEmployees ? [{ name: t('nav.activity'), icon: ClockCounterClockwiseIcon, route: '/activity' }] : []),
+    { name: t('nav.settings'), icon: GearIcon, route: '/settings' }
   ];
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,7 +91,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
                 {getInitials(user.first_name, user.last_name)}
               </div>
               <div className="overflow-hidden min-w-0">
-                <p className="text-body-strong text-gray-800 dark:text-white truncate">Dobrý den, {user.first_name || user.username}!</p>
+                <p className="text-body-strong text-gray-800 dark:text-white truncate">{t('dashboard.greeting', { name: user.first_name || user.username })}</p>
                 <p className="text-micro text-emerald-600 dark:text-emerald-400 mt-0.5">{user.role.name}</p>
               </div>
             </Link>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useAuthContext } from '@features/auth/AuthContext';
+import { usePreferences } from '@shared/preferences/PreferencesContext';
 import { type Shift, type ShiftWithProfile, type Location } from '@shared/types';
 import { useShiftQueries } from './hooks/useShiftQueries';
 import { useShiftMutations } from './hooks/useShiftMutations';
@@ -41,13 +42,15 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
     useShiftRealtime(user);
     const mutations = useShiftMutations(user);
 
+    const { defaultLocationId } = usePreferences();
     const activeShiftData = activeShift.data ?? null;
 
     // When a shift is active its location is the source of truth; otherwise the
-    // selection is the user's manual pick for clocking in. Derived (no effect)
-    // so it stays in sync with the active-shift query without cascading renders.
+    // selection is the user's manual pick, falling back to their configured
+    // default clock-in location. Derived (no effect) so it stays in sync with the
+    // active-shift query without cascading renders.
     const [pickedLocationId, setPickedLocationId] = useState<string | null>(null);
-    const selectedLocationId = activeShiftData?.location_id ?? pickedLocationId;
+    const selectedLocationId = activeShiftData?.location_id ?? pickedLocationId ?? defaultLocationId;
 
     const handleStartShift = () => {
         if (!user || !selectedLocationId || mutations.startShift.isPending) return;
