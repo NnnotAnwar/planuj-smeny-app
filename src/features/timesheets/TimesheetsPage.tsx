@@ -349,18 +349,18 @@ function TimesheetsInner() {
         },
         ...(canEdit
             ? [
-                  {
-                      key: 'actions',
-                      header: '',
-                      align: 'right' as const,
-                      width: 'w-16 sm:w-24',
-                      render: (s: Shift) => (
-                          <div className="flex justify-end">
-                              <ActionButtons onEdit={() => setEditing({ shift: s })} onDelete={() => setDeleting(s)} />
-                          </div>
-                      ),
-                  },
-              ]
+                {
+                    key: 'actions',
+                    header: '',
+                    align: 'right' as const,
+                    width: 'w-16 sm:w-24',
+                    render: (s: Shift) => (
+                        <div className="flex justify-end">
+                            <ActionButtons onEdit={() => setEditing({ shift: s })} onDelete={() => setDeleting(s)} />
+                        </div>
+                    ),
+                },
+            ]
             : []),
     ];
 
@@ -451,7 +451,7 @@ function TimesheetsInner() {
                                 key: 'caret',
                                 header: '',
                                 align: 'right',
-                                width: 'w-8',
+                                width: 'w-10 sm:w-12',
                                 render: () => <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-300 inline" />,
                             },
                         ]}

@@ -83,9 +83,8 @@ export function DataTable<T>({
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`${cellPad} text-label text-gray-400 truncate ${ALIGN[col.align ?? 'left']} ${
-                  col.width ?? ''
-                } ${col.hideOnMobile ? mobileHidden : ''} ${col.headerClassName ?? ''}`}
+                className={`${cellPad} text-label text-gray-400 truncate ${ALIGN[col.align ?? 'left']} ${col.width ?? ''
+                  } ${col.hideOnMobile ? mobileHidden : ''} ${col.headerClassName ?? ''}`}
               >
                 {col.header}
               </th>
@@ -97,16 +96,14 @@ export function DataTable<T>({
             <tr
               key={rowKey(row)}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className={`transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-800/20 ${
-                onRowClick ? 'cursor-pointer' : ''
-              }`}
+              className={`transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-800/20 ${onRowClick ? 'cursor-pointer' : ''
+                }`}
             >
               {columns.map((col) => (
                 <td
                   key={col.key}
-                  className={`${cellPad} ${ALIGN[col.align ?? 'left']} ${col.width ?? ''} ${
-                    col.hideOnMobile ? mobileHidden : ''
-                  } ${col.className ?? ''}`}
+                  className={`${cellPad} ${ALIGN[col.align ?? 'left']} ${col.width ?? ''} ${col.hideOnMobile ? mobileHidden : ''
+                    } ${col.className ?? ''}`}
                 >
                   {col.render(row)}
                 </td>
@@ -120,9 +117,8 @@ export function DataTable<T>({
               {columns.map((col) => (
                 <td
                   key={col.key}
-                  className={`${cellPad} truncate ${ALIGN[col.align ?? 'left']} ${col.width ?? ''} ${
-                    col.hideOnMobile ? mobileHidden : ''
-                  }`}
+                  className={`${cellPad} truncate ${ALIGN[col.align ?? 'left']} ${col.width ?? ''} ${col.hideOnMobile ? mobileHidden : ''
+                    }`}
                 >
                   {col.footer}
                 </td>
