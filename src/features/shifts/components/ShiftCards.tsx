@@ -11,10 +11,10 @@ import { getRoleBadgeColor } from '@/shared/utils/roleColors';
  * Colour language:
  *  - Your own active shift is always tinted in the app accent (the themeable
  *    `emerald-*` utilities), so it re-tints with the chosen colour scheme.
- *  - A location change ("moved") is flagged with a fixed amber accent — a left
- *    stripe + a "Moved from …" chip — rather than recolouring the whole card.
- *    Amber stays meaningful and distinct in every theme without fighting the
- *    accent hue.
+ *  - A location change ("moved") is flagged in a neutral monochrome — a left
+ *    stripe + a "Moved from …" chip in black (light) / white (dark) — rather than
+ *    recolouring the whole card. Staying monochrome keeps it readable in every
+ *    theme without adding yet another hue to the palette.
  */
 
 interface ShiftCardsProps {
@@ -24,8 +24,8 @@ interface ShiftCardsProps {
   onSelectUser?: (userId: string) => void; // Open a worker's profile modal.
 }
 
-// Amber left stripe applied to any card representing a just-moved shift.
-const MOVED_STRIPE = 'border-l-4 border-l-amber-400 dark:border-l-amber-500';
+// Neutral (black / white) left stripe marking a just-moved shift.
+const MOVED_STRIPE = 'border-l-4 border-l-gray-900 dark:border-l-white';
 
 const itemVariants: Variants = {
   hidden: { opacity: 0, x: -20, height: 0, marginTop: 0 },
@@ -36,7 +36,7 @@ const itemVariants: Variants = {
 /** "↪ Moved from X" chip — the single, consistent location-change indicator. */
 function MovedFrom({ from }: { from?: string }) {
   return (
-    <span className="inline-flex items-center gap-1 text-micro font-bold text-amber-600 dark:text-amber-400 mb-0.5 normal-case tracking-normal">
+    <span className="inline-flex items-center gap-1 text-micro font-bold text-gray-900 dark:text-white mb-0.5 normal-case tracking-normal">
       <ArrowBendUpLeftIcon weight="bold" className="w-3 h-3 shrink-0" />
       <span className="truncate">{from ? `Moved from ${from}` : 'Moved'}</span>
     </span>
