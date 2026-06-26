@@ -97,7 +97,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
             </Link>
           )}
 
-          <div className="flex-1 overflow-y-auto scrollbar-hide py-2 hidden md:flex md:flex-col gap-4">
+          <div className="flex-1 min-h-0 overflow-y-auto emerald-scrollbar py-2 hidden md:flex md:flex-col gap-4">
             <nav className="flex flex-col gap-0.5">
               {navItems.map((item) => (
                 <Link to={item?.route || '/'} key={item.route} className={`flex items-center p-2 gap-3 w-full rounded-xl transition-all duration-200 cursor-pointer
@@ -150,7 +150,7 @@ export function Dashboard({ onLocationSelect }: DashboardProps) {
                       <svg className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
                   </div>
-                  <div className="px-1 overflow-y-auto max-h-[35vh] emerald-scrollbar pb-4 overscroll-contain">
+                  <div className="px-1 pb-4">
                     <LocationSelection
                       locations={filteredLocations}
                       selectedLocationId={selectedLocationId}
