@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 
 import { formatTime } from '@shared/utils/date';
 import { Clock } from '@shared/components/Clock';
-import { SearchInput } from '@shared/components/SearchInput';
-import { MapPinIcon, SignOutIcon } from '@phosphor-icons/react';
+import { MapPinIcon, SignOutIcon, CaretUpDownIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { getFullInitials } from '@shared/utils/getInitials';
 import { useNavItems, NAV_SECTIONS, SECTION_LABEL_KEYS, type ResolvedNavItem } from '../navigation';
+import { useRecentLocations } from '@features/locations/useRecentLocations';
+import { LocationPicker } from '@features/locations/components/LocationPicker';
 
 import { type Shift } from '@shared/types';
 
@@ -126,8 +128,12 @@ function SidebarNavSection({
   );
 }
 
-/** Search + vertical list of locations ("posts"). Only shown on the main home view. */
-function SidebarLocations({
+/**
+ * "Change location" trigger + popover picker (desktop). Keeps the sidebar
+ * compact: the full searchable list lives in a portal popover anchored to the
+ * trigger, instead of an always-on list that competes for vertical space.
+ */
+function LocationControl({
   locations,
   selectedLocationId,
   isOnShift,
@@ -137,65 +143,82 @@ function SidebarLocations({
   locations: Array<{ id: string; name: string; archived_at?: string | null }>;
   selectedLocationId: string | null;
   isOnShift: boolean;
-  onLocationSelect: (id: string | null) => void;
+  onLocationSelect: (id: string) => void;
   t: TranslateFn;
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const { recentIds, recordPick } = useRecentLocations();
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ left: number; width: number; top?: number; bottom?: number } | null>(null);
 
-  const filtered = locations
-    .filter((loc) => !loc.archived_at || loc.id === selectedLocationId)
-    .filter((loc) => loc.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const selected = locations.find((l) => l.id === selectedLocationId);
+
+  const place = useCallback(() => {
+    const r = triggerRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const width = Math.max(r.width, 248);
+    // Open downward if there's room, otherwise upward (the trigger sits low).
+    const openDown = r.bottom + 380 <= window.innerHeight;
+    setPos(
+      openDown
+        ? { left: r.left, width, top: r.bottom + 6 }
+        : { left: r.left, width, bottom: window.innerHeight - r.top + 6 },
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    if (open) place();
+  }, [open, place]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onMove = () => place();
+    window.addEventListener('resize', onMove);
+    return () => window.removeEventListener('resize', onMove);
+  }, [open, place]);
+
+  const handleSelect = (id: string) => {
+    recordPick(id);
+    onLocationSelect(id);
+    setOpen(false);
+  };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden max-h-[280px]">
-      <div className="flex items-center justify-between px-3 mb-1.5">
-        <div className="uppercase text-[10px] font-semibold tracking-[1px] text-gray-500 dark:text-slate-500">
-          {t('sidebar.availablePosts')}
-        </div>
-        <div className="text-[10px] px-1.5 py-px rounded bg-gray-200 dark:bg-[color:var(--grad-to)] text-gray-600 dark:text-slate-400">
-          {filtered.length}
-        </div>
+    <div className="mb-1 px-0.5">
+      <div className="uppercase text-[10px] font-semibold tracking-[1px] text-gray-500 dark:text-slate-500 mb-1 px-2.5">
+        {t('sidebar.availablePosts')}
       </div>
+      <button
+        ref={triggerRef}
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[color:var(--grad-to)] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-slate-200"
+      >
+        <MapPinIcon weight="fill" className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+        <span className="flex-1 truncate text-left">{selected ? selected.name : t('location.select')}</span>
+        <CaretUpDownIcon className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+      </button>
 
-      {/* Search */}
-      <SearchInput
-        value={searchQuery}
-        onChange={setSearchQuery}
-        placeholder={t('sidebar.searchPosts')}
-        className="mb-1.5"
-        inputClassName="bg-gray-100 dark:bg-[color:var(--grad-to)] border border-gray-200 dark:border-slate-700 focus:border-emerald-400 dark:focus:border-emerald-400/60 text-sm placeholder:text-gray-400 dark:placeholder:text-slate-500 py-1.5 pl-8 pr-2"
-        iconClassName="left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 w-3.5 h-3.5"
-      />
-
-      {/* List */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-0.5 emerald-scrollbar">
-        {filtered.length === 0 && (
-          <div className="text-xs text-gray-500 dark:text-slate-500 px-3 py-2">{t('sidebar.noMatching')}</div>
-        )}
-
-        {filtered.map((location) => {
-          const isSelected = location.id === selectedLocationId;
-          return (
-            <button
-              key={location.id}
-              onClick={() => onLocationSelect(location.id)}
-              className={`w-full text-left px-3 py-2 rounded-xl flex items-center gap-2.5 text-sm transition-all border ${
-                isSelected
-                  ? 'bg-emerald-500 dark:bg-emerald-400 text-white dark:text-[#0B1120] border-emerald-500 dark:border-emerald-400 font-medium'
-                  : 'border-transparent hover:bg-gray-100 dark:hover:bg-[color:var(--grad-to)]/80 active:bg-gray-200 dark:active:bg-white/10 text-gray-700 dark:text-slate-200'
-              }`}
+      {open &&
+        pos &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-[59]" onClick={() => setOpen(false)} />
+            <div
+              className="fixed z-[60] rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-[color:var(--grad-to)] shadow-2xl p-2 flex flex-col max-h-[60vh]"
+              style={{ left: pos.left, width: pos.width, top: pos.top, bottom: pos.bottom }}
             >
-              <MapPinIcon
-                className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white dark:text-[#0B1120]' : 'text-emerald-600 dark:text-emerald-400'}`}
+              <LocationPicker
+                locations={locations}
+                selectedLocationId={selectedLocationId}
+                recentIds={recentIds}
+                isOnShift={isOnShift}
+                onSelect={handleSelect}
               />
-              <span className="truncate flex-1 text-left">{location.name}</span>
-              {isSelected && isOnShift && (
-                <div className="text-[10px] font-mono text-white/70 dark:text-[#0B1120]/70">{t('sidebar.live')}</div>
-              )}
-            </button>
-          );
-        })}
-      </div>
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -290,9 +313,9 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
           />
         ))}
 
-        {/* LOCATIONS — Available Posts (only on home) */}
+        {/* LOCATIONS — "Change location" trigger + popover (only on home) */}
         {currentRoute.pathname === '/' && (
-          <SidebarLocations
+          <LocationControl
             locations={locations}
             selectedLocationId={selectedLocationId}
             isOnShift={isOnShift}
@@ -301,8 +324,8 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
           />
         )}
 
-        {/* Spacer when locations hidden */}
-        {currentRoute.pathname !== '/' && <div className="flex-1" />}
+        {/* Push the footer to the bottom */}
+        <div className="flex-1" />
 
         {/* FOOTER — minimal, clear action */}
         <div className="pt-3 mt-auto border-t border-gray-200 dark:border-slate-800">
