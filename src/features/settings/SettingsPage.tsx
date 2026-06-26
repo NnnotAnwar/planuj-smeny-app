@@ -11,15 +11,36 @@ import { useTheme } from '@app/providers/ThemeContext';
 const cardClass =
   'bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm';
 
+interface AppSettings {
+  notifications: {
+    shiftUpdates: boolean;
+    nameRequests: boolean;
+    adminAlerts: boolean;
+  };
+  work: {
+    defaultLocation: string;
+    timeFormat: string;
+    autoClockOut: boolean;
+  };
+  privacy: {
+    showStatus: boolean;
+    showLocation: boolean;
+  };
+}
+
 export default function SettingsPage() {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
   // Simple local settings persisted in localStorage for now
-  const [settings, setSettings] = useState(() => {
+  const [settings, setSettings] = useState<AppSettings>(() => {
     try {
       const saved = localStorage.getItem('app-settings');
-      return saved ? JSON.parse(saved) : {
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed as AppSettings;
+      }
+      return {
         notifications: {
           shiftUpdates: true,
           nameRequests: true,
@@ -48,8 +69,12 @@ export default function SettingsPage() {
     localStorage.setItem('app-settings', JSON.stringify(settings));
   }, [settings]);
 
-  const updateSetting = (category: string, key: string, value: boolean | string) => {
-    setSettings((prev: any) => ({
+  const updateSetting = <K extends keyof AppSettings, SK extends keyof AppSettings[K]>(
+    category: K,
+    key: SK,
+    value: AppSettings[K][SK]
+  ) => {
+    setSettings((prev) => ({
       ...prev,
       [category]: {
         ...prev[category],
