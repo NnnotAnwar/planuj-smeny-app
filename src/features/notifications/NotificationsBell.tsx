@@ -12,7 +12,7 @@ import {
     type Icon,
 } from '@phosphor-icons/react';
 import type { ShiftAuditLog, ShiftSnapshot } from '@shared/types';
-import { formatClock } from '@shared/utils/date';
+import { formatClock, formatDateTime } from '@shared/utils/date';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import type { TranslationKey } from '@shared/i18n/translations';
 import { useNotifications } from './useNotifications';
@@ -28,7 +28,7 @@ function fmtSnapshot(s?: ShiftSnapshot | null): string {
     return `${d.getDate()} ${MONTHS[d.getMonth()]} · ${fmtClock(s.started_at)}–${fmtClock(s.ended_at)} · ${s.location_name ?? 'Unknown'}`;
 }
 function fmtWhen(iso: string): string {
-    return new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return formatDateTime(iso);
 }
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;

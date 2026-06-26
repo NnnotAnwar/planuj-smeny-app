@@ -52,6 +52,25 @@ export function formatClock(isoString: string | null | undefined, fallback = 'â€
 }
 
 /**
+ * Short date + time (e.g. "26 Jun, 14:30" / "26 Jun, 02:30 PM"), honouring the
+ * 12h/24h preference â€” used for log/notification timestamps.
+ */
+export function formatDateTime(isoString: string | null | undefined): string {
+  if (!isoString) return '';
+  try {
+    return new Date(isoString).toLocaleString(timeFormat === '12h' ? 'en-US' : 'en-GB', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: timeFormat === '12h',
+    });
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Formats an ISO date string into a readable date (D. Month).
  * Example: '2026-03-19' -> '19 Mar'
  */

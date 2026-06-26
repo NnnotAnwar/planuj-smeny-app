@@ -16,7 +16,7 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { canManageEmployees } from '@shared/auth/permissions';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { type ShiftAuditLog, type ShiftSnapshot, type Profile } from '@shared/types';
-import { formatClock } from '@shared/utils/date';
+import { formatClock, formatDateTime } from '@shared/utils/date';
 import { timesheetService, type AuditLogQuery } from './timesheetService';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
@@ -252,12 +252,7 @@ function AuditCard({ entry, onOpenUser }: { entry: ShiftAuditLog; onOpenUser: (u
     const meta = ACTION[entry.action] ?? FALLBACK_META;
     const actor = entry.details.actor_name ?? t('audit.someone');
     const target = entry.details.target_name ?? t('audit.member');
-    const when = new Date(entry.created_at).toLocaleString(undefined, {
-        day: 'numeric',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+    const when = formatDateTime(entry.created_at);
 
     return (
         <div className="flex gap-3 p-3 rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm">
