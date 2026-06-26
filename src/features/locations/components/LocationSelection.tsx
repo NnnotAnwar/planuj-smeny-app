@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPinIcon } from '@phosphor-icons/react';
 import { type Location } from '@shared/types';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * --- LOCATION SELECTION COMPONENT ---
@@ -20,6 +21,7 @@ export function LocationSelection({
   selectedLocationId,
   onLocationSelect,
 }: LocationSelectionProps) {
+  const t = useTranslation();
   // If we have many locations, we only show some of them by default.
   const [showAll, setShowAll] = useState(false);
 
@@ -85,7 +87,7 @@ export function LocationSelection({
             onClick={() => setShowAll(!showAll)}
             className="flex items-center justify-center p-2 rounded-lg border border-dashed border-gray-300 dark:border-white/10 text-micro text-gray-500 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
           >
-            {showAll ? 'Show Less' : `Show All (+${locations.length - displayedLocations.length})`}
+            {showAll ? t('location.showLess') : t('location.showAll', { count: locations.length - displayedLocations.length })}
           </motion.button>
         )}
       </motion.div>

@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import { MapPinIcon, ArrowsLeftRightIcon, type Icon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
+import type { TranslationKey } from '@shared/i18n/translations';
 
 /**
  * --- LOCATION POPUP ---
@@ -20,21 +22,22 @@ export interface LocationPopupProps {
     onCancel: () => void;
 }
 
-const COPY: Record<LocationPopupVariant, { sub: string; icon: Icon; tint: string }> = {
+const COPY: Record<LocationPopupVariant, { subKey: TranslationKey; icon: Icon; tint: string }> = {
     confirm: {
-        sub: 'Start your shift at',
+        subKey: 'location.startAt',
         icon: MapPinIcon,
         tint: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
     },
     switch: {
-        sub: 'Move your shift to',
+        subKey: 'location.moveTo',
         icon: ArrowsLeftRightIcon,
         tint: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
     },
 };
 
 export function LocationPopup({ locationName, variant, isBusy, onConfirm, onCancel }: LocationPopupProps) {
-    const { sub, icon: VariantIcon, tint } = COPY[variant];
+    const t = useTranslation();
+    const { subKey, icon: VariantIcon, tint } = COPY[variant];
 
     return (
         <motion.div
@@ -61,7 +64,7 @@ export function LocationPopup({ locationName, variant, isBusy, onConfirm, onCanc
                         <VariantIcon weight="bold" className="w-5 h-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <p className="text-micro text-gray-400">{sub}</p>
+                        <p className="text-micro text-gray-400">{t(subKey)}</p>
                         <p className="text-title text-gray-900 dark:text-white leading-snug truncate">{locationName}</p>
                     </div>
                 </div>
@@ -73,7 +76,7 @@ export function LocationPopup({ locationName, variant, isBusy, onConfirm, onCanc
                         disabled={isBusy}
                         className="flex-1 py-3.5 rounded-2xl text-body-strong text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-[0.98] disabled:opacity-50 transition-all"
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button
                         type="button"
@@ -82,7 +85,7 @@ export function LocationPopup({ locationName, variant, isBusy, onConfirm, onCanc
                         className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-body-strong text-white bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/25 active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 transition-all"
                     >
                         {isBusy && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                        {isBusy ? 'Saving…' : 'Confirm'}
+                        {isBusy ? t('common.saving') : t('location.confirm')}
                     </button>
                 </div>
             </motion.div>

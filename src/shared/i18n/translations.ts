@@ -80,6 +80,15 @@ export const en = {
     'shifts.startedAt': 'Started at {time}',
     'shifts.unknownLocation': 'Unknown location',
 
+    // Locations
+    'location.startAt': 'Start your shift at',
+    'location.moveTo': 'Move your shift to',
+    'location.confirm': 'Confirm',
+    'location.showAll': 'Show All (+{count})',
+    'location.showLess': 'Show Less',
+    'location.alreadyHere': "You're already here",
+    'location.workingAt': 'Working at {location}',
+
     // About / Support / Legal
     'settings.about': 'About',
     'settings.about.app': 'App',
@@ -164,6 +173,14 @@ export const cs: Record<TranslationKey, string> = {
     'shifts.movedFrom': 'Přesunuto z {location}',
     'shifts.startedAt': 'Začátek v {time}',
     'shifts.unknownLocation': 'Neznámé místo',
+
+    'location.startAt': 'Začít směnu na',
+    'location.moveTo': 'Přesunout směnu na',
+    'location.confirm': 'Potvrdit',
+    'location.showAll': 'Zobrazit vše (+{count})',
+    'location.showLess': 'Zobrazit méně',
+    'location.alreadyHere': 'Už jste tady',
+    'location.workingAt': 'Pracujete na {location}',
 };
 
 export const translations = { en, cs };

@@ -7,6 +7,7 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useLocationManagement } from '@features/locations/hooks/useLocationManagement';
 import { useToasts, toastStore } from '@shared/toast/toastStore';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 import { Dashboard } from '@features/dashboard/Dashboard';
 import { BottomNav } from './BottomNav';
@@ -38,6 +39,7 @@ export interface AppOutletContext {
 export function AppShell() {
   const { user, isAuthChecking, isLoading: isAuthLoading } = useAuthContext();
   const { activeShift, allActiveShifts, locations, selectedLocationId, setSelectedLocationId, handleChangeLocation, isChangingLocation } = useShiftContext();
+  const t = useTranslation();
 
   // Failed shift actions (start/end/move) are surfaced via the toast store; the
   // store auto-dismisses each entry.
@@ -145,8 +147,8 @@ export function AppShell() {
                 <MapPinIcon weight="fill" className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-body-strong text-gray-900 dark:text-white leading-tight">You're already here</p>
-                <p className="text-caption text-gray-500 dark:text-gray-400 truncate">Working at {hereToast}</p>
+                <p className="text-body-strong text-gray-900 dark:text-white leading-tight">{t('location.alreadyHere')}</p>
+                <p className="text-caption text-gray-500 dark:text-gray-400 truncate">{t('location.workingAt', { location: hereToast })}</p>
               </div>
             </div>
           </motion.div>
