@@ -16,13 +16,12 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { canManageEmployees } from '@shared/auth/permissions';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { type ShiftAuditLog, type ShiftSnapshot, type Profile } from '@shared/types';
-import { formatClock, formatDateTime } from '@shared/utils/date';
+import { formatClock, formatDateTime, monthShort } from '@shared/utils/date';
 import { timesheetService, type AuditLogQuery } from './timesheetService';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import type { TranslationKey } from '@shared/i18n/translations';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const PAGE = 50;
 
 type ActionMeta = { labelKey: TranslationKey; Icon: typeof PlusIcon; badge: string };
@@ -50,7 +49,7 @@ function fmtClock(iso?: string | null): string {
 function fmtSnapshot(s?: ShiftSnapshot | null): string {
     if (!s || !s.started_at) return '—';
     const d = new Date(s.started_at);
-    return `${d.getDate()} ${MONTHS[d.getMonth()]} · ${fmtClock(s.started_at)}–${fmtClock(s.ended_at)} · ${s.location_name ?? 'Unknown'}`;
+    return `${d.getDate()} ${monthShort(d)} · ${fmtClock(s.started_at)}–${fmtClock(s.ended_at)} · ${s.location_name ?? '—'}`;
 }
 
 const selectClass =

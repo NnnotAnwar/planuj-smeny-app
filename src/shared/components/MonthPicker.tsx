@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarBlankIcon, CaretDownIcon, CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { monthShort } from '@shared/utils/date';
 
 /**
  * --- MONTH PICKER ---
@@ -8,14 +10,14 @@ import { CalendarBlankIcon, CaretDownIcon, CaretLeftIcon, CaretRightIcon } from 
  * string, or `null` for all-time. Shared by Overview and Timesheets.
  */
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 interface MonthPickerProps {
     value: string | null;
     onChange: (value: string | null) => void;
 }
 
 export function MonthPicker({ value, onChange }: MonthPickerProps) {
+    const t = useTranslation();
+    const MONTHS = Array.from({ length: 12 }, (_, i) => monthShort(new Date(2024, i, 1)));
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +47,7 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
         setIsOpen(false);
     };
 
-    const label = value ? `${MONTHS[selectedMonthIdx!]} ${selectedYear}` : 'All Time';
+    const label = value ? `${MONTHS[selectedMonthIdx!]} ${selectedYear}` : t('month.allTime');
 
     return (
         <div className="relative" ref={containerRef}>
@@ -85,7 +87,7 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
                                 const isCurrent = today.getFullYear() === viewYear && today.getMonth() === idx;
                                 return (
                                     <button
-                                        key={month}
+                                        key={idx}
                                         onClick={() => handleMonthClick(idx)}
                                         className={`relative py-1.5 rounded-lg text-caption transition-all ${
                                             isSelected ? 'bg-emerald-500 text-white shadow-md' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
@@ -99,8 +101,8 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
                         </div>
 
                         <div className="mt-3 pt-2 border-t border-gray-50 dark:border-gray-800 flex gap-1.5">
-                            <button onClick={() => { setViewYear(today.getFullYear()); onChange(currentMonthStr); setIsOpen(false); }} className="flex-1 py-1.5 rounded-lg text-micro bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors">Today</button>
-                            <button onClick={() => { onChange(null); setIsOpen(false); }} className={`flex-1 py-1.5 rounded-lg text-micro transition-colors ${value === null ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>All</button>
+                            <button onClick={() => { setViewYear(today.getFullYear()); onChange(currentMonthStr); setIsOpen(false); }} className="flex-1 py-1.5 rounded-lg text-micro bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors">{t('common.today')}</button>
+                            <button onClick={() => { onChange(null); setIsOpen(false); }} className={`flex-1 py-1.5 rounded-lg text-micro transition-colors ${value === null ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>{t('common.all')}</button>
                         </div>
                     </motion.div>
                 )}

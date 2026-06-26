@@ -19,13 +19,12 @@ import { type Shift } from '@shared/types';
 import { DataTable, type Column } from '@shared/components/DataTable';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from './shiftStats';
-import { formatClock } from '@shared/utils/date';
+import { formatClock, monthShort, weekdayShort, weekdayShortLabels } from '@shared/utils/date';
 import { exportShifts, type ExportFormat } from '@features/timesheets/exportShifts';
 
 /**
  * --- CONSTANTS ---
  */
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /**
  * --- HELPERS ---
@@ -117,9 +116,9 @@ export default function OverviewPage() {
         return (
           <div className="flex flex-col">
             <span className="text-small-strong dark:text-white">
-              {date.getDate()} {date.toLocaleDateString(undefined, { month: 'short' })}
+              {date.getDate()} {monthShort(date)}
             </span>
-            <span className="text-micro text-gray-400">{WEEKDAYS[(date.getDay() + 6) % 7]}</span>
+            <span className="text-micro text-gray-400">{weekdayShort(date)}</span>
           </div>
         );
       },
@@ -380,7 +379,7 @@ export default function OverviewPage() {
                   return (
                     <div key={i} className="flex-1 text-center">
                       <span className={`text-micro ${isMax ? 'text-emerald-500' : 'text-gray-400'}`}>
-                        {WEEKDAYS[i].slice(0, 3)}
+                        {weekdayShortLabels()[i]}
                       </span>
                     </div>
                   );

@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { CalendarBlankIcon, CaretDownIcon, CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { monthLong, formatDateLong, weekdayShortLabels } from '@shared/utils/date';
 
 /**
  * --- DATE PICKER ---
@@ -11,8 +13,6 @@ import { CalendarBlankIcon, CaretDownIcon, CaretLeftIcon, CaretRightIcon } from 
  * `"YYYY-MM-DD"` (local).
  */
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const POP_W = 256; // w-64
 const MARGIN = 8;
 
@@ -27,6 +27,8 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ value, onChange, disabled, ...rest }: DatePickerProps) {
+    const t = useTranslation();
+    const DOW = weekdayShortLabels();
     const [isOpen, setIsOpen] = useState(false);
     const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -73,8 +75,8 @@ export function DatePicker({ value, onChange, disabled, ...rest }: DatePickerPro
     }, [isOpen, place, viewY, viewM]);
 
     const label = value
-        ? new Date(value + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-        : 'Pick a date';
+        ? formatDateLong(value)
+        : t('common.pickDate');
 
     const prev = () => { if (viewM === 0) { setViewM(11); setViewY((y) => y - 1); } else setViewM((m) => m - 1); };
     const next = () => { if (viewM === 11) { setViewM(0); setViewY((y) => y + 1); } else setViewM((m) => m + 1); };
@@ -120,7 +122,7 @@ export function DatePicker({ value, onChange, disabled, ...rest }: DatePickerPro
                             <button type="button" onClick={prev} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                                 <CaretLeftIcon weight="bold" className="w-3 h-3 dark:text-white" />
                             </button>
-                            <span className="font-black text-sm dark:text-white">{MONTHS[viewM]} {viewY}</span>
+                            <span className="font-black text-sm dark:text-white">{monthLong(new Date(viewY, viewM, 1))} {viewY}</span>
                             <button type="button" onClick={next} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                                 <CaretRightIcon weight="bold" className="w-3 h-3 dark:text-white" />
                             </button>

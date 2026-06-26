@@ -1,7 +1,7 @@
-import React, { createContext, useCallback, useContext, useLayoutEffect, useMemo, useReducer, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useReducer, useState } from 'react';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { translations, type Language, type TranslationKey } from '@shared/i18n/translations';
-import { setTimeFormatPreference, type TimeFormat } from '@shared/utils/date';
+import { setTimeFormatPreference, setLocalePreference, type TimeFormat } from '@shared/utils/date';
 
 /**
  * --- PREFERENCES CONTEXT ---
@@ -47,10 +47,11 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     const [, refreshDefaultLocation] = useReducer((n: number) => n + 1, 0);
     const defaultLocationId = userId ? localStorage.getItem(defaultLocationKey(userId)) : null;
 
-    // Keep the formatTime module preference in sync (before paint).
-    useLayoutEffect(() => {
-        setTimeFormatPreference(timeFormat);
-    }, [timeFormat]);
+    // Sync the date-util module preferences synchronously during render, so child
+    // components (which re-render when language/format changes) read the current
+    // values in the same pass — no stale-by-one-frame dates.
+    setTimeFormatPreference(timeFormat);
+    setLocalePreference(language);
 
     const setLanguage = useCallback((lang: Language) => {
         localStorage.setItem(STORAGE.language, lang);

@@ -12,12 +12,11 @@ import {
     type Icon,
 } from '@phosphor-icons/react';
 import type { ShiftAuditLog, ShiftSnapshot } from '@shared/types';
-import { formatClock, formatDateTime } from '@shared/utils/date';
+import { formatClock, formatDateTime, monthShort } from '@shared/utils/date';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import type { TranslationKey } from '@shared/i18n/translations';
 import { useNotifications } from './useNotifications';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function fmtClock(iso?: string | null): string {
     return formatClock(iso);
@@ -25,7 +24,7 @@ function fmtClock(iso?: string | null): string {
 function fmtSnapshot(s?: ShiftSnapshot | null): string {
     if (!s || !s.started_at) return '';
     const d = new Date(s.started_at);
-    return `${d.getDate()} ${MONTHS[d.getMonth()]} · ${fmtClock(s.started_at)}–${fmtClock(s.ended_at)} · ${s.location_name ?? 'Unknown'}`;
+    return `${d.getDate()} ${monthShort(d)} · ${fmtClock(s.started_at)}–${fmtClock(s.ended_at)} · ${s.location_name ?? '—'}`;
 }
 function fmtWhen(iso: string): string {
     return formatDateTime(iso);

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatWallClock } from '@shared/utils/date';
 
 /**
  * --- CLOCK COMPONENT ---
@@ -32,11 +33,7 @@ export function Clock({ className = "", seconds }: ClockProps) {
     // 4. RENDER: We format the time for humans.
     return (
         <span className={className}>
-            {
-                !seconds
-                    ? time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-                    : time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-            }
+            {formatWallClock(time, seconds)}
         </span>
     );
 }

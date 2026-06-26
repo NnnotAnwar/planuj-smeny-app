@@ -28,7 +28,7 @@ import { getFullInitials } from '@shared/utils/getInitials';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type Shift, type Profile } from '@shared/types';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from '@features/shifts/shiftStats';
-import { formatClock } from '@shared/utils/date';
+import { formatClock, monthShort, weekdayShort } from '@shared/utils/date';
 
 import { timesheetService } from './timesheetService';
 import { exportShifts, exportAllShifts, type ExportFormat } from './exportShifts';
@@ -41,7 +41,6 @@ const EXPORT_FORMATS = [
     { fmt: 'csv' as const, label: 'CSV', Icon: FileCsvIcon },
 ];
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function memberName(m: Profile): string {
     return [m.first_name, m.last_name].filter(Boolean).join(' ') || m.username;
@@ -277,9 +276,9 @@ function TimesheetsInner() {
                 return (
                     <div className="flex flex-col">
                         <span className="text-small-strong dark:text-white">
-                            {d.getDate()} {d.toLocaleDateString(undefined, { month: 'short' })}
+                            {d.getDate()} {monthShort(d)}
                         </span>
-                        <span className="text-micro text-gray-400">{WEEKDAYS[(d.getDay() + 6) % 7]}</span>
+                        <span className="text-micro text-gray-400">{weekdayShort(d)}</span>
                     </div>
                 );
             },
@@ -504,9 +503,7 @@ function TimesheetsInner() {
                     {/* Table header + add */}
                     <div className="flex items-center justify-between gap-2 px-1">
                         <p className="text-caption leading-relaxed text-gray-400">
-                            Net = Gross − mandatory breaks:{' '}
-                            <span className="whitespace-nowrap">−30&nbsp;min from 6&nbsp;h</span>,{' '}
-                            <span className="whitespace-nowrap">−1&nbsp;h from 12&nbsp;h</span>.
+                            {t('ts.netExplainFull')}
                         </p>
                         {canEdit && (
                             <button

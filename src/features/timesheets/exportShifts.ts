@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { type Shift } from '@shared/types';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from '@features/shifts/shiftStats';
-import { formatClock } from '@shared/utils/date';
+import { formatClock, monthShort, weekdayShort } from '@shared/utils/date';
 
 /**
  * --- SHIFT EXPORT ---
@@ -23,8 +23,6 @@ export interface ExportContext {
     locationName: (id: string) => string;
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const BREAK_LEGEND = 'Mandatory breaks deducted: -30 min from 6h, -1h from 12h (per shift).';
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -72,8 +70,8 @@ function build({ shifts, locationName }: ExportContext): Built {
         const start = timeOnly(s.started_at);
         const end = s.ended_at ? timeOnly(s.ended_at) : '…';
         return {
-            date: `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`,
-            day: WEEKDAYS[(d.getDay() + 6) % 7],
+            date: `${d.getDate()} ${monthShort(d)} ${d.getFullYear()}`,
+            day: weekdayShort(d),
             location: locationName(s.location_id),
             start,
             end,

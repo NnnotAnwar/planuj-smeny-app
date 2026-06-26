@@ -55,6 +55,11 @@ export const en = {
     'common.loading': 'Loading…',
     'common.retry': 'Try again',
     'common.unknown': 'Unknown',
+    'common.today': 'Today',
+    'common.all': 'All',
+    'common.pickDate': 'Pick a date',
+    'month.allTime': 'All Time',
+    'ts.netExplainFull': 'Net = Gross − mandatory breaks: −30 min from 6 h, −1 h from 12 h.',
 
     // Overview
     'overview.titleMonthly': 'Monthly Analytics',
@@ -369,6 +374,11 @@ export const cs: Record<TranslationKey, string> = {
     'common.loading': 'Načítání…',
     'common.retry': 'Zkusit znovu',
     'common.unknown': 'Neznámé',
+    'common.today': 'Dnes',
+    'common.all': 'Vše',
+    'common.pickDate': 'Vyberte datum',
+    'month.allTime': 'Celé období',
+    'ts.netExplainFull': 'Čistý = hrubý − povinné přestávky: −30 min od 6 h, −1 h od 12 h.',
 
     'overview.titleMonthly': 'Měsíční přehled',
     'overview.titleAll': 'Celkový přehled',
