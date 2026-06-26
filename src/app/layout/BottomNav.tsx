@@ -129,9 +129,9 @@ export function BottomNav() {
                                     <Link
                                         to="/profile"
                                         onClick={() => setMenuOpen(false)}
-                                        className="flex items-center gap-3 p-4 rounded-2xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                                        className="flex items-center gap-3 p-4 rounded-2xl bg-white/70 dark:bg-white/5 border-2 border-gray-200 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                                     >
-                                        <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 shadow-md flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-title shrink-0">
+                                        <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 ring-1 ring-white/60 dark:ring-white/20 shadow-md flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-title shrink-0">
                                             {getInitials(user.first_name, user.last_name)}
                                         </div>
                                         <div className="min-w-0">
