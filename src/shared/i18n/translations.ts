@@ -22,6 +22,9 @@ export const en = {
     'nav.more': 'More',
     'nav.menu': 'Menu',
     'nav.logout': 'Log out',
+    'nav.sectionWork': 'Work',
+    'nav.sectionManage': 'Manage',
+    'nav.sectionSystem': 'System',
 
     // Sidebar
     'sidebar.currentPost': 'Current shift',
@@ -349,6 +352,9 @@ export const cs: Record<TranslationKey, string> = {
     'nav.more': 'Více',
     'nav.menu': 'Menu',
     'nav.logout': 'Odhlásit se',
+    'nav.sectionWork': 'Práce',
+    'nav.sectionManage': 'Správa',
+    'nav.sectionSystem': 'Systém',
 
     // Sidebar
     'sidebar.currentPost': 'Aktuální směna',

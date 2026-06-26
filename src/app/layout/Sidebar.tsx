@@ -10,7 +10,7 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { getFullInitials } from '@shared/utils/getInitials';
-import { useNavItems, type ResolvedNavItem } from '../navigation';
+import { useNavItems, NAV_SECTIONS, SECTION_LABEL_KEYS, type ResolvedNavItem } from '../navigation';
 
 import { type Shift } from '@shared/types';
 
@@ -82,17 +82,24 @@ function CurrentPost({
   );
 }
 
-/** Vertical navigation list with active state styling. */
-function SidebarNav({
+/** One labelled navigation section (header + vertical list with active state). */
+function SidebarNavSection({
+  title,
   items,
   currentPath,
 }: {
+  title: string;
   items: ResolvedNavItem[];
   currentPath: string;
 }) {
+  if (items.length === 0) return null;
   return (
-    <nav className="flex flex-col gap-0.5 mb-3">
-      {items.map((item) => {
+    <div className="mb-2.5">
+      <div className="uppercase text-[10px] font-semibold tracking-[1px] text-gray-500 dark:text-slate-500 mb-1 px-3">
+        {title}
+      </div>
+      <nav className="flex flex-col gap-0.5">
+        {items.map((item) => {
         const active = currentPath === item.route;
         return (
           <Link
@@ -113,8 +120,9 @@ function SidebarNav({
             )}
           </Link>
         );
-      })}
-    </nav>
+        })}
+      </nav>
+    </div>
   );
 }
 
@@ -272,14 +280,15 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
           />
         )}
 
-        {/* NAVIGATION */}
-        <div className="mb-1.5 px-3">
-          <div className="uppercase text-[10px] font-semibold tracking-[1px] text-gray-500 dark:text-slate-500 mb-1">
-            {t('sidebar.navigation')}
-          </div>
-        </div>
-
-        <SidebarNav items={navItems} currentPath={currentRoute.pathname} />
+        {/* NAVIGATION — grouped into Work / Manage / System */}
+        {NAV_SECTIONS.map((section) => (
+          <SidebarNavSection
+            key={section}
+            title={t(SECTION_LABEL_KEYS[section])}
+            items={navItems.filter((i) => i.section === section)}
+            currentPath={currentRoute.pathname}
+          />
+        ))}
 
         {/* LOCATIONS — Available Posts (only on home) */}
         {currentRoute.pathname === '/' && (

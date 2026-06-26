@@ -24,6 +24,16 @@ import type { TranslationKey } from '@shared/i18n/translations';
 
 export type NavSection = 'work' | 'manage' | 'system';
 
+/** Render order of the sidebar sections. */
+export const NAV_SECTIONS: readonly NavSection[] = ['work', 'manage', 'system'];
+
+/** Section header labels. */
+export const SECTION_LABEL_KEYS: Record<NavSection, TranslationKey> = {
+    work: 'nav.sectionWork',
+    manage: 'nav.sectionManage',
+    system: 'nav.sectionSystem',
+};
+
 /** Capabilities a nav item can gate on (a subset of usePermissions). */
 export interface NavCaps {
     canViewAdminPanel: boolean;
