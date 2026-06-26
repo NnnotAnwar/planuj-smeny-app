@@ -7,6 +7,7 @@ import {
 } from '@phosphor-icons/react';
 import type { NameChangeRequest } from '@shared/types';
 import { LoadingState, EmptyState } from './AdminStateViews';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * Pending name-change requests for the admin to approve or reject. Approving
@@ -21,8 +22,9 @@ export function NameChangeRequestsList({
     isLoading: boolean;
     onReview: (id: string, approve: boolean, note?: string | null) => Promise<void>;
 }) {
-    if (isLoading) return <LoadingState label="requests" />;
-    if (items.length === 0) return <EmptyState label="pending requests" />;
+    const t = useTranslation();
+    if (isLoading) return <LoadingState label={t('admin.nounRequests')} />;
+    if (items.length === 0) return <EmptyState label={t('admin.nounPendingRequests')} />;
 
     return (
         <div className="space-y-2">
@@ -44,6 +46,7 @@ function RequestRow({
     req: NameChangeRequest;
     onReview: (id: string, approve: boolean, note?: string | null) => Promise<void>;
 }) {
+    const t = useTranslation();
     const [busy, setBusy] = useState<null | 'approve' | 'reject'>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +56,7 @@ function RequestRow({
         try {
             await onReview(req.id, approve);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Action failed.');
+            setError(err instanceof Error ? err.message : t('common.actionFailed'));
             setBusy(null);
         }
     };
@@ -93,7 +96,7 @@ function RequestRow({
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-small-strong text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-50"
                     >
                         <CheckIcon weight="bold" className="w-4 h-4" />
-                        {busy === 'approve' ? '…' : 'Approve'}
+                        {busy === 'approve' ? '…' : t('common.approve')}
                     </button>
                     <button
                         onClick={() => act(false)}
@@ -101,7 +104,7 @@ function RequestRow({
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-small-strong text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/15 hover:bg-red-100 dark:hover:bg-red-900/25 transition-colors disabled:opacity-50"
                     >
                         <XIcon weight="bold" className="w-4 h-4" />
-                        {busy === 'reject' ? '…' : 'Reject'}
+                        {busy === 'reject' ? '…' : t('common.reject')}
                     </button>
                 </div>
             </div>

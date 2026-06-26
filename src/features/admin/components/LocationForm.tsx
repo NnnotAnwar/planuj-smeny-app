@@ -4,6 +4,7 @@ import { Field, TextInput, SelectInput, FormError, FormActions } from './FormCon
 import { useAdminContext } from '../AdminContext';
 import { adminService } from '../adminService';
 import { useAuthContext } from '@/features/auth/AuthContext';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 export interface LocationEditTarget {
     id: string;
@@ -19,6 +20,7 @@ export interface LocationEditTarget {
 export function LocationForm({ location, onClose }: { location?: LocationEditTarget; onClose: () => void }) {
     const { adminData, isSuperAdmin, createLocation, updateLocation } = useAdminContext();
     const { user } = useAuthContext();
+    const t = useTranslation();
     const isEdit = Boolean(location);
 
     const [name, setName] = useState(location?.name ?? '');
@@ -35,8 +37,8 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const trimmedName = name.trim();
-        if (!trimmedName) return setError('Location name is required.');
-        if (!organizationId) return setError('An organization is required.');
+        if (!trimmedName) return setError(t('admin.locationNameRequired'));
+        if (!organizationId) return setError(t('admin.locationOrgRequired'));
 
         setIsBusy(true);
         setError(null);
@@ -47,7 +49,7 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
                 // "Unknown Location"). Block it until the shift is ended.
                 const orgChanged = isSuperAdmin && organizationId !== location.organization_id;
                 if (orgChanged && (await adminService.hasActiveShiftsAtLocation(location.id))) {
-                    setError('Someone is currently clocked in here. End their active shift before moving this location to another organization.');
+                    setError(t('admin.locationActiveShiftBlock'));
                     setIsBusy(false);
                     return;
                 }
@@ -60,15 +62,15 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
             }
             onClose();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not save location.');
+            setError(err instanceof Error ? err.message : t('admin.locationSaveError'));
             setIsBusy(false);
         }
     };
 
     return (
-        <Modal title={isEdit ? 'Edit Location' : 'New Location'} subtitle="Workplace" onClose={onClose}>
+        <Modal title={isEdit ? t('admin.locationEditTitle') : t('admin.locationNewTitle')} subtitle={t('admin.workplace')} onClose={onClose}>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <Field label="Name">
+                <Field label={t('admin.fieldName')}>
                     <TextInput
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -78,7 +80,7 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
                 </Field>
 
                 {showOrgSelect && (
-                    <Field label="Organization">
+                    <Field label={t('profile.field.organization')}>
                         <SelectInput value={organizationId} onChange={(e) => setOrganizationId(e.target.value)}>
                             {adminData?.map((org) => (
                                 <option key={org.id} value={org.id}>
@@ -90,7 +92,7 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
                 )}
 
                 <FormError message={error} />
-                <FormActions onCancel={onClose} isBusy={isBusy} submitLabel={isEdit ? 'Save' : 'Create'} />
+                <FormActions onCancel={onClose} isBusy={isBusy} submitLabel={isEdit ? t('common.save') : t('common.create')} />
             </form>
         </Modal>
     );

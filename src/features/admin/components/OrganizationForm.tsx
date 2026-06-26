@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import { Field, TextInput, FormError, FormActions } from './FormControls';
 import { useAdminContext } from '../AdminContext';
 import type { Organization } from '@/shared/types';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /** Turns a free-text name into a url-safe slug. */
 function slugify(value: string): string {
@@ -19,6 +20,7 @@ function slugify(value: string): string {
  */
 export function OrganizationForm({ org, onClose }: { org?: Organization; onClose: () => void }) {
     const { createOrganization, updateOrganization } = useAdminContext();
+    const t = useTranslation();
     const isEdit = Boolean(org);
 
     const [name, setName] = useState(org?.name ?? '');
@@ -36,8 +38,8 @@ export function OrganizationForm({ org, onClose }: { org?: Organization; onClose
         e.preventDefault();
         const trimmedName = name.trim();
         const trimmedSlug = slugify(slug);
-        if (!trimmedName) return setError('Organization name is required.');
-        if (!trimmedSlug) return setError('A valid slug is required.');
+        if (!trimmedName) return setError(t('admin.orgNameRequired'));
+        if (!trimmedSlug) return setError(t('admin.orgSlugRequired'));
 
         setIsBusy(true);
         setError(null);
@@ -49,19 +51,19 @@ export function OrganizationForm({ org, onClose }: { org?: Organization; onClose
             }
             onClose();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not save organization.');
+            setError(err instanceof Error ? err.message : t('admin.orgSaveError'));
             setIsBusy(false);
         }
     };
 
     return (
         <Modal
-            title={isEdit ? 'Edit Organization' : 'New Organization'}
+            title={isEdit ? t('admin.orgEditTitle') : t('admin.orgNewTitle')}
             subtitle={isEdit ? org?.slug : 'Superadmin'}
             onClose={onClose}
         >
             <form onSubmit={handleSubmit} className="space-y-4">
-                <Field label="Name">
+                <Field label={t('admin.fieldName')}>
                     <TextInput
                         value={name}
                         onChange={(e) => handleNameChange(e.target.value)}
@@ -69,7 +71,7 @@ export function OrganizationForm({ org, onClose }: { org?: Organization; onClose
                         autoFocus
                     />
                 </Field>
-                <Field label="Slug">
+                <Field label={t('admin.fieldSlug')}>
                     <TextInput
                         value={slug}
                         onChange={(e) => {
@@ -80,7 +82,7 @@ export function OrganizationForm({ org, onClose }: { org?: Organization; onClose
                     />
                 </Field>
                 <FormError message={error} />
-                <FormActions onCancel={onClose} isBusy={isBusy} submitLabel={isEdit ? 'Save' : 'Create'} />
+                <FormActions onCancel={onClose} isBusy={isBusy} submitLabel={isEdit ? t('common.save') : t('common.create')} />
             </form>
         </Modal>
     );

@@ -13,6 +13,7 @@ import type { Organization, Profile } from '@/shared/types';
 import { useAuthContext } from '@/features/auth/AuthContext';
 import { AdminProvider, useAdminContext } from './AdminContext';
 import { canManageEmployees, canManageLocations } from '@shared/auth/permissions';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { ConfirmDialog } from './components/Modal';
 import { OrganizationForm } from './components/OrganizationForm';
 import { LocationForm, type LocationEditTarget } from './components/LocationForm';
@@ -34,12 +35,6 @@ type ModalState =
     | { kind: 'invite-emp' }
     | { kind: 'delete'; entity: TabType; id: string; label: string }
     | null;
-
-const ADD_LABEL: Record<TabType, string> = {
-    organizations: 'Add Organization',
-    locations: 'Add Location',
-    employees: 'Invite Employee',
-};
 
 /**
  * --- ADMIN PAGE ---
@@ -65,6 +60,7 @@ function AdminPanel() {
         deleteEmployee,
     } = useAdminContext();
     const { user } = useAuthContext();
+    const t = useTranslation();
 
     // Admin (rank >= 30) capability.
     const canManageEmp = user ? canManageEmployees(user) : false;
@@ -75,9 +71,9 @@ function AdminPanel() {
     const [modal, setModal] = useState<ModalState>(null);
 
     const tabs = [
-        { id: 'employees', label: 'Employees', icon: UsersIcon },
-        { id: 'locations', label: 'Locations', icon: MapPinIcon },
-        ...(isSuperAdmin ? [{ id: 'organizations', label: 'Organizations', icon: BuildingsIcon }] : []),
+        { id: 'employees', label: t('admin.tabEmployees'), icon: UsersIcon },
+        { id: 'locations', label: t('admin.tabLocations'), icon: MapPinIcon },
+        ...(isSuperAdmin ? [{ id: 'organizations', label: t('admin.tabOrganizations'), icon: BuildingsIcon }] : []),
     ] as const;
 
     // Guard against showing a tab the user may not access (e.g. if their role
@@ -158,13 +154,13 @@ function AdminPanel() {
                 <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <div className="space-y-1">
                         <p className="text-label text-emerald-500">
-                            System Infrastructure
+                            {t('admin.systemInfra')}
                         </p>
                         <h1 className="text-display text-gray-900 dark:text-white sm:text-3xl">
-                            Admin Panel
+                            {t('admin.panelTitle')}
                         </h1>
                         <p className="text-small text-gray-400">
-                            {isSuperAdmin ? 'Full system access' : 'Managing your organization'}
+                            {isSuperAdmin ? t('admin.fullAccess') : t('admin.managingOrg')}
                         </p>
                     </div>
 
@@ -178,7 +174,7 @@ function AdminPanel() {
                             ) : (
                                 <PlusIcon weight="bold" className="w-4 h-4" />
                             )}
-                            <span>{ADD_LABEL[safeTab]}</span>
+                            <span>{safeTab === 'employees' ? t('admin.inviteEmployee') : safeTab === 'locations' ? t('admin.addLocation') : t('admin.addOrganization')}</span>
                         </button>
                     )}
                 </div>
@@ -186,9 +182,9 @@ function AdminPanel() {
 
             {/* --- STATS --- */}
             <div className={`grid gap-2 sm:gap-3 ${isSuperAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                <StatCard icon={UsersIcon} label="Employees" value={empCount} accent="emerald" />
-                <StatCard icon={MapPinIcon} label="Locations" value={locCount} accent="blue" />
-                {isSuperAdmin && <StatCard icon={BuildingsIcon} label="Organizations" value={orgCount} accent="violet" />}
+                <StatCard icon={UsersIcon} label={t('admin.tabEmployees')} value={empCount} accent="emerald" />
+                <StatCard icon={MapPinIcon} label={t('admin.tabLocations')} value={locCount} accent="blue" />
+                {isSuperAdmin && <StatCard icon={BuildingsIcon} label={t('admin.tabOrganizations')} value={orgCount} accent="violet" />}
             </div>
 
             {/* --- TABS & SEARCH --- */}
@@ -224,7 +220,7 @@ function AdminPanel() {
                 <div className="relative w-full md:w-64">
                     <input
                         type="text"
-                        placeholder={`Search ${safeTab}...`}
+                        placeholder={t('admin.search', { what: safeTab === 'employees' ? t('admin.nounEmployees') : safeTab === 'locations' ? t('admin.nounLocations') : t('admin.nounOrganizations') })}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 focus:border-emerald-500/50 rounded-xl py-2 pl-9 pr-4 text-micro outline-none transition-all dark:text-white"
@@ -308,8 +304,8 @@ function AdminPanel() {
                 {modal?.kind === 'invite-emp' && <InviteEmployeeForm onClose={() => setModal(null)} />}
                 {modal?.kind === 'delete' && (
                     <ConfirmDialog
-                        title="Confirm Deletion"
-                        message={`Delete "${modal.label}"? This action cannot be undone.`}
+                        title={t('admin.confirmDeletionTitle')}
+                        message={t('admin.confirmDeletionMessage', { label: modal.label })}
                         onConfirm={confirmDelete}
                         onClose={() => setModal(null)}
                     />

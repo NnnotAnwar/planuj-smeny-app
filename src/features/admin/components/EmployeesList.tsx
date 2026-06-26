@@ -5,11 +5,13 @@ import { getRoleBadgeColor } from '@/shared/utils/roleColors';
 import { getFullInitials } from '@/shared/utils/getInitials';
 import { DataTable, type Column } from '@/shared/components/DataTable';
 import { canManageMember, RANK } from '@shared/auth/permissions';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { ActionButtons } from './ActionButtons';
 import { LoadingState, EmptyState } from './AdminStateViews';
 
 /** Small "A" badge with a tap/hover "Administrator" tooltip. */
 function AdminBadgeWithTooltip() {
+    const t = useTranslation();
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
@@ -41,7 +43,7 @@ function AdminBadgeWithTooltip() {
                         exit={{ opacity: 0, scale: 0.8, y: 5 }}
                         className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-micro rounded-md shadow-xl z-50 whitespace-nowrap pointer-events-none"
                     >
-                        Administrator
+                        {t('admin.administrator')}
                         <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-gray-900 dark:border-t-white" />
                     </motion.div>
                 )}
@@ -59,6 +61,7 @@ function RoleBadge({ role }: { role: Profile['role'] }) {
 export type EmployeeRow = Profile & { organizationName?: string };
 
 function EmployeeIdentity({ employee, isSelf, org }: { employee: Profile; isSelf: boolean; org?: string }) {
+    const t = useTranslation();
     return (
         <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-micro shrink-0">
@@ -72,7 +75,7 @@ function EmployeeIdentity({ employee, isSelf, org }: { employee: Profile; isSelf
                     {employee.role.rank >= RANK.ADMIN && <AdminBadgeWithTooltip />}
                     {isSelf && (
                         <span className="shrink-0 px-1.5 py-0.5 text-micro rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
-                            You
+                            {t('common.you')}
                         </span>
                     )}
                 </div>
@@ -101,6 +104,7 @@ export function EmployeesList({
     onEdit: (emp: Profile) => void;
     onDelete: (emp: Profile) => void;
 }) {
+    const t = useTranslation();
     const manageable = (emp: Profile) => (currentUser ? canManageMember(currentUser, emp) : false);
     // Read-only viewers (e.g. Manager) can't manage anyone — drop the actions
     // column entirely so the Role badge sits flush right instead of leaving an
@@ -108,12 +112,12 @@ export function EmployeesList({
     const anyManageable = items.some(manageable);
 
     const columns: Column<EmployeeRow>[] = [
-        { key: 'employee', header: 'Employee', render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} org={showOrganization ? emp.organizationName : undefined} /> },
-        { key: 'email', header: 'Email', hideOnMobile: true, className: 'truncate', render: (emp) => <span className="text-body text-gray-500 dark:text-gray-400">{emp.email}</span> },
+        { key: 'employee', header: t('admin.colEmployee'), render: (emp) => <EmployeeIdentity employee={emp} isSelf={emp.id === currentUser?.id} org={showOrganization ? emp.organizationName : undefined} /> },
+        { key: 'email', header: t('profile.field.email'), hideOnMobile: true, className: 'truncate', render: (emp) => <span className="text-body text-gray-500 dark:text-gray-400">{emp.email}</span> },
         ...(showOrganization
-            ? [{ key: 'org', header: 'Organization', hideOnMobile: true, className: 'truncate', render: (emp: EmployeeRow) => <span className="text-body text-gray-500 dark:text-gray-400">{emp.organizationName ?? '—'}</span> }]
+            ? [{ key: 'org', header: t('profile.field.organization'), hideOnMobile: true, className: 'truncate', render: (emp: EmployeeRow) => <span className="text-body text-gray-500 dark:text-gray-400">{emp.organizationName ?? '—'}</span> }]
             : []),
-        { key: 'role', header: 'Role', align: 'right', width: 'w-24 sm:w-32', render: (emp) => <RoleBadge role={emp.role} /> },
+        { key: 'role', header: t('profile.field.role'), align: 'right', width: 'w-24 sm:w-32', render: (emp) => <RoleBadge role={emp.role} /> },
         ...(anyManageable
             ? [
                   {
@@ -138,8 +142,8 @@ export function EmployeesList({
             rowKey={(emp) => emp.id}
             columns={columns}
             isLoading={isLoading}
-            loadingState={<LoadingState label="employees" />}
-            emptyState={<EmptyState label="employees" />}
+            loadingState={<LoadingState label={t('admin.nounEmployees')} />}
+            emptyState={<EmptyState label={t('admin.nounEmployees')} />}
             onRowClick={onView}
         />
     );

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { XIcon, WarningIcon } from '@phosphor-icons/react';
 import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * --- MODAL ---
@@ -22,6 +23,7 @@ export function Modal({
     onClose: () => void;
     children: ReactNode;
 }) {
+    const t = useTranslation();
     const panelRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -92,7 +94,7 @@ export function Modal({
                     <button
                         onClick={onClose}
                         className="shrink-0 p-2.5 -m-1 text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors"
-                        aria-label="Close"
+                        aria-label={t('common.close')}
                     >
                         <XIcon weight="bold" className="w-5 h-5" />
                     </button>
@@ -115,7 +117,7 @@ export function Modal({
 export function ConfirmDialog({
     title,
     message,
-    confirmLabel = 'Delete',
+    confirmLabel,
     onConfirm,
     onClose,
 }: {
@@ -125,6 +127,7 @@ export function ConfirmDialog({
     onConfirm: () => Promise<void>;
     onClose: () => void;
 }) {
+    const t = useTranslation();
     const [isBusy, setIsBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -135,7 +138,7 @@ export function ConfirmDialog({
             await onConfirm();
             onClose();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Action failed. Please try again.');
+            setError(err instanceof Error ? err.message : t('common.actionFailedRetry'));
             setIsBusy(false);
         }
     };
@@ -160,14 +163,14 @@ export function ConfirmDialog({
                         disabled={isBusy}
                         className="flex-1 px-4 py-2.5 rounded-xl text-label text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button
                         onClick={handleConfirm}
                         disabled={isBusy}
                         className="flex-1 px-4 py-2.5 rounded-xl text-label text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60 shadow-lg shadow-red-500/20"
                     >
-                        {isBusy ? 'Working…' : confirmLabel}
+                        {isBusy ? t('common.working') : (confirmLabel ?? t('common.delete'))}
                     </button>
                 </div>
             </div>

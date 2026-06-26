@@ -5,6 +5,7 @@ import { useAdminContext } from '../AdminContext';
 import { useAuthContext } from '@/features/auth/AuthContext';
 import { assignableRoles as getAssignableRoles } from '@shared/auth/permissions';
 import type { Profile } from '@/shared/types';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * Edit an employee's name and role.
@@ -16,6 +17,7 @@ import type { Profile } from '@/shared/types';
 export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose: () => void }) {
     const { adminData, roles, isSuperAdmin, updateEmployee } = useAdminContext();
     const { user } = useAuthContext();
+    const t = useTranslation();
 
     const [firstName, setFirstName] = useState(employee.first_name ?? '');
     const [lastName, setLastName] = useState(employee.last_name ?? '');
@@ -45,24 +47,24 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
             });
             onClose();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not update employee.');
+            setError(err instanceof Error ? err.message : t('admin.employeeUpdateError'));
             setIsBusy(false);
         }
     };
 
     return (
-        <Modal title="Edit Employee" subtitle={employee.email} onClose={onClose}>
+        <Modal title={t('admin.editEmployee')} subtitle={employee.email} onClose={onClose}>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
-                    <Field label="First name">
+                    <Field label={t('profile.field.firstName')}>
                         <TextInput value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jane" autoFocus />
                     </Field>
-                    <Field label="Last name">
+                    <Field label={t('profile.field.lastName')}>
                         <TextInput value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" />
                     </Field>
                 </div>
 
-                <Field label="Role">
+                <Field label={t('profile.field.role')}>
                     <SelectInput value={role} onChange={(e) => setRole(e.target.value)}>
                         {roleOptions.map((r) => (
                             <option key={r.name} value={r.name}>
@@ -74,7 +76,7 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
                 </Field>
 
                 {showOrgSelect && (
-                    <Field label="Organization">
+                    <Field label={t('profile.field.organization')}>
                         <SelectInput value={organizationId} onChange={(e) => setOrganizationId(e.target.value)}>
                             {adminData?.map((org) => (
                                 <option key={org.id} value={org.id}>
@@ -86,7 +88,7 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
                 )}
 
                 <FormError message={error} />
-                <FormActions onCancel={onClose} isBusy={isBusy} submitLabel="Save" />
+                <FormActions onCancel={onClose} isBusy={isBusy} submitLabel={t('common.save')} />
             </form>
         </Modal>
     );

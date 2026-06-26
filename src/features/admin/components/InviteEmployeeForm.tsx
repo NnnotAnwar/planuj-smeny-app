@@ -4,6 +4,7 @@ import { Field, TextInput, SelectInput, FormError, FormActions } from './FormCon
 import { useAdminContext } from '../AdminContext';
 import { useAuthContext } from '@/features/auth/AuthContext';
 import { assignableRoles as getAssignableRoles } from '@shared/auth/permissions';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * Invite a brand-new user by email.
@@ -15,6 +16,7 @@ import { assignableRoles as getAssignableRoles } from '@shared/auth/permissions'
 export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
     const { adminData, roles, isSuperAdmin, inviteEmployee } = useAdminContext();
     const { user } = useAuthContext();
+    const t = useTranslation();
 
     const ownOrgId = user?.organization_id ?? '';
     // Roles strictly below the inviter's rank (Admin -> up to Manager, etc.).
@@ -33,7 +35,7 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const trimmedEmail = email.trim().toLowerCase();
-        if (!trimmedEmail.includes('@')) return setError('A valid email is required.');
+        if (!trimmedEmail.includes('@')) return setError(t('admin.inviteEmailRequired'));
 
         setIsBusy(true);
         setError(null);
@@ -47,15 +49,15 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
             });
             onClose();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not send the invitation.');
+            setError(err instanceof Error ? err.message : t('admin.inviteSendError'));
             setIsBusy(false);
         }
     };
 
     return (
-        <Modal title="Invite Employee" subtitle="Email invitation" onClose={onClose}>
+        <Modal title={t('admin.inviteEmployee')} subtitle={t('admin.inviteSubtitle')} onClose={onClose}>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <Field label="Email">
+                <Field label={t('profile.field.email')}>
                     <TextInput
                         type="email"
                         value={email}
@@ -66,16 +68,16 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
                 </Field>
 
                 <div className="grid grid-cols-2 gap-3">
-                    <Field label="First name">
+                    <Field label={t('profile.field.firstName')}>
                         <TextInput value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jane" />
                     </Field>
-                    <Field label="Last name">
+                    <Field label={t('profile.field.lastName')}>
                         <TextInput value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" />
                     </Field>
                 </div>
 
                 {showOrgSelect && (
-                    <Field label="Organization">
+                    <Field label={t('profile.field.organization')}>
                         <SelectInput value={organizationId} onChange={(e) => setOrganizationId(e.target.value)}>
                             {adminData?.map((org) => (
                                 <option key={org.id} value={org.id}>
@@ -86,7 +88,7 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
                     </Field>
                 )}
 
-                <Field label="Role">
+                <Field label={t('profile.field.role')}>
                     <SelectInput value={role} onChange={(e) => setRole(e.target.value)}>
                         {roleOptions.map((r) => (
                             <option key={r.name} value={r.name}>
@@ -98,7 +100,7 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
                 </Field>
 
                 <FormError message={error} />
-                <FormActions onCancel={onClose} isBusy={isBusy} submitLabel="Send invite" />
+                <FormActions onCancel={onClose} isBusy={isBusy} submitLabel={t('admin.sendInvite')} />
             </form>
         </Modal>
     );

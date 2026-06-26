@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * --- ADMIN FORM CONTROLS ---
@@ -41,6 +42,7 @@ export function FormActions({
     isBusy: boolean;
     submitLabel: string;
 }) {
+    const t = useTranslation();
     return (
         <div className="flex gap-2 pt-1">
             <button
@@ -49,14 +51,14 @@ export function FormActions({
                 disabled={isBusy}
                 className="flex-1 px-4 py-2.5 rounded-xl text-label text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
             >
-                Cancel
+                {t('common.cancel')}
             </button>
             <button
                 type="submit"
                 disabled={isBusy}
                 className="flex-1 px-4 py-2.5 rounded-xl text-label text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-60 shadow-lg shadow-emerald-500/20"
             >
-                {isBusy ? 'Saving…' : submitLabel}
+                {isBusy ? t('common.saving') : submitLabel}
             </button>
         </div>
     );
