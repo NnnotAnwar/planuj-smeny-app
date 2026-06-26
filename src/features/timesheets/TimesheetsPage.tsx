@@ -171,7 +171,7 @@ function TimesheetsInner() {
     const locationName = useMemo(() => {
         const map = new Map(locations.map((l) => [l.id, l.name]));
         return (id: string) => map.get(id) ?? t('common.unknown');
-    }, [locations]);
+    }, [locations, t]);
 
     const shifts = useMemo(() => {
         const all = shiftsQ.data ?? [];

@@ -22,6 +22,8 @@ import { useShiftContext } from '@features/shifts/ShiftContext';
 import { usePermissions } from '@shared/auth/usePermissions';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 
+import { type Shift } from '@shared/types';
+
 type TranslateFn = ReturnType<typeof useTranslation>;
 import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
 import { NotificationsBell } from '@features/notifications/NotificationsBell';
@@ -55,7 +57,7 @@ function CurrentPost({
   t,
 }: {
   currentLocation?: { id: string; name: string };
-  activeShift: any;
+  activeShift: Shift;
   onSelect: () => void;
   t: TranslateFn;
 }) {
@@ -291,7 +293,7 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
         )}
 
         {/* SIGNATURE HERO — only show "Aktuální směna" when shift is active */}
-        {isOnShift && (
+        {activeShift && (
           <CurrentPost
             currentLocation={currentLocation}
             activeShift={activeShift}
