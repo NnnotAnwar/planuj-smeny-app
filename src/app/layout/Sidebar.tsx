@@ -4,28 +4,17 @@ import { Link, useLocation } from 'react-router-dom';
 import { formatTime } from '@shared/utils/date';
 import { Clock } from '@shared/components/Clock';
 import { SearchInput } from '@shared/components/SearchInput';
-import {
-  SquaresFourIcon,
-  ChartBarIcon,
-  GearIcon,
-  ShieldCheckIcon,
-  UserCircleGearIcon,
-  ClockUserIcon,
-  ClockCounterClockwiseIcon,
-  MapPinIcon,
-  SignOutIcon,
-  type Icon,
-} from '@phosphor-icons/react';
+import { MapPinIcon, SignOutIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
-import { usePermissions } from '@shared/auth/usePermissions';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { getFullInitials } from '@shared/utils/getInitials';
+import { useNavItems, type ResolvedNavItem } from '../navigation';
 
 import { type Shift } from '@shared/types';
 
 type TranslateFn = ReturnType<typeof useTranslation>;
-import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
 import { NotificationsBell } from '@features/notifications/NotificationsBell';
 
 /**
@@ -39,12 +28,6 @@ import { NotificationsBell } from '@features/notifications/NotificationsBell';
 
 interface SidebarProps {
   onLocationSelect: (locationId: string | null) => void;
-}
-
-function getInitials(firstName?: string | null, lastName?: string | null): string {
-  const f = firstName?.[0] || '';
-  const l = lastName?.[0] || '';
-  return (f + l).toUpperCase() || '??';
 }
 
 /** The signature element — shows the active shift location ("Aktuální směna").
@@ -104,7 +87,7 @@ function SidebarNav({
   items,
   currentPath,
 }: {
-  items: Array<{ name: string; icon: Icon; route: string; badge?: number }>;
+  items: ResolvedNavItem[];
   currentPath: string;
 }) {
   return (
@@ -122,10 +105,10 @@ function SidebarNav({
             }`}
           >
             <item.icon className="w-4 h-4 opacity-80" />
-            <span className="flex-1">{item.name}</span>
-            {item.badge && item.badge > 0 && (
+            <span className="flex-1">{item.label}</span>
+            {item.badgeCount > 0 && (
               <span className="ml-auto bg-emerald-500 dark:bg-emerald-400 text-white dark:text-[#0B1120] text-[10px] font-bold px-1.5 rounded-full min-w-[17px] h-[17px] flex items-center justify-center">
-                {item.badge}
+                {item.badgeCount}
               </span>
             )}
           </Link>
@@ -212,26 +195,13 @@ function SidebarLocations({
 export function Sidebar({ onLocationSelect }: SidebarProps) {
   const { user, logout } = useAuthContext();
   const { locations, selectedLocationId, activeShift } = useShiftContext();
-  const { canViewAdminPanel, canManageEmployees } = usePermissions();
   const t = useTranslation();
-  const pendingRequests = usePendingNameRequestCount();
+  const navItems = useNavItems();
   const currentRoute = useLocation();
 
   // Current location is the heart of the experience
   const currentLocation = locations.find((l) => l.id === selectedLocationId);
   const isOnShift = !!activeShift;
-
-  const navItems: { name: string; icon: Icon; route: string; badge?: number }[] = [
-    { name: t('nav.dashboard'), icon: SquaresFourIcon, route: '/' },
-    { name: t('nav.overview'), icon: ChartBarIcon, route: '/overview' },
-    ...(canViewAdminPanel ? [{ name: t('nav.adminPanel'), icon: ShieldCheckIcon, route: '/admin' }] : []),
-    ...(canViewAdminPanel ? [{ name: t('nav.timesheets'), icon: ClockUserIcon, route: '/timesheets' }] : []),
-    ...(canManageEmployees ? [{ name: t('nav.requests'), icon: UserCircleGearIcon, route: '/requests', badge: pendingRequests }] : []),
-    ...(canManageEmployees ? [{ name: t('nav.activity'), icon: ClockCounterClockwiseIcon, route: '/activity' }] : []),
-    { name: t('nav.settings'), icon: GearIcon, route: '/settings' },
-  ];
-
-
 
   const handleCurrentPostClick = () => {
     if (currentLocation) {
@@ -279,7 +249,7 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
             className="flex items-center gap-3 mb-4 px-3 py-2 rounded-2xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
           >
             <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 shadow-md flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-semibold shrink-0">
-              {getInitials(user.first_name, user.last_name)}
+              {getFullInitials(user.first_name, user.last_name)}
             </div>
             <div className="min-w-0">
               <div className="text-sm font-medium text-gray-800 dark:text-slate-200 truncate">

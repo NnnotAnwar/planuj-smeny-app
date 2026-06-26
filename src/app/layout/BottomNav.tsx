@@ -2,42 +2,25 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import {
-    SquaresFourIcon,
-    ChartBarIcon,
-    GearIcon,
-    ShieldCheckIcon,
-    UserCircleGearIcon,
-    ClockUserIcon,
-    ClockCounterClockwiseIcon,
     DotsThreeOutlineIcon,
     XIcon,
     SignOutIcon,
     PaletteIcon,
     CaretRightIcon,
-    type Icon,
 } from '@phosphor-icons/react';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useTheme } from '@app/providers/ThemeContext';
-import { usePermissions } from '@shared/auth/usePermissions';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
-import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
-
-function getInitials(firstName?: string | null, lastName?: string | null): string {
-    return ((firstName?.[0] ?? '') + (lastName?.[0] ?? '')).toUpperCase() || '?';
-}
+import { getFullInitials } from '@shared/utils/getInitials';
+import { useNavItems } from '../navigation';
 
 /**
  * --- BOTTOM NAVIGATION (mobile) ---
  * Persistent native-style tab bar (hidden on md+). Primary destinations live in
  * the bar; secondary ones (Settings, and Requests for admins) are tucked into a
- * "More" sheet that slides in above — but never covers — the bar.
+ * "More" sheet that slides in above — but never covers — the bar. Both sets come
+ * from the shared `useNavItems` config, so they can't drift from the sidebar.
  */
-
-interface NavItem {
-    name: string;
-    icon: Icon;
-    route: string;
-}
 
 // Burger-style slide-in (mirrors the old fullscreen menu): the panel springs in
 // from the right and staggers its items.
@@ -67,28 +50,17 @@ export function BottomNav() {
             ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim()
             : user?.username ?? '';
 
-    const { canViewAdminPanel, canManageEmployees: isAdmin } = usePermissions();
     const t = useTranslation();
-    const pending = usePendingNameRequestCount();
+    const navItems = useNavItems();
 
-    // Primary bar destinations.
-    const items: NavItem[] = [
-        { name: t('nav.home'), icon: SquaresFourIcon, route: '/' },
-        { name: t('nav.overview'), icon: ChartBarIcon, route: '/overview' },
-        ...(canViewAdminPanel ? [{ name: t('nav.admin'), icon: ShieldCheckIcon, route: '/admin' }] : []),
-    ];
-
-    // Destinations that live inside the "More" sheet.
-    const moreItems: NavItem[] = [
-        ...(canViewAdminPanel ? [{ name: t('nav.timesheets'), icon: ClockUserIcon, route: '/timesheets' }] : []),
-        ...(isAdmin ? [{ name: t('nav.requests'), icon: UserCircleGearIcon, route: '/requests' }] : []),
-        ...(isAdmin ? [{ name: t('nav.activity'), icon: ClockCounterClockwiseIcon, route: '/activity' }] : []),
-        { name: t('nav.settings'), icon: GearIcon, route: '/settings' },
-    ];
+    // Primary bar destinations vs. those tucked into the "More" sheet — both
+    // derived from the shared nav config (single source of truth with Sidebar).
+    const items = navItems.filter((i) => i.primaryOnMobile);
+    const moreItems = navItems.filter((i) => !i.primaryOnMobile);
 
     // When the sheet is open only "More" is lit; otherwise it's lit on its routes.
     const moreActive = menuOpen || moreItems.some((i) => i.route === pathname);
-    const moreBadge = isAdmin ? pending : 0;
+    const moreBadge = moreItems.reduce((sum, i) => sum + i.badgeCount, 0);
 
     // Lock body scroll while the sheet is open.
     useEffect(() => {
@@ -132,7 +104,7 @@ export function BottomNav() {
                                         className="flex items-center gap-3 p-4 rounded-2xl bg-white/70 dark:bg-white/5 border-2 border-gray-200 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                                     >
                                         <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 ring-1 ring-white/60 dark:ring-white/20 shadow-md flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-title shrink-0">
-                                            {getInitials(user.first_name, user.last_name)}
+                                            {getFullInitials(user.first_name, user.last_name)}
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-body-strong text-gray-900 dark:text-white truncate">{fullName}</p>
@@ -148,9 +120,7 @@ export function BottomNav() {
                                 variants={itemVariants}
                                 className="rounded-2xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 overflow-hidden"
                             >
-                                {moreItems.map((item, i) => {
-                                    const badge = item.route === '/requests' ? moreBadge : 0;
-                                    return (
+                                {moreItems.map((item, i) => (
                                         <Link
                                             key={item.route}
                                             to={item.route}
@@ -160,14 +130,13 @@ export function BottomNav() {
                                             <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                                                 <item.icon weight="bold" className="w-4 h-4" />
                                             </div>
-                                            <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{item.name}</span>
-                                            {badge > 0 && (
-                                                <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-600 text-white text-micro flex items-center justify-center">{badge}</span>
+                                            <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{item.label}</span>
+                                            {item.badgeCount > 0 && (
+                                                <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-600 text-white text-micro flex items-center justify-center">{item.badgeCount}</span>
                                             )}
                                             <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-400" />
                                         </Link>
-                                    );
-                                })}
+                                ))}
 
                                 {/* Dark mode */}
                                 <button
@@ -220,7 +189,7 @@ export function BottomNav() {
                                 }`}
                             >
                                 <item.icon weight={active ? 'fill' : 'regular'} className="w-6 h-6" />
-                                <span className="text-caption">{item.name}</span>
+                                <span className="text-caption">{item.shortLabel}</span>
                             </Link>
                         );
                     })}
