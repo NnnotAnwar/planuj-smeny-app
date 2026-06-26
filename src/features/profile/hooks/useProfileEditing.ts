@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, type SyntheticEvent } from 'react';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { authService } from '@features/auth/authService';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import type { NameChangeRequest } from '@shared/types';
 
 /**
@@ -19,6 +20,7 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function useProfileEditing() {
     const { user, refreshUser } = useAuthContext();
+    const t = useTranslation();
     const isStaff = (user?.role.rank ?? 0) < ADMIN_RANK;
 
     // username (self-service, weekly limited)
@@ -90,7 +92,7 @@ export function useProfileEditing() {
         setUserErr(null);
         setUserSaved(false);
         if (!USERNAME_RE.test(normalizedUsername)) {
-            setUserErr('Username must be 3–30 characters: lowercase letters, numbers, dot, underscore or hyphen.');
+            setUserErr(t('profile.editor.usernameInvalid'));
             return;
         }
         setBusyUser(true);
@@ -98,8 +100,8 @@ export function useProfileEditing() {
         if (error) {
             setUserErr(
                 error.code === '23505'
-                    ? 'That username is already taken. Please choose another.'
-                    : error.message || 'Could not update your username.',
+                    ? t('profile.editor.usernameTaken')
+                    : error.message || t('profile.editor.usernameError'),
             );
             setBusyUser(false);
             return;
@@ -124,7 +126,7 @@ export function useProfileEditing() {
             last_name: lastName.trim() || null,
         });
         if (error) {
-            setNameErr(error.message || 'Could not update your name.');
+            setNameErr(error.message || t('profile.editor.nameError'));
             setBusyName(false);
             return;
         }
@@ -138,7 +140,7 @@ export function useProfileEditing() {
         e.preventDefault();
         setReqErr(null);
         if (!reqFirst.trim() && !reqLast.trim()) {
-            setReqErr('Enter the first and/or last name you would like.');
+            setReqErr(t('profile.editor.requestEmpty'));
             return;
         }
         setBusyReq(true);
@@ -148,7 +150,7 @@ export function useProfileEditing() {
             setReqNote('');
             await loadRequest();
         } catch (err) {
-            setReqErr(err instanceof Error ? err.message : 'Could not submit your request.');
+            setReqErr(err instanceof Error ? err.message : t('profile.editor.requestError'));
         } finally {
             setBusyReq(false);
         }
@@ -161,7 +163,7 @@ export function useProfileEditing() {
             await authService.cancelNameChange(latestRequest.id);
             await loadRequest();
         } catch (err) {
-            setReqErr(err instanceof Error ? err.message : 'Could not cancel your request.');
+            setReqErr(err instanceof Error ? err.message : t('profile.editor.cancelError'));
         } finally {
             setBusyReq(false);
         }

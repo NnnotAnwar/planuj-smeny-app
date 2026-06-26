@@ -5,6 +5,7 @@ import { Modal } from '@features/admin/components/Modal';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { isSuperAdmin } from '@shared/auth/permissions';
 import { usePermissions } from '@shared/auth/usePermissions';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { getFullName } from '@shared/utils/getInitials';
 import { profileService } from '../profileService';
 import { ProfileView } from './ProfileView';
@@ -20,6 +21,7 @@ import { ProfileView } from './ProfileView';
 export function UserProfileModal({ userId, onClose }: { userId: string; onClose: () => void }) {
     const { user } = useAuthContext();
     const { canViewAdminPanel } = usePermissions();
+    const t = useTranslation();
     const showOrganization = !!user && isSuperAdmin(user);
     const isSelf = user?.id === userId;
 
@@ -29,7 +31,7 @@ export function UserProfileModal({ userId, onClose }: { userId: string; onClose:
         enabled: !!userId,
     });
 
-    const title = profile ? getFullName(profile) : 'Profile';
+    const title = profile ? getFullName(profile) : t('profile.title');
     const subtitle = profile ? `@${profile.username}` : undefined;
 
     return (
@@ -41,7 +43,7 @@ export function UserProfileModal({ userId, onClose }: { userId: string; onClose:
             ) : error || !profile ? (
                 <div className="rounded-2xl border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 p-4">
                     <p className="text-body text-red-600 dark:text-red-400">
-                        {error instanceof Error ? error.message : 'Profile not found or you do not have access.'}
+                        {error instanceof Error ? error.message : t('profile.notFound')}
                     </p>
                 </div>
             ) : (
@@ -60,7 +62,7 @@ export function UserProfileModal({ userId, onClose }: { userId: string; onClose:
                             className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-body-strong text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                         >
                             <ClockUserIcon weight="bold" className="w-4 h-4" />
-                            View timesheets
+                            {t('profile.viewTimesheets')}
                         </Link>
                     )}
 
@@ -71,7 +73,7 @@ export function UserProfileModal({ userId, onClose }: { userId: string; onClose:
                             className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-body-strong text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/25 transition-colors"
                         >
                             <ArrowSquareOutIcon weight="bold" className="w-4 h-4" />
-                            Open profile page
+                            {t('profile.openPage')}
                         </Link>
                     )}
                 </div>

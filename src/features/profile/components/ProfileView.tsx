@@ -9,6 +9,7 @@ import {
 import type { Profile } from '@shared/types';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
 import { getFullInitials, getFullName } from '@shared/utils/getInitials';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { ShiftStatusBadge } from './ShiftStatusBadge';
 
 const cardClass =
@@ -46,6 +47,7 @@ export function ProfileView({
   /** Identity card (avatar + name + role). Hidden when a host already shows it (e.g. a modal title). */
   showHeader?: boolean;
 }) {
+  const t = useTranslation();
   return (
     <div className="space-y-4">
       <ShiftStatusBadge userId={profile.id} />
@@ -70,33 +72,33 @@ export function ProfileView({
       <div className={`${cardClass} overflow-hidden`}>
         <ProfileField
           icon={<UserIcon weight="bold" className="w-4 h-4" />}
-          label="First name"
+          label={t('profile.field.firstName')}
           value={profile.first_name?.trim() || '—'}
         />
         <ProfileField
           icon={<UserIcon weight="bold" className="w-4 h-4" />}
-          label="Last name"
+          label={t('profile.field.lastName')}
           value={profile.last_name?.trim() || '—'}
         />
         <ProfileField
           icon={<EnvelopeSimpleIcon weight="bold" className="w-4 h-4" />}
-          label="Email"
+          label={t('profile.field.email')}
           value={profile.email}
         />
         <ProfileField
           icon={<AtIcon weight="bold" className="w-4 h-4" />}
-          label="Username"
+          label={t('profile.field.username')}
           value={`@${profile.username}`}
         />
         <ProfileField
           icon={<IdentificationBadgeIcon weight="bold" className="w-4 h-4" />}
-          label="Role"
+          label={t('profile.field.role')}
           value={profile.role.name}
         />
         {showOrganization && organizationName && (
           <ProfileField
             icon={<BuildingsIcon weight="bold" className="w-4 h-4" />}
-            label="Organization"
+            label={t('profile.field.organization')}
             value={organizationName}
           />
         )}

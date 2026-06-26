@@ -1,5 +1,6 @@
 import { LiveClockIcon } from '@shared/components/LiveClockIcon';
 import { formatTime } from '@shared/utils/date';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { useUserStatus } from '../hooks/useUserStatus';
 
 /**
@@ -8,6 +9,7 @@ import { useUserStatus } from '../hooks/useUserStatus';
  */
 export function ShiftStatusBadge({ userId }: { userId: string }) {
     const { data: status, isLoading } = useUserStatus(userId);
+    const t = useTranslation();
 
     if (isLoading) return null;
 
@@ -15,7 +17,7 @@ export function ShiftStatusBadge({ userId }: { userId: string }) {
         return (
             <div className="flex items-center gap-2 rounded-2xl bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 px-4 py-3">
                 <LiveClockIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" isActive={false} />
-                <span className="text-body-strong text-gray-500 dark:text-gray-400">Not on shift</span>
+                <span className="text-body-strong text-gray-500 dark:text-gray-400">{t('profile.offShift')}</span>
             </div>
         );
     }
@@ -25,10 +27,10 @@ export function ShiftStatusBadge({ userId }: { userId: string }) {
             <LiveClockIcon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" isActive={true} />
             <span className="min-w-0 text-body-strong text-emerald-700 dark:text-emerald-400 truncate">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 align-middle" />
-                On shift{status.location_name ? ` · ${status.location_name}` : ''}
+                {t('profile.onShift')}{status.location_name ? ` · ${status.location_name}` : ''}
             </span>
             <span className="ml-auto shrink-0 text-caption text-emerald-600/80 dark:text-emerald-400/70">
-                since {formatTime(status.started_at)}
+                {t('profile.since', { time: formatTime(status.started_at) })}
             </span>
         </div>
     );

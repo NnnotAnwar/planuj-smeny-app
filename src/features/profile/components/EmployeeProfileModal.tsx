@@ -4,6 +4,7 @@ import { Modal } from '@features/admin/components/Modal';
 import type { Profile } from '@shared/types';
 import { getFullName } from '@shared/utils/getInitials';
 import { usePermissions } from '@shared/auth/usePermissions';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { ProfileView } from './ProfileView';
 
 export function EmployeeProfileModal({
@@ -20,6 +21,7 @@ export function EmployeeProfileModal({
   onClose: () => void;
 }) {
   const { canViewAdminPanel } = usePermissions();
+  const t = useTranslation();
 
   return (
     <Modal title={getFullName(employee)} subtitle={`@${employee.username}`} onClose={onClose}>
@@ -38,7 +40,7 @@ export function EmployeeProfileModal({
             className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-body-strong text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
           >
             <ClockUserIcon weight="bold" className="w-4 h-4" />
-            View timesheets
+            {t('profile.viewTimesheets')}
           </Link>
         )}
 
@@ -49,7 +51,7 @@ export function EmployeeProfileModal({
             className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-body-strong text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/25 transition-colors"
           >
             <ArrowSquareOutIcon weight="bold" className="w-4 h-4" />
-            Open profile page
+            {t('profile.openPage')}
           </Link>
         )}
       </div>
