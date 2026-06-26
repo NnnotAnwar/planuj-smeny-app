@@ -3,6 +3,7 @@ import { Modal } from '@features/admin/components/Modal';
 import { TimePicker } from '@shared/components/TimePicker';
 import { DatePicker } from '@shared/components/DatePicker';
 import type { Location, Shift, Profile } from '@shared/types';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * --- SHIFT EDITOR MODAL ---
@@ -49,6 +50,7 @@ export function ShiftEditorModal({
     onClose: () => void;
     onSubmit: (values: ShiftFormValues) => Promise<void>;
 }) {
+    const t = useTranslation();
     const isEdit = !!shift;
     const memberName =
         [member.first_name, member.last_name].filter(Boolean).join(' ') || member.username;
@@ -75,7 +77,7 @@ export function ShiftEditorModal({
 
     const handleSubmit = async () => {
         setError(null);
-        if (!locationId) return setError('Please choose a location.');
+        if (!locationId) return setError(t('shiftEditor.chooseLocation'));
 
         const startDate = new Date(`${date}T${start}:00`);
         let endDate = new Date(`${date}T${end}:00`);
@@ -90,45 +92,45 @@ export function ShiftEditorModal({
             });
             onClose();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not save the shift.');
+            setError(err instanceof Error ? err.message : t('shiftEditor.saveError'));
             setBusy(false);
         }
     };
 
     return (
-        <Modal title={isEdit ? 'Edit shift' : 'Add shift'} subtitle={memberName} onClose={onClose}>
+        <Modal title={isEdit ? t('shiftEditor.editTitle') : t('shiftEditor.addTitle')} subtitle={memberName} onClose={onClose}>
             <div className="space-y-4">
                 <div className="space-y-1.5">
-                    <label className="text-label text-gray-400">Location</label>
+                    <label className="text-label text-gray-400">{t('admin.colLocation')}</label>
                     <select
                         value={locationId}
                         onChange={(e) => setLocationId(e.target.value)}
                         className={inputClass}
                     >
-                        {pickable.length === 0 && <option value="">No locations</option>}
+                        {pickable.length === 0 && <option value="">{t('shiftEditor.noLocations')}</option>}
                         {pickable.map((l) => (
                             <option key={l.id} value={l.id}>
                                 {l.name}
-                                {l.archived_at ? ' (archived)' : ''}
+                                {l.archived_at ? t('shiftEditor.archived') : ''}
                             </option>
                         ))}
                     </select>
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-label text-gray-400">Date</label>
-                    <DatePicker value={date} onChange={setDate} aria-label="Shift date" />
+                    <label className="text-label text-gray-400">{t('overview.colDate')}</label>
+                    <DatePicker value={date} onChange={setDate} aria-label={t('shiftEditor.shiftDate')} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                        <label className="text-label text-gray-400">Start</label>
-                        <TimePicker value={start} onChange={setStart} aria-label="Start time" />
+                        <label className="text-label text-gray-400">{t('shiftEditor.start')}</label>
+                        <TimePicker value={start} onChange={setStart} aria-label={t('shiftEditor.startTime')} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-label text-gray-400">End</label>
-                        <TimePicker value={end} onChange={setEnd} aria-label="End time" />
-                        {overnight && <p className="text-micro text-amber-500">Ends next day (overnight)</p>}
+                        <label className="text-label text-gray-400">{t('shiftEditor.end')}</label>
+                        <TimePicker value={end} onChange={setEnd} aria-label={t('shiftEditor.endTime')} />
+                        {overnight && <p className="text-micro text-amber-500">{t('shiftEditor.overnight')}</p>}
                     </div>
                 </div>
 
@@ -144,14 +146,14 @@ export function ShiftEditorModal({
                         disabled={busy}
                         className="flex-1 px-4 py-2.5 rounded-xl text-label text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={busy}
                         className="flex-1 px-4 py-2.5 rounded-xl text-label text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-60 shadow-lg shadow-emerald-500/20"
                     >
-                        {busy ? 'Saving…' : isEdit ? 'Save changes' : 'Add shift'}
+                        {busy ? t('common.saving') : isEdit ? t('shiftEditor.saveChanges') : t('shiftEditor.addTitle')}
                     </button>
                 </div>
             </div>

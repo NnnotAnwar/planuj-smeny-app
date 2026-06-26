@@ -18,22 +18,24 @@ import { UserProfileModal } from '@features/profile/components/UserProfileModal'
 import { type ShiftAuditLog, type ShiftSnapshot, type Profile } from '@shared/types';
 import { timesheetService, type AuditLogQuery } from './timesheetService';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
+import type { TranslationKey } from '@shared/i18n/translations';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const PAGE = 50;
 
-type ActionMeta = { label: string; Icon: typeof PlusIcon; badge: string; noun?: string };
+type ActionMeta = { labelKey: TranslationKey; Icon: typeof PlusIcon; badge: string };
 
 const ACTION: Record<string, ActionMeta> = {
-    create: { label: 'Added', noun: 'shift', Icon: PlusIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
-    update: { label: 'Edited', noun: 'shift', Icon: PencilSimpleIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
-    delete: { label: 'Deleted', noun: 'shift', Icon: TrashIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
-    username_change: { label: 'Changed username', Icon: AtIcon, badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400' },
-    name_request_approved: { label: 'Approved name change', Icon: CheckCircleIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
-    name_request_rejected: { label: 'Declined name change', Icon: XCircleIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    create: { labelKey: 'audit.actionAdded', Icon: PlusIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    update: { labelKey: 'audit.actionEdited', Icon: PencilSimpleIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    delete: { labelKey: 'audit.actionDeleted', Icon: TrashIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    username_change: { labelKey: 'audit.actionUsername', Icon: AtIcon, badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400' },
+    name_request_approved: { labelKey: 'audit.actionNameApproved', Icon: CheckCircleIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    name_request_rejected: { labelKey: 'audit.actionNameDeclined', Icon: XCircleIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
 };
 
-const FALLBACK_META: ActionMeta = { label: 'Activity', Icon: ClockCounterClockwiseIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' };
+const FALLBACK_META: ActionMeta = { labelKey: 'audit.actionGeneric', Icon: ClockCounterClockwiseIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' };
 
 function memberName(m: Profile): string {
     return [m.first_name, m.last_name].filter(Boolean).join(' ') || m.username;
@@ -67,6 +69,7 @@ export function AuditLogPage() {
 
 function AuditLogInner() {
     const { user } = useAuthContext();
+    const t = useTranslation();
     useTimesheetRealtime();
 
     const [targetUserId, setTargetUserId] = useState<string>('');
@@ -102,15 +105,15 @@ function AuditLogInner() {
         <div className="space-y-4 px-1 pb-10">
             <header className="flex items-end justify-between gap-3 pt-2">
                 <div className="space-y-0.5">
-                    <p className="text-label text-emerald-500 text-left">Administration</p>
-                    <h1 className="text-display text-gray-900 dark:text-white">Activity Log</h1>
+                    <p className="text-label text-emerald-500 text-left">{t('admin.administration')}</p>
+                    <h1 className="text-display text-gray-900 dark:text-white">{t('nav.activity')}</h1>
                 </div>
             </header>
 
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-2">
                 <select value={targetUserId} onChange={(e) => setTargetUserId(e.target.value)} className={selectClass}>
-                    <option value="">All employees</option>
+                    <option value="">{t('audit.allEmployees')}</option>
                     {members.map((m) => (
                         <option key={m.id} value={m.id}>
                             {memberName(m)}
@@ -118,37 +121,37 @@ function AuditLogInner() {
                     ))}
                 </select>
                 <select value={action} onChange={(e) => setAction(e.target.value)} className={selectClass}>
-                    <option value="">All actions</option>
-                    <option value="create">Added shift</option>
-                    <option value="update">Edited shift</option>
-                    <option value="delete">Deleted shift</option>
-                    <option value="username_change">Username changed</option>
-                    <option value="name_request_approved">Name approved</option>
-                    <option value="name_request_rejected">Name declined</option>
+                    <option value="">{t('audit.allActions')}</option>
+                    <option value="create">{t('audit.optAddedShift')}</option>
+                    <option value="update">{t('audit.optEditedShift')}</option>
+                    <option value="delete">{t('audit.optDeletedShift')}</option>
+                    <option value="username_change">{t('audit.optUsername')}</option>
+                    <option value="name_request_approved">{t('audit.optNameApproved')}</option>
+                    <option value="name_request_rejected">{t('audit.optNameDeclined')}</option>
                 </select>
                 <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className={selectClass}>
-                    <option value="desc">Newest first</option>
-                    <option value="asc">Oldest first</option>
+                    <option value="desc">{t('audit.newest')}</option>
+                    <option value="asc">{t('audit.oldest')}</option>
                 </select>
             </div>
 
             <section className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
                     <ClockCounterClockwiseIcon weight="bold" className="w-4 h-4 text-emerald-500" />
-                    <h2 className="text-label text-gray-400">Shift changes</h2>
+                    <h2 className="text-label text-gray-400">{t('audit.shiftChanges')}</h2>
                 </div>
 
                 {error ? (
                     <div className="py-16 text-center space-y-1">
-                        <p className="text-label text-red-500">Something went wrong</p>
+                        <p className="text-label text-red-500">{t('state.error')}</p>
                         <p className="text-small text-gray-400">
-                            {error instanceof Error ? error.message : 'Failed to load the activity log.'}
+                            {error instanceof Error ? error.message : t('audit.loadError')}
                         </p>
                     </div>
                 ) : isLoading ? (
-                    <div className="py-20 text-center text-label text-gray-400 animate-pulse">Loading activity…</div>
+                    <div className="py-20 text-center text-label text-gray-400 animate-pulse">{t('audit.loading')}</div>
                 ) : entries.length === 0 ? (
-                    <div className="py-20 text-center text-label text-gray-400">No activity found</div>
+                    <div className="py-20 text-center text-label text-gray-400">{t('audit.empty')}</div>
                 ) : (
                     <>
                         <div className="space-y-2">
@@ -163,7 +166,7 @@ function AuditLogInner() {
                                 disabled={isFetchingNextPage}
                                 className="w-full py-2.5 rounded-xl text-label text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
                             >
-                                {isFetchingNextPage ? 'Loading…' : 'Load more'}
+                                {isFetchingNextPage ? t('common.loading') : t('audit.loadMore')}
                             </button>
                         )}
                     </>
@@ -215,6 +218,7 @@ function DiffRow({ before, after, beforeStrike = true }: { before: string; after
 }
 
 function AuditBody({ entry }: { entry: ShiftAuditLog }) {
+    const t = useTranslation();
     const d = entry.details;
     switch (entry.action) {
         case 'update':
@@ -233,8 +237,8 @@ function AuditBody({ entry }: { entry: ShiftAuditLog }) {
         case 'name_request_rejected':
             return (
                 <div className="text-caption text-gray-700 dark:text-gray-200 space-y-0.5">
-                    <p>Requested: <span className="text-gray-500 dark:text-gray-400">{d.new_name || '—'}</span></p>
-                    {d.note && <p className="text-gray-400">Reason: {d.note}</p>}
+                    <p>{t('audit.requested', { name: d.new_name || '—' })}</p>
+                    {d.note && <p className="text-gray-400">{t('audit.reason', { note: d.note })}</p>}
                 </div>
             );
         default:
@@ -243,9 +247,10 @@ function AuditBody({ entry }: { entry: ShiftAuditLog }) {
 }
 
 function AuditCard({ entry, onOpenUser }: { entry: ShiftAuditLog; onOpenUser: (userId: string) => void }) {
+    const t = useTranslation();
     const meta = ACTION[entry.action] ?? FALLBACK_META;
-    const actor = entry.details.actor_name ?? 'Someone';
-    const target = entry.details.target_name ?? 'a member';
+    const actor = entry.details.actor_name ?? t('audit.someone');
+    const target = entry.details.target_name ?? t('audit.member');
     const when = new Date(entry.created_at).toLocaleString(undefined, {
         day: 'numeric',
         month: 'short',
@@ -262,13 +267,13 @@ function AuditCard({ entry, onOpenUser }: { entry: ShiftAuditLog; onOpenUser: (u
                 {/* Action + who it was about (wraps instead of cramming on mobile). */}
                 <div className="flex flex-wrap items-baseline gap-x-1.5">
                     <span className="text-body-strong text-gray-900 dark:text-white">
-                        {meta.label}{meta.noun ? ` a ${meta.noun}` : ''} ·
+                        {t(meta.labelKey)} ·
                     </span>
                     <PersonButton name={target} userId={entry.target_user_id} onOpenUser={onOpenUser} strong />
                 </div>
                 {/* Who did it + when — own line so nothing gets squeezed off-screen. */}
                 <p className="text-micro text-gray-400">
-                    by <PersonButton name={actor} userId={entry.actor_id} onOpenUser={onOpenUser} />
+                    {t('audit.by')} <PersonButton name={actor} userId={entry.actor_id} onOpenUser={onOpenUser} />
                     {' · '}
                     {when}
                 </p>

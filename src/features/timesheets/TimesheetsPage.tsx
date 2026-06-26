@@ -25,6 +25,7 @@ import { ConfirmDialog } from '@features/admin/components/Modal';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
 import { getFullInitials } from '@shared/utils/getInitials';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type Shift, type Profile } from '@shared/types';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from '@features/shifts/shiftStats';
 
@@ -123,6 +124,7 @@ export function TimesheetsPage() {
 
 function TimesheetsInner() {
     const { user } = useAuthContext();
+    const t = useTranslation();
     const qc = useQueryClient();
     useTimesheetRealtime();
 
@@ -169,7 +171,7 @@ function TimesheetsInner() {
 
     const locationName = useMemo(() => {
         const map = new Map(locations.map((l) => [l.id, l.name]));
-        return (id: string) => map.get(id) ?? 'Unknown';
+        return (id: string) => map.get(id) ?? t('common.unknown');
     }, [locations]);
 
     const shifts = useMemo(() => {
@@ -189,7 +191,7 @@ function TimesheetsInner() {
 
     const canEdit = !!(user && selected && canManageMember(user, selected));
     // Period for the exported document — `YYYY-MM`, or all-time.
-    const periodLabel = month ?? 'All time';
+    const periodLabel = month ?? t('overview.allTime');
 
     const invalidate = () =>
         Promise.all([
@@ -252,7 +254,7 @@ function TimesheetsInner() {
 
             await exportAllShifts(fmt, {
                 periodLabel,
-                locationName: (id) => locMap.get(id) ?? 'Unknown',
+                locationName: (id) => locMap.get(id) ?? t('common.unknown'),
                 groups,
             });
         } finally {
@@ -266,10 +268,10 @@ function TimesheetsInner() {
     const columns: Column<Shift>[] = [
         {
             key: 'date',
-            header: 'Date',
+            header: t('overview.colDate'),
             width: 'w-16 sm:w-24',
             className: 'whitespace-nowrap',
-            footer: <span className="text-label text-gray-400">Total</span>,
+            footer: <span className="text-label text-gray-400">{t('overview.total')}</span>,
             render: (s) => {
                 const d = new Date(s.started_at);
                 return (
@@ -284,7 +286,7 @@ function TimesheetsInner() {
         },
         {
             key: 'location',
-            header: 'Location & Time',
+            header: t('overview.colLocationTime'),
             className: 'w-full',
             footer: (
                 <span className="sm:hidden text-caption text-gray-500 dark:text-gray-400 tabular-nums">
@@ -307,7 +309,7 @@ function TimesheetsInner() {
         },
         {
             key: 'gross',
-            header: 'Gross',
+            header: t('overview.colGross'),
             align: 'right',
             width: 'w-20',
             hideOnMobile: true,
@@ -317,7 +319,7 @@ function TimesheetsInner() {
         },
         {
             key: 'break',
-            header: 'Break',
+            header: t('overview.colBreak'),
             align: 'right',
             width: 'w-20',
             hideOnMobile: true,
@@ -330,7 +332,7 @@ function TimesheetsInner() {
         },
         {
             key: 'net',
-            header: 'Net',
+            header: t('overview.colNet'),
             align: 'right',
             width: canEdit ? 'w-16 sm:w-20' : 'w-20 sm:w-24',
             footer: <span className="text-xs font-black tabular-nums whitespace-nowrap text-emerald-600 dark:text-emerald-400">{fmtHours(totals.net)}</span>,
@@ -341,7 +343,7 @@ function TimesheetsInner() {
                         <span className={`block text-xs font-black tabular-nums whitespace-nowrap ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
                             {fmtDuration(shiftHours(s))}
                         </span>
-                        {ongoing && <span className="block text-micro text-amber-500">Live</span>}
+                        {ongoing && <span className="block text-micro text-amber-500">{t('overview.live')}</span>}
                     </>
                 );
             },
@@ -370,8 +372,8 @@ function TimesheetsInner() {
         <div className="space-y-4 px-1 pb-10">
             <header className="flex items-end justify-between gap-3 pt-2">
                 <div className="space-y-0.5">
-                    <p className="text-label text-emerald-500 text-left">Administration</p>
-                    <h1 className="text-display text-gray-900 dark:text-white">Timesheets</h1>
+                    <p className="text-label text-emerald-500 text-left">{t('admin.administration')}</p>
+                    <h1 className="text-display text-gray-900 dark:text-white">{t('nav.timesheets')}</h1>
                 </div>
                 <div className="flex items-center gap-2">
                     {selected ? (
@@ -380,7 +382,7 @@ function TimesheetsInner() {
                             setOpen={setExportOpen}
                             onPick={doExport}
                             disabled={shifts.length === 0}
-                            title="Export this timesheet"
+                            title={t('ts.exportThis')}
                             Icon={DownloadSimpleIcon}
                         />
                     ) : (
@@ -389,7 +391,7 @@ function TimesheetsInner() {
                             setOpen={setExportAllOpen}
                             onPick={doExportAll}
                             disabled={exportingAll || members.length === 0}
-                            title="Export all employees (selected month)"
+                            title={t('ts.exportAll')}
                             Icon={UsersThreeIcon}
                             busy={exportingAll}
                         />
@@ -405,7 +407,7 @@ function TimesheetsInner() {
                         <MagnifyingGlassIcon weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search employees…"
+                            placeholder={t('ts.searchEmployees')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 py-2.5 pl-9 pr-3 text-body text-gray-900 dark:text-white outline-none focus:border-emerald-500/40 shadow-sm transition-all"
@@ -413,9 +415,9 @@ function TimesheetsInner() {
                     </div>
 
                     {membersQ.isLoading ? (
-                        <div className="py-20 text-center text-label text-gray-400 animate-pulse">Loading employees…</div>
+                        <div className="py-20 text-center text-label text-gray-400 animate-pulse">{t('state.loading', { label: t('admin.nounEmployees') })}</div>
                     ) : filteredMembers.length === 0 ? (
-                        <div className="py-20 text-center text-label text-gray-400">No employees found</div>
+                        <div className="py-20 text-center text-label text-gray-400">{t('state.empty', { label: t('admin.nounEmployees') })}</div>
                     ) : (
                         <div className="rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                             {filteredMembers.map((m, i) => (
@@ -447,7 +449,7 @@ function TimesheetsInner() {
                         <button
                             onClick={backToList}
                             className="shrink-0 p-2 -ml-1 rounded-xl text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
-                            aria-label="Back to employees"
+                            aria-label={t('ts.backToEmployees')}
                         >
                             <CaretLeftIcon weight="bold" className="w-5 h-5" />
                         </button>
@@ -472,9 +474,9 @@ function TimesheetsInner() {
                     {/* Summary stats */}
                     <div className="grid grid-cols-3 gap-2">
                         {[
-                            { label: 'Net Hours', value: fmtHours(totals.net) },
-                            { label: 'Shifts', value: String(totals.count) },
-                            { label: 'Breaks', value: fmtHours(totals.brk) },
+                            { label: t('ts.netHours'), value: fmtHours(totals.net) },
+                            { label: t('overview.shifts'), value: String(totals.count) },
+                            { label: t('ts.breaks'), value: fmtHours(totals.brk) },
                         ].map((s) => (
                             <div key={s.label} className="bg-white dark:bg-gray-800/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
                                 <p className="text-micro text-gray-400 mb-1 truncate">{s.label}</p>
@@ -501,16 +503,16 @@ function TimesheetsInner() {
                     </div>
 
                     {shiftsQ.isLoading ? (
-                        <div className="py-20 text-center text-label text-gray-400 animate-pulse">Loading shifts…</div>
+                        <div className="py-20 text-center text-label text-gray-400 animate-pulse">{t('state.loading', { label: t('admin.nounShifts') })}</div>
                     ) : shifts.length === 0 ? (
                         <div className="flex flex-col items-center justify-center text-center py-16 gap-3">
                             <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500">
                                 <ClockUserIcon weight="bold" className="w-7 h-7" />
                             </div>
                             <div>
-                                <h2 className="text-heading text-gray-900 dark:text-white">No shifts {month ? 'this month' : 'yet'}</h2>
+                                <h2 className="text-heading text-gray-900 dark:text-white">{month ? t('ts.noShiftsMonth') : t('ts.noShiftsYet')}</h2>
                                 <p className="text-body text-gray-400 mt-1">
-                                    {canEdit ? 'Add a shift or pick another month.' : 'Pick another month to see more.'}
+                                    {canEdit ? t('ts.emptyHintAdd') : t('ts.emptyHintMonth')}
                                 </p>
                             </div>
                         </div>
@@ -537,9 +539,9 @@ function TimesheetsInner() {
             <AnimatePresence>
                 {deleting && (
                     <ConfirmDialog
-                        title="Delete shift"
-                        message="This permanently removes the shift and records the change in the Activity Log. Continue?"
-                        confirmLabel="Delete"
+                        title={t('ts.deleteShiftTitle')}
+                        message={t('ts.deleteShiftMessage')}
+                        confirmLabel={t('common.delete')}
                         onConfirm={handleDelete}
                         onClose={() => setDeleting(null)}
                     />
