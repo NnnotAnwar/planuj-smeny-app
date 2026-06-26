@@ -52,8 +52,8 @@ export default function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
        <ThemeProvider>
-        <PreferencesProvider>
         <AuthProvider>
+         <PreferencesProvider>
           <ShiftProvider>
             <Suspense fallback={<PageLoader />}>
               <Routes>
@@ -90,8 +90,8 @@ export default function App() {
               </Routes>
             </Suspense>
           </ShiftProvider>
+         </PreferencesProvider>
         </AuthProvider>
-        </PreferencesProvider>
        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>

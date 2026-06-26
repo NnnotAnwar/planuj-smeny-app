@@ -13,11 +13,7 @@ import { LANGUAGES } from '@shared/i18n/translations';
 
 const APP_NAME = 'Planuj Směny';
 const APP_VERSION = '1.5.0';
-
-// TODO: replace with the real support address and published policy URLs.
-const SUPPORT_EMAIL = 'support@planujsmeny.app';
-const PRIVACY_URL = 'https://planujsmeny.app/privacy';
-const TERMS_URL = 'https://planujsmeny.app/terms';
+const SUPPORT_EMAIL = 'anuarkairulla@gmail.com';
 
 /**
  * --- SETTINGS PAGE ---
@@ -89,6 +85,18 @@ function LinkRow({ icon, label, href }: { icon: React.ReactNode; label: string; 
       <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{label}</span>
       <ArrowSquareOutIcon weight="bold" className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" />
     </a>
+  );
+}
+
+/** A plain, non-interactive info row (used for legal items that aren't linked yet). */
+function StaticRow({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <div className="flex items-center gap-3 p-4">
+      <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
+        {icon}
+      </div>
+      <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{label}</span>
+    </div>
   );
 }
 
@@ -237,16 +245,8 @@ export default function SettingsPage() {
             label={t('settings.support')}
             href={`mailto:${SUPPORT_EMAIL}`}
           />
-          <LinkRow
-            icon={<ShieldCheckIcon weight="bold" className="w-4 h-4" />}
-            label={t('settings.privacy')}
-            href={PRIVACY_URL}
-          />
-          <LinkRow
-            icon={<FileTextIcon weight="bold" className="w-4 h-4" />}
-            label={t('settings.terms')}
-            href={TERMS_URL}
-          />
+          <StaticRow icon={<ShieldCheckIcon weight="bold" className="w-4 h-4" />} label={t('settings.privacy')} />
+          <StaticRow icon={<FileTextIcon weight="bold" className="w-4 h-4" />} label={t('settings.terms')} />
         </div>
       </div>
     </div>

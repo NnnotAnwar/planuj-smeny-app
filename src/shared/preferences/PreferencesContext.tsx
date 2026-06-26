@@ -1,12 +1,14 @@
-import React, { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useLayoutEffect, useMemo, useReducer, useState } from 'react';
+import { useAuthContext } from '@features/auth/AuthContext';
 import { translations, type Language, type TranslationKey } from '@shared/i18n/translations';
 import { setTimeFormatPreference, type TimeFormat } from '@shared/utils/date';
 
 /**
  * --- PREFERENCES CONTEXT ---
- * Device-level user preferences that aren't visual theme: UI language, time
- * format and the default clock-in location. Persisted in localStorage and
- * exposes `t()` for translations.
+ * User preferences that aren't visual theme: UI language, time format and the
+ * default clock-in location. Language and time format are device-level; the
+ * default location is per-user (keyed by user id). All persisted in localStorage;
+ * also exposes `t()` for translations.
  */
 
 interface PreferencesContextType {
@@ -20,7 +22,8 @@ interface PreferencesContextType {
     t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
 }
 
-const STORAGE = { language: 'language', timeFormat: 'time-format', defaultLocation: 'default-location-id' } as const;
+const STORAGE = { language: 'language', timeFormat: 'time-format' } as const;
+const defaultLocationKey = (userId: string) => `default-location-id:${userId}`;
 
 function readLanguage(): Language {
     const v = localStorage.getItem(STORAGE.language);
@@ -33,11 +36,16 @@ function readTimeFormat(): TimeFormat {
 const PreferencesContext = createContext<PreferencesContextType | undefined>(undefined);
 
 export function PreferencesProvider({ children }: { children: React.ReactNode }) {
+    const { user } = useAuthContext();
+    const userId = user?.id ?? null;
+
     const [language, setLanguageState] = useState<Language>(readLanguage);
     const [timeFormat, setTimeFormatState] = useState<TimeFormat>(readTimeFormat);
-    const [defaultLocationId, setDefaultLocationIdState] = useState<string | null>(
-        () => localStorage.getItem(STORAGE.defaultLocation),
-    );
+    // Default location is per-user: read straight from localStorage (keyed by the
+    // current user) on render and force a refresh on write — no effect needed, and
+    // it naturally re-keys when the signed-in user changes.
+    const [, refreshDefaultLocation] = useReducer((n: number) => n + 1, 0);
+    const defaultLocationId = userId ? localStorage.getItem(defaultLocationKey(userId)) : null;
 
     // Keep the formatTime module preference in sync (before paint).
     useLayoutEffect(() => {
@@ -54,11 +62,16 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
         setTimeFormatState(format);
     }, []);
 
-    const setDefaultLocationId = useCallback((id: string | null) => {
-        if (id) localStorage.setItem(STORAGE.defaultLocation, id);
-        else localStorage.removeItem(STORAGE.defaultLocation);
-        setDefaultLocationIdState(id);
-    }, []);
+    const setDefaultLocationId = useCallback(
+        (id: string | null) => {
+            if (!userId) return;
+            const key = defaultLocationKey(userId);
+            if (id) localStorage.setItem(key, id);
+            else localStorage.removeItem(key);
+            refreshDefaultLocation();
+        },
+        [userId],
+    );
 
     const t = useCallback<PreferencesContextType['t']>(
         (key, vars) => {
