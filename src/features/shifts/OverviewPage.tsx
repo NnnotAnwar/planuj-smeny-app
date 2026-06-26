@@ -14,6 +14,7 @@ import {
 } from '@phosphor-icons/react';
 import { useShiftContext } from './ShiftContext';
 import { useAuthContext } from '@features/auth/AuthContext';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type Shift } from '@shared/types';
 import { DataTable, type Column } from '@shared/components/DataTable';
 import { MonthPicker } from '@shared/components/MonthPicker';
@@ -41,6 +42,7 @@ function fmtTimeRange(s: Shift): string {
 export default function OverviewPage() {
   const { userShifts, locations, isLoading } = useShiftContext();
   const { user } = useAuthContext();
+  const t = useTranslation();
 
   const [selectedMonth, setSelectedMonth] = useState<string | null>(() => {
     const now = new Date();
@@ -50,8 +52,8 @@ export default function OverviewPage() {
 
   const locationName = useMemo(() => {
     const map = new Map(locations.map((l) => [l.id, l.name]));
-    return (id: string) => map.get(id) ?? 'Unknown';
-  }, [locations]);
+    return (id: string) => map.get(id) ?? t('common.unknown');
+  }, [locations, t]);
 
   const stats = useMemo(() => {
     const filtered = selectedMonth
@@ -108,10 +110,10 @@ export default function OverviewPage() {
   const historyColumns: Column<Shift>[] = [
     {
       key: 'date',
-      header: 'Date',
+      header: t('overview.colDate'),
       width: 'w-16 sm:w-24',
       className: 'whitespace-nowrap',
-      footer: <span className="text-label text-gray-400">Total</span>,
+      footer: <span className="text-label text-gray-400">{t('overview.total')}</span>,
       render: (shift) => {
         const date = new Date(shift.started_at);
         return (
@@ -126,7 +128,7 @@ export default function OverviewPage() {
     },
     {
       key: 'location',
-      header: 'Location & Time',
+      header: t('overview.colLocationTime'),
       className: 'w-full',
       // On mobile the Gross/Break columns are hidden to fit; surface them here.
       footer: (
@@ -142,7 +144,7 @@ export default function OverviewPage() {
             <span className="text-small-strong text-gray-700 dark:text-gray-200 truncate">{locationName(shift.location_id)}</span>
             <span className="text-caption text-gray-400 tabular-nums">{fmtTimeRange(shift)}</span>
             <span className="sm:hidden text-caption text-gray-400 tabular-nums">
-              Gross {fmtDuration(gross)}{brk > 0 ? ` · −${fmtDuration(brk)}` : ''}
+              {t('overview.colGross')} {fmtDuration(gross)}{brk > 0 ? ` · −${fmtDuration(brk)}` : ''}
             </span>
           </div>
         );
@@ -150,7 +152,7 @@ export default function OverviewPage() {
     },
     {
       key: 'gross',
-      header: 'Gross',
+      header: t('overview.colGross'),
       align: 'right',
       width: 'w-20',
       hideOnMobile: true,
@@ -160,7 +162,7 @@ export default function OverviewPage() {
     },
     {
       key: 'break',
-      header: 'Break',
+      header: t('overview.colBreak'),
       align: 'right',
       width: 'w-20',
       hideOnMobile: true,
@@ -173,7 +175,7 @@ export default function OverviewPage() {
     },
     {
       key: 'net',
-      header: 'Net',
+      header: t('overview.colNet'),
       align: 'right',
       width: 'w-20 sm:w-24',
       footer: <span className="text-xs font-black tabular-nums whitespace-nowrap text-emerald-600 dark:text-emerald-400">{fmtHours(stats.totalHours)}</span>,
@@ -184,7 +186,7 @@ export default function OverviewPage() {
             <span className={`block text-xs font-black tabular-nums whitespace-nowrap ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
               {fmtDuration(shiftHours(shift))}
             </span>
-            {ongoing && <span className="block text-micro text-amber-500">Live</span>}
+            {ongoing && <span className="block text-micro text-amber-500">{t('overview.live')}</span>}
           </>
         );
       },
@@ -196,7 +198,7 @@ export default function OverviewPage() {
   // signature block) — just sourced from their own shifts.
   const employeeName =
     (user && [user.first_name, user.last_name].filter(Boolean).join(' ')) || user?.username || 'Me';
-  const periodLabel = selectedMonth ?? 'All time';
+  const periodLabel = selectedMonth ?? t('overview.allTime');
 
   const doExport = (fmt: ExportFormat) => {
     void exportShifts(fmt, {
@@ -209,9 +211,9 @@ export default function OverviewPage() {
   };
 
   const statCards = [
-    { label: 'Work Time', value: fmtHours(stats.totalHours), icon: TimerIcon },
-    { label: 'Shifts', value: String(stats.count), icon: StackIcon },
-    { label: 'Avg. Shift', value: fmtHours(stats.avg), icon: ChartBarIcon },
+    { label: t('overview.workTime'), value: fmtHours(stats.totalHours), icon: TimerIcon },
+    { label: t('overview.shifts'), value: String(stats.count), icon: StackIcon },
+    { label: t('overview.avgShift'), value: fmtHours(stats.avg), icon: ChartBarIcon },
   ];
 
   return (
@@ -219,7 +221,7 @@ export default function OverviewPage() {
       <header className="flex items-end justify-between gap-3 pt-2">
         <div className="space-y-0.5">
           <p className="text-label text-emerald-500 text-left">
-            {selectedMonth ? 'Monthly Analytics' : 'All Time Analytics'}
+            {selectedMonth ? t('overview.titleMonthly') : t('overview.titleAll')}
           </p>
           <h1 className="text-display text-gray-900 dark:text-white">Overview</h1>
         </div>
@@ -229,7 +231,7 @@ export default function OverviewPage() {
               onClick={() => setExportOpen((v) => !v)}
               disabled={!stats.hasData}
               className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
-              title="Export"
+              title={t('overview.export')}
             >
               <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
             </button>
@@ -393,14 +395,14 @@ export default function OverviewPage() {
           <div className="mt-2">
             <div className="flex items-center justify-between mb-1 px-1">
               <h2 className="text-heading dark:text-white">
-                {selectedMonth ? 'Monthly Activity' : 'History'}
+                {selectedMonth ? t('overview.historyMonthly') : t('overview.historyAll')}
               </h2>
               <span className="text-micro text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-lg">
                 {stats.shifts.length} entries
               </span>
             </div>
             <p className="px-1 mb-3 text-caption leading-relaxed text-gray-400">
-              Net = Gross − mandatory breaks:{' '}
+              {t('overview.netExplain')}{' '}
               <span className="whitespace-nowrap">−30&nbsp;min from 6&nbsp;h</span>,{' '}
               <span className="whitespace-nowrap">−1&nbsp;h from 12&nbsp;h</span>.
             </p>

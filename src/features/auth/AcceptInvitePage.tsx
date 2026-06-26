@@ -15,6 +15,7 @@ import {
 } from '@phosphor-icons/react';
 import { supabase } from '@shared/api/supabaseClient';
 import { useTheme } from '@app/providers/ThemeContext';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { authService } from './authService';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
 
@@ -40,6 +41,7 @@ interface InviteInfo {
 function PageShell({ children }: { children: ReactNode }) {
     const { resolvedTheme, setTheme } = useTheme();
     const isDark = resolvedTheme === 'dark';
+    const t = useTranslation();
     return (
         <div className="relative min-h-dvh flex items-center justify-center overflow-hidden px-4 py-10">
             <div className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-emerald-500/20 blur-3xl" />
@@ -47,7 +49,7 @@ function PageShell({ children }: { children: ReactNode }) {
 
             <button
                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                aria-label="Toggle theme"
+                aria-label={t('common.toggleTheme')}
                 className="absolute top-4 right-4 z-10 p-2.5 rounded-xl bg-white/60 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-500 dark:text-gray-300 backdrop-blur-md hover:bg-white/80 dark:hover:bg-white/10 active:scale-90 transition-all"
             >
                 <AnimatePresence mode="wait" initial={false}>
@@ -74,6 +76,7 @@ const INPUT =
 
 export function AcceptInvitePage() {
     const navigate = useNavigate();
+    const t = useTranslation();
     const [status, setStatus] = useState<Status>('loading');
     const [info, setInfo] = useState<InviteInfo | null>(null);
     const [username, setUsername] = useState('');
@@ -151,10 +154,10 @@ export function AcceptInvitePage() {
         e.preventDefault();
         const uname = username.trim().toLowerCase();
         if (!USERNAME_RE.test(uname)) {
-            return setError('Username must be 3–30 characters: lowercase letters, numbers, dot, underscore or hyphen.');
+            return setError(t('profile.editor.usernameInvalid'));
         }
-        if (password.length < 6) return setError('Password must be at least 6 characters.');
-        if (password !== confirm) return setError('Passwords do not match.');
+        if (password.length < 6) return setError(t('invite.passwordShort'));
+        if (password !== confirm) return setError(t('invite.passwordMismatch'));
 
         setBusy(true);
         setError(null);
@@ -179,8 +182,8 @@ export function AcceptInvitePage() {
                 if (profileError) {
                     setError(
                         profileError.code === '23505'
-                            ? 'That username is already taken. Please choose another.'
-                            : profileError.message || 'Could not save your changes.',
+                            ? t('profile.editor.usernameTaken')
+                            : profileError.message || t('invite.saveError'),
                     );
                     setBusy(false);
                     return;
@@ -190,7 +193,7 @@ export function AcceptInvitePage() {
             // Full reload so AuthProvider re-initialises with the now-complete session.
             window.location.replace('/');
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not complete your setup.');
+            setError(err instanceof Error ? err.message : t('invite.setupError'));
             setBusy(false);
         }
     };
@@ -215,15 +218,15 @@ export function AcceptInvitePage() {
                     <div className="w-14 h-14 mx-auto rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center">
                         <WarningCircleIcon weight="fill" className="w-7 h-7" />
                     </div>
-                    <h1 className="text-title text-gray-900 dark:text-white mt-5">Invitation unavailable</h1>
+                    <h1 className="text-title text-gray-900 dark:text-white mt-5">{t('invite.unavailable')}</h1>
                     <p className="text-body text-gray-500 dark:text-gray-400 mt-2">
-                        This invitation link is invalid or has expired. Please ask an administrator to send a new one.
+                        {t('invite.invalidDesc')}
                     </p>
                     <button
                         onClick={() => navigate('/login', { replace: true })}
                         className="mt-6 w-full py-3 rounded-xl text-body-strong text-white bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all"
                     >
-                        Go to sign in
+                        {t('invite.goSignIn')}
                     </button>
                 </motion.div>
             </PageShell>
@@ -243,7 +246,7 @@ export function AcceptInvitePage() {
                     <div className="p-6 bg-emerald-500/5 border-b border-emerald-100/60 dark:border-emerald-900/30 space-y-4">
                         <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                             <CheckCircleIcon weight="fill" className="w-5 h-5" />
-                            <p className="text-micro">You've been invited</p>
+                            <p className="text-micro">{t('invite.invited')}</p>
                         </div>
                         <div className="space-y-3">
                             <div className="flex items-center gap-3">
@@ -251,7 +254,7 @@ export function AcceptInvitePage() {
                                     <BuildingsIcon weight="bold" className="w-5 h-5" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-micro text-gray-400">Organization</p>
+                                    <p className="text-micro text-gray-400">{t('profile.field.organization')}</p>
                                     <p className="text-body-strong text-gray-900 dark:text-white truncate">{info?.org}</p>
                                 </div>
                             </div>
@@ -260,7 +263,7 @@ export function AcceptInvitePage() {
                                     <IdentificationBadgeIcon weight="bold" className="w-5 h-5" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-micro text-gray-400">Role</p>
+                                    <p className="text-micro text-gray-400">{t('profile.field.role')}</p>
                                     <span className={`inline-block px-2 py-0.5 text-micro rounded-md ${getRoleBadgeColor(info?.role ?? '')}`}>
                                         {info?.role}
                                     </span>
@@ -273,12 +276,12 @@ export function AcceptInvitePage() {
                     {/* Set password to finish */}
                     <form onSubmit={handleSubmit} className="p-6 space-y-4">
                         <div>
-                            <h2 className="text-heading text-gray-900 dark:text-white">Set up your account</h2>
-                            <p className="text-small text-gray-400 mt-0.5">Pick a username and password to accept the invitation.</p>
+                            <h2 className="text-heading text-gray-900 dark:text-white">{t('invite.setup')}</h2>
+                            <p className="text-small text-gray-400 mt-0.5">{t('invite.setupHint')}</p>
                         </div>
 
                         <div>
-                            <label htmlFor="username" className="text-micro text-gray-400 ml-1">Username</label>
+                            <label htmlFor="username" className="text-micro text-gray-400 ml-1">{t('profile.field.username')}</label>
                             <div className="relative mt-1.5">
                                 <AtIcon weight="bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
@@ -292,21 +295,21 @@ export function AcceptInvitePage() {
                                     className={`${INPUT} pl-10 pr-3.5`}
                                 />
                             </div>
-                            <p className="text-caption text-gray-400 mt-1.5 ml-1">Used to sign in instead of your email. Must be unique.</p>
+                            <p className="text-caption text-gray-400 mt-1.5 ml-1">{t('invite.usernameHint')}</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                             <input
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
-                                placeholder="First name"
+                                placeholder={t('profile.field.firstName')}
                                 autoComplete="given-name"
                                 className={`${INPUT} px-3.5`}
                             />
                             <input
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
-                                placeholder="Last name"
+                                placeholder={t('profile.field.lastName')}
                                 autoComplete="family-name"
                                 className={`${INPUT} px-3.5`}
                             />
@@ -318,7 +321,7 @@ export function AcceptInvitePage() {
                                 type={showPwd ? 'text' : 'password'}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Password"
+                                placeholder={t('auth.password')}
                                 autoComplete="new-password"
                                 autoFocus
                                 className={`${INPUT} pl-10 pr-11`}
@@ -326,7 +329,7 @@ export function AcceptInvitePage() {
                             <button
                                 type="button"
                                 onClick={() => setShowPwd((v) => !v)}
-                                aria-label={showPwd ? 'Hide password' : 'Show password'}
+                                aria-label={showPwd ? t('auth.hidePassword') : t('auth.showPassword')}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                             >
                                 {showPwd ? <EyeSlashIcon weight="bold" className="w-4 h-4" /> : <EyeIcon weight="bold" className="w-4 h-4" />}
@@ -339,7 +342,7 @@ export function AcceptInvitePage() {
                                 type={showPwd ? 'text' : 'password'}
                                 value={confirm}
                                 onChange={(e) => setConfirm(e.target.value)}
-                                placeholder="Confirm password"
+                                placeholder={t('auth.confirmPassword')}
                                 autoComplete="new-password"
                                 className={`${INPUT} pl-10 pr-3.5`}
                             />
@@ -365,7 +368,7 @@ export function AcceptInvitePage() {
                             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-body-strong text-white bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/25 active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 transition-all"
                         >
                             {busy && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                            {busy ? 'Joining…' : `Join ${info?.org ?? ''}`}
+                            {busy ? t('invite.joining') : t('invite.join', { org: info?.org ?? '' })}
                         </button>
                     </form>
                 </div>
