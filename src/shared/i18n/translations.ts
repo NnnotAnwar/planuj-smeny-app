@@ -47,6 +47,25 @@ export const en = {
     'settings.defaultLocation.hint': 'Pre-selected when you open the app to start a shift.',
     'settings.version': 'Version {version} • {year}',
 
+    // Common
+    'common.toggleTheme': 'Toggle theme',
+    'common.cancel': 'Cancel',
+    'common.save': 'Save',
+    'common.saving': 'Saving…',
+    'common.loading': 'Loading…',
+    'common.retry': 'Try again',
+
+    // Auth
+    'auth.welcomeBack': 'Welcome back',
+    'auth.portal': 'Planuj Směny · Employee Portal',
+    'auth.emailOrUsername': 'Email or username',
+    'auth.password': 'Password',
+    'auth.showPassword': 'Show password',
+    'auth.hidePassword': 'Hide password',
+    'auth.invalidCredentials': 'Invalid email/username or password.',
+    'auth.signIn': 'Sign in',
+    'auth.signingIn': 'Signing in…',
+
     // About / Support / Legal
     'settings.about': 'About',
     'settings.about.app': 'App',
@@ -101,6 +120,23 @@ export const cs: Record<TranslationKey, string> = {
     'settings.support.hint': 'Dotazy nebo potíže? Obvykle odpovídáme do jednoho dne.',
     'settings.privacy': 'Zásady ochrany osobních údajů',
     'settings.terms': 'Podmínky použití',
+
+    'common.toggleTheme': 'Přepnout motiv',
+    'common.cancel': 'Zrušit',
+    'common.save': 'Uložit',
+    'common.saving': 'Ukládání…',
+    'common.loading': 'Načítání…',
+    'common.retry': 'Zkusit znovu',
+
+    'auth.welcomeBack': 'Vítejte zpět',
+    'auth.portal': 'Planuj Směny · Zaměstnanecký portál',
+    'auth.emailOrUsername': 'E-mail nebo uživatelské jméno',
+    'auth.password': 'Heslo',
+    'auth.showPassword': 'Zobrazit heslo',
+    'auth.hidePassword': 'Skrýt heslo',
+    'auth.invalidCredentials': 'Neplatný e-mail/uživatelské jméno nebo heslo.',
+    'auth.signIn': 'Přihlásit se',
+    'auth.signingIn': 'Přihlašování…',
 };
 
 export const translations = { en, cs };

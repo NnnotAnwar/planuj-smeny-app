@@ -2,6 +2,7 @@ import { useState, type SyntheticEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AtIcon, LockIcon, EyeIcon, EyeSlashIcon, SunIcon, MoonIcon, WarningCircleIcon } from '@phosphor-icons/react';
 import { useTheme } from '@app/providers/ThemeContext';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { authService } from './authService';
 
 /**
@@ -20,6 +21,7 @@ export function LoginPage() {
 
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  const t = useTranslation();
 
   const handleLogin = async (e: SyntheticEvent) => {
     e.preventDefault();
@@ -43,7 +45,7 @@ export function LoginPage() {
     } catch (error) {
       // Single generic message — never reveal whether the account exists.
       console.error(error);
-      setErrorMsg('Invalid email/username or password.');
+      setErrorMsg(t('auth.invalidCredentials'));
       setIsLoading(false);
     }
   };
@@ -57,7 +59,7 @@ export function LoginPage() {
       {/* Theme toggle */}
       <button
         onClick={() => setTheme(isDark ? 'light' : 'dark')}
-        aria-label="Toggle theme"
+        aria-label={t('common.toggleTheme')}
         className="absolute top-4 right-4 z-10 p-2.5 rounded-xl bg-white/60 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-500 dark:text-gray-300 backdrop-blur-md hover:bg-white/80 dark:hover:bg-white/10 active:scale-90 transition-all"
       >
         <AnimatePresence mode="wait" initial={false}>
@@ -89,14 +91,14 @@ export function LoginPage() {
                 <span className="text-white font-black text-2xl tracking-wider">PS</span>
               </div>
             </div>
-            <h1 className="text-display text-gray-900 dark:text-white mt-5">Welcome back</h1>
-            <p className="text-label text-emerald-600 dark:text-emerald-400 mt-1.5">Planuj Směny · Employee Portal</p>
+            <h1 className="text-display text-gray-900 dark:text-white mt-5">{t('auth.welcomeBack')}</h1>
+            <p className="text-label text-emerald-600 dark:text-emerald-400 mt-1.5">{t('auth.portal')}</p>
           </div>
 
           <form className="space-y-4" onSubmit={handleLogin}>
             {/* Email / Username */}
             <div>
-              <label htmlFor="login" className="text-micro text-gray-400 ml-1">Email or username</label>
+              <label htmlFor="login" className="text-micro text-gray-400 ml-1">{t('auth.emailOrUsername')}</label>
               <div className="relative mt-1.5">
                 <AtIcon weight="bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -116,7 +118,7 @@ export function LoginPage() {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="text-micro text-gray-400 ml-1">Password</label>
+              <label htmlFor="password" className="text-micro text-gray-400 ml-1">{t('auth.password')}</label>
               <div className="relative mt-1.5">
                 <LockIcon weight="bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -132,7 +134,7 @@ export function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
                 >
                   {showPassword ? <EyeSlashIcon weight="bold" className="w-4 h-4" /> : <EyeIcon weight="bold" className="w-4 h-4" />}
@@ -162,7 +164,7 @@ export function LoginPage() {
               {isLoading && (
                 <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
               )}
-              {isLoading ? 'Signing in…' : 'Sign in'}
+              {isLoading ? t('auth.signingIn') : t('auth.signIn')}
             </button>
           </form>
         </div>
