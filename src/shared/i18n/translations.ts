@@ -23,6 +23,17 @@ export const en = {
     'nav.menu': 'Menu',
     'nav.logout': 'Log out',
 
+    // Sidebar
+    'sidebar.currentPost': 'Current shift',
+    'sidebar.selectedPost': 'Selected shift',
+    'sidebar.onShift': 'Live',
+    'sidebar.started': 'Started',
+    'sidebar.availablePosts': 'Locations',
+    'sidebar.searchPosts': 'Search...',
+    'sidebar.noMatching': 'No matching posts.',
+    'sidebar.live': 'Live',
+    'sidebar.navigation': 'Navigation',
+
     // Dashboard
     'dashboard.greeting': 'Hello, {name}!',
 
@@ -338,6 +349,17 @@ export const cs: Record<TranslationKey, string> = {
     'nav.more': 'Více',
     'nav.menu': 'Menu',
     'nav.logout': 'Odhlásit se',
+
+    // Sidebar
+    'sidebar.currentPost': 'Aktuální směna',
+    'sidebar.selectedPost': 'Vybraná směna',
+    'sidebar.onShift': 'Live',
+    'sidebar.started': 'Začátek',
+    'sidebar.availablePosts': 'Místo',
+    'sidebar.searchPosts': 'Hledat...',
+    'sidebar.noMatching': 'Žádná odpovídající místa.',
+    'sidebar.live': 'Live',
+    'sidebar.navigation': 'Navigace',
 
     'dashboard.greeting': 'Dobrý den, {name}!',
 

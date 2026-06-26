@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useCallback, useContext, useMemo, useReducer, useState } from 'react';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { translations, type Language, type TranslationKey } from '@shared/i18n/translations';
