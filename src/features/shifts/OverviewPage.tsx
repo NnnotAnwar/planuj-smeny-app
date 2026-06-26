@@ -77,7 +77,11 @@ export default function OverviewPage() {
     }
 
     const locationBreakdown = Array.from(byLocation.entries())
-      .map(([id, hours]) => ({ id, hours, percent: totalHours > 0 ? Math.round((hours / totalHours) * 100) : 0 }))
+      .map(([id, hours]) => {
+        const percent = totalHours > 0 ? Math.round((hours / totalHours) * 100) : 0;
+        const share = totalHours > 0 ? (hours / totalHours) * 100 : 0;
+        return { id, hours, percent, share };
+      })
       .sort((a, b) => b.hours - a.hours)
       .slice(0, 5);
 
@@ -292,7 +296,7 @@ export default function OverviewPage() {
           </div>
 
           {/* CHARTS SECTION */}
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid sm:grid-cols-2 gap-3 items-start">
             {/* BY LOCATION */}
             <div className="bg-white dark:bg-gray-800/40 p-5 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-5">
@@ -314,7 +318,7 @@ export default function OverviewPage() {
                     <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800/60 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${l.percent}%` }}
+                        animate={{ width: `${l.share}%` }}
                         className="h-full bg-linear-to-r from-emerald-500 to-emerald-400 rounded-full"
                       />
                     </div>
@@ -331,32 +335,50 @@ export default function OverviewPage() {
                 </h2>
                 <TrendUpIcon className="w-4 h-4 text-gray-300" />
               </div>
-              <div className="flex items-end justify-between gap-2 h-32 pt-6">
+              {/* Value labels */}
+              <div className="flex justify-between gap-2 h-6 mb-1">
                 {stats.byWeekday.map((h, i) => {
                   const isMax = h === maxWeekday && h > 0;
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center justify-end gap-2 h-full group">
-                      <div className="relative w-full flex flex-col items-center justify-end h-full">
-                        {h > 0 && (
-                          <motion.span
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`absolute -top-6 text-micro tabular-nums ${isMax ? 'text-emerald-500' : 'text-gray-400'}`}
-                          >
-                            {Math.round(h)}h
-                          </motion.span>
-                        )}
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${(h / maxWeekday) * 100}%` }}
-                          className={`w-full max-w-[16px] rounded-t-md transition-all ${
-                            isMax
-                              ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                              : h > 0 ? 'bg-gray-200 dark:bg-gray-700 group-hover:bg-emerald-500/40' : 'bg-gray-50 dark:bg-gray-800/40'
-                          }`}
-                          style={{ minHeight: h > 0 ? '4px' : '2px' }}
-                        />
-                      </div>
+                    <div key={i} className="flex-1 text-center">
+                      {h > 0 && (
+                        <span className={`text-micro tabular-nums ${isMax ? 'text-emerald-500' : 'text-gray-400'}`}>
+                          {Math.round(h)}H
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Bars - fixed height area, grow from bottom */}
+              <div className="flex items-end justify-between gap-2 h-28">
+                {stats.byWeekday.map((h, i) => {
+                  const isMax = h === maxWeekday && h > 0;
+                  const pct = (h / maxWeekday) * 100;
+                  return (
+                    <div key={i} className="flex-1 flex justify-center h-full items-end">
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${pct}%` }}
+                        className={`w-full max-w-[16px] rounded-t-md transition-all ${
+                          isMax
+                            ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                            : h > 0 ? 'bg-gray-200 dark:bg-gray-700 group-hover:bg-emerald-500/40' : 'bg-gray-50 dark:bg-gray-800/40'
+                        }`}
+                        style={{ minHeight: h > 0 ? '4px' : '2px' }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Day labels */}
+              <div className="flex justify-between gap-2 mt-1">
+                {stats.byWeekday.map((h, i) => {
+                  const isMax = h === maxWeekday && h > 0;
+                  return (
+                    <div key={i} className="flex-1 text-center">
                       <span className={`text-micro ${isMax ? 'text-emerald-500' : 'text-gray-400'}`}>
                         {WEEKDAYS[i].slice(0, 3)}
                       </span>

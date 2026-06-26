@@ -89,6 +89,14 @@ export function useShiftRealtime(user: User | null) {
                             s && s.id === deletedId ? null : s,
                         );
                     }
+
+                    // Profile status badges (ShiftStatusBadge / useUserStatus) for
+                    // any viewer who has a profile or modal open for this user must
+                    // reflect the clock-in/out immediately.
+                    const affectedUserId = row.user_id || (payload.old as { user_id?: string })?.user_id;
+                    if (affectedUserId) {
+                        qc.invalidateQueries({ queryKey: ['shift-status', affectedUserId] });
+                    }
                 },
             )
             // Locations: an admin adding / renaming / removing a location should

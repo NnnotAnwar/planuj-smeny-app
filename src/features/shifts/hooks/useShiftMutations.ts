@@ -3,6 +3,7 @@ import { shiftService } from '../shiftService';
 import { toast } from '@shared/toast/toastStore';
 import { type Shift, type ShiftWithProfile, type User } from '@shared/types';
 import { shiftKeys } from '../shiftKeys';
+import type { ActiveShiftStatus } from '../shiftService';
 
 /**
  * --- useShiftMutations ---
@@ -17,10 +18,12 @@ export function useShiftMutations(user: User | null) {
     const boardKey = shiftKeys.board(user?.organization_id ?? 'anon');
     const activeKey = shiftKeys.active(user?.id ?? 'anon');
     const historyKey = shiftKeys.history(user?.id ?? 'anon');
+    const locationsKey = user ? shiftKeys.locations(user.organization_id) : null;
 
     const reconcileActiveBoard = () => {
         qc.invalidateQueries({ queryKey: activeKey });
         qc.invalidateQueries({ queryKey: boardKey });
+        if (user) qc.invalidateQueries({ queryKey: ['shift-status', user.id] });
     };
 
     const startShift = useMutation({
@@ -31,7 +34,10 @@ export function useShiftMutations(user: User | null) {
         onMutate: async (locationId) => {
             if (!user) return {};
             await qc.cancelQueries({ queryKey: boardKey });
+            await qc.cancelQueries({ queryKey: ['shift-status', user.id] });
             const prevBoard = qc.getQueryData<ShiftWithProfile[]>(boardKey);
+            const prevStatus = qc.getQueryData(['shift-status', user.id]);
+
             const optimistic: ShiftWithProfile = {
                 id: `optimistic-${Date.now()}`,
                 user_id: user.id,
@@ -48,14 +54,33 @@ export function useShiftMutations(user: User | null) {
                 },
             };
             qc.setQueryData<ShiftWithProfile[]>(boardKey, (b = []) => [...b, optimistic]);
-            return { prevBoard };
+
+            // Optimistic status for profile badges (with location name from cache if available)
+            let locName: string | null = null;
+            if (locationsKey) {
+                const locs = qc.getQueryData<any[]>(locationsKey) || [];
+                const found = locs.find((l: any) => l.id === locationId);
+                locName = found?.name ?? null;
+            }
+            const optimisticStatus = {
+                started_at: new Date().toISOString(),
+                location_id: locationId,
+                location_name: locName,
+            };
+            qc.setQueryData(['shift-status', user.id], optimisticStatus);
+
+            return { prevBoard, prevStatus };
         },
         onError: (err, _vars, ctx) => {
             if (ctx?.prevBoard) qc.setQueryData(boardKey, ctx.prevBoard);
+            if (ctx?.prevStatus !== undefined && user) {
+                qc.setQueryData(['shift-status', user.id], ctx.prevStatus);
+            }
             toast(err instanceof Error ? err.message : 'Could not start your shift. Please try again.');
         },
         onSuccess: (shift) => {
             qc.setQueryData<Shift | null>(activeKey, shift);
+            if (user) qc.invalidateQueries({ queryKey: ['shift-status', user.id] });
         },
         onSettled: reconcileActiveBoard,
     });
@@ -64,20 +89,29 @@ export function useShiftMutations(user: User | null) {
         mutationFn: (shiftId: string) => shiftService.endShift(shiftId),
         onMutate: async (shiftId) => {
             await qc.cancelQueries({ queryKey: boardKey });
+            await qc.cancelQueries({ queryKey: ['shift-status', user?.id ?? 'anon'] });
             const prevBoard = qc.getQueryData<ShiftWithProfile[]>(boardKey);
             const prevActive = qc.getQueryData<Shift | null>(activeKey);
+            const prevStatus = user ? qc.getQueryData<ActiveShiftStatus | null>(['shift-status', user.id]) : null;
+
             qc.setQueryData<ShiftWithProfile[]>(boardKey, (b = []) => b.filter((s) => s.id !== shiftId));
             qc.setQueryData<Shift | null>(activeKey, null);
-            return { prevBoard, prevActive };
+            if (user) qc.setQueryData(['shift-status', user.id], null);
+
+            return { prevBoard, prevActive, prevStatus };
         },
         onError: (err, _vars, ctx) => {
             if (ctx?.prevBoard) qc.setQueryData(boardKey, ctx.prevBoard);
             if (ctx?.prevActive !== undefined) qc.setQueryData(activeKey, ctx.prevActive);
+            if (ctx?.prevStatus !== undefined && user) {
+                qc.setQueryData(['shift-status', user.id], ctx.prevStatus);
+            }
             toast(err instanceof Error ? err.message : 'Could not end your shift. Please try again.');
         },
         onSettled: () => {
             reconcileActiveBoard();
             qc.invalidateQueries({ queryKey: historyKey });
+            if (user) qc.invalidateQueries({ queryKey: ['shift-status', user.id] });
         },
     });
 
@@ -89,8 +123,11 @@ export function useShiftMutations(user: User | null) {
         }) => shiftService.changeShiftLocation(shiftId, newLocationId, previousLocationId),
         onMutate: async ({ shiftId, newLocationId, previousLocationId }) => {
             await qc.cancelQueries({ queryKey: activeKey });
+            await qc.cancelQueries({ queryKey: ['shift-status', user?.id ?? 'anon'] });
             const prevActive = qc.getQueryData<Shift | null>(activeKey);
             const prevBoard = qc.getQueryData<ShiftWithProfile[]>(boardKey);
+            const prevStatus = user ? qc.getQueryData<ActiveShiftStatus | null>(['shift-status', user.id]) : null;
+
             qc.setQueryData<Shift | null>(activeKey, (s) =>
                 s ? { ...s, location_id: newLocationId, previous_location_id: previousLocationId } : s,
             );
@@ -101,11 +138,29 @@ export function useShiftMutations(user: User | null) {
                         : s,
                 ),
             );
-            return { prevActive, prevBoard };
+
+            if (user && prevStatus) {
+                let locName: string | null = prevStatus.location_name;
+                if (locationsKey) {
+                    const locs = qc.getQueryData<any[]>(locationsKey) || [];
+                    const found = locs.find((l: any) => l.id === newLocationId);
+                    locName = found?.name ?? locName;
+                }
+                qc.setQueryData(['shift-status', user.id], {
+                    ...prevStatus,
+                    location_id: newLocationId,
+                    location_name: locName,
+                });
+            }
+
+            return { prevActive, prevBoard, prevStatus };
         },
         onError: (err, _vars, ctx) => {
             if (ctx?.prevActive !== undefined) qc.setQueryData(activeKey, ctx.prevActive);
             if (ctx?.prevBoard) qc.setQueryData(boardKey, ctx.prevBoard);
+            if (ctx?.prevStatus !== undefined && user) {
+                qc.setQueryData(['shift-status', user.id], ctx.prevStatus);
+            }
             toast(err instanceof Error ? err.message : 'Could not change location. Please try again.');
         },
         onSettled: reconcileActiveBoard,
