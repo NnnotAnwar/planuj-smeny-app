@@ -8,6 +8,7 @@ import { ShiftCards } from '@features/shifts/components/ShiftCards';
 import { LocationSelection } from '@features/locations/components/LocationSelection';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { Clock } from '@shared/components/Clock';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type ShiftDisplayData } from '@shared/types';
 import { formatTime } from '@shared/utils/date';
 
@@ -23,6 +24,7 @@ export function HomePage() {
 
   // Which worker's profile modal is open (from tapping an active-shift card).
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const t = useTranslation();
 
   if (!user) return null;
 
@@ -30,6 +32,46 @@ export function HomePage() {
   // must not appear as places you can pick or clock in at — except the one you're
   // currently clocked into, so you never lose sight of where you are.
   const activeLocations = locations.filter((l) => !l.archived_at || l.id === activeShift?.location_id);
+
+  // The board only shows locations with something happening — colleagues on
+  // shift there, or your own active shift — so it scales with activity, not with
+  // the (ever-growing) total number of locations.
+  const userFullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+  const board = activeLocations
+    .map((location) => {
+      const colleagues: ShiftDisplayData[] = allActiveShifts
+        .filter((s) => s.location_id === location.id && s.user_id !== user.id)
+        .map((s) => {
+          const prevLoc = s.previous_location_id ? locations.find((l) => l.id === s.previous_location_id) : null;
+          return {
+            id: s.id,
+            userId: s.user_id,
+            start: formatTime(s.started_at),
+            name: `${s.profiles?.first_name || 'Employee'} ${s.profiles?.last_name || ''}`.trim(),
+            role: s.role,
+            end: null,
+            previousLocationName: prevLoc?.name,
+            isChangeLocation: !!s.previous_location_id,
+          };
+        });
+
+      let userCard: ShiftDisplayData | undefined;
+      if (activeShift && location.id === activeShift.location_id) {
+        const prevLoc = activeShift.previous_location_id ? locations.find((l) => l.id === activeShift.previous_location_id) : null;
+        userCard = {
+          userId: user.id,
+          name: userFullName,
+          role: user.role.name,
+          start: formatTime(activeShift.started_at),
+          end: null,
+          previousLocationName: prevLoc?.name,
+          isChangeLocation: !!activeShift.previous_location_id,
+        };
+      }
+
+      return { location, colleagues, userCard };
+    })
+    .filter((entry) => entry.colleagues.length > 0 || entry.userCard);
 
   return (
     <>
@@ -56,42 +98,12 @@ export function HomePage() {
       </div>
 
       <div className={`space-y-4 ${activeShift ? 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : ''} md:pb-0`}>
-        {activeLocations.map((location) => {
-          const userFullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
-          const role = user.role.name
-          // Find colleagues working in this specific location.
-          const colleagues: ShiftDisplayData[] = allActiveShifts
-            .filter((s) => s.location_id === location.id && s.user_id !== user.id)
-            .map((s) => {
-              const prevLoc = s.previous_location_id ? locations.find(l => l.id === s.previous_location_id) : null;
-              return {
-                id: s.id,
-                userId: s.user_id,
-                start: formatTime(s.started_at),
-                name: `${s.profiles?.first_name || 'Employee'} ${s.profiles?.last_name || ''}`.trim(),
-                role: s.role,
-                end: null,
-                previousLocationName: prevLoc?.name,
-                isChangeLocation: !!s.previous_location_id
-              };
-            });
-
-          // Prepare own shift data for display if we're working here.
-          let userCard: ShiftDisplayData | undefined;
-          if (activeShift && location.id === activeShift.location_id) {
-            const prevLoc = activeShift.previous_location_id ? locations.find(l => l.id === activeShift.previous_location_id) : null;
-            userCard = {
-              userId: user.id,
-              name: userFullName,
-              role: role,
-              start: formatTime(activeShift.started_at),
-              end: null,
-              previousLocationName: prevLoc?.name,
-              isChangeLocation: !!activeShift.previous_location_id
-            };
-          }
-
-          return (
+        {board.length === 0 ? (
+          <div className="py-10 text-center text-body text-gray-400 dark:text-gray-500">
+            {t('home.noActivity')}
+          </div>
+        ) : (
+          board.map(({ location, colleagues, userCard }) => (
             <section key={location.id}>
               <ShiftCards
                 locationName={location.name}
@@ -100,8 +112,8 @@ export function HomePage() {
                 onSelectUser={setProfileUserId}
               />
             </section>
-          );
-        })}
+          ))
+        )}
       </div>
 
       {profileUserId && (

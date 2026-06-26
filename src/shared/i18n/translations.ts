@@ -39,6 +39,7 @@ export const en = {
 
     // Dashboard
     'dashboard.greeting': 'Hello, {name}!',
+    'home.noActivity': 'No one is on shift right now.',
 
     // Settings
     'settings.preferences': 'Preferences',
@@ -368,6 +369,7 @@ export const cs: Record<TranslationKey, string> = {
     'sidebar.navigation': 'Navigace',
 
     'dashboard.greeting': 'Dobrý den, {name}!',
+    'home.noActivity': 'Nikdo teď není ve směně.',
 
     'settings.preferences': 'Předvolby',
     'settings.title': 'Nastavení',
