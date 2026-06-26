@@ -54,7 +54,7 @@ export function FormActions({
             <button
                 type="submit"
                 disabled={isBusy}
-                className="flex-1 px-4 py-2.5 rounded-xl text-label text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-60 shadow-lg shadow-emerald-500/20"
+                className="flex-1 px-4 py-2.5 rounded-xl text-label text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-60 shadow-lg shadow-emerald-500/20"
             >
                 {isBusy ? 'Saving…' : submitLabel}
             </button>

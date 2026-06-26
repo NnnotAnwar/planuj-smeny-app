@@ -90,7 +90,7 @@ function RequestRow({
                     <button
                         onClick={() => act(true)}
                         disabled={busy !== null}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-small-strong text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-small-strong text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-50"
                     >
                         <CheckIcon weight="bold" className="w-4 h-4" />
                         {busy === 'approve' ? '…' : 'Approve'}

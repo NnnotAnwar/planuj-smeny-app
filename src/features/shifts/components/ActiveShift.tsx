@@ -67,7 +67,7 @@ export function ActiveShift() {
                 {/* Make it obvious WHERE you're clocked in (esp. on phone). */}
                 <p className="mt-2 text-body-strong text-gray-900 dark:text-white text-center">{locationName}</p>
                 {previousLocation && (
-                    <div className="mt-2 flex items-center gap-1 text-micro text-gray-500">
+                    <div className="mt-2 flex items-center gap-1 text-micro text-amber-600 dark:text-amber-500">
                         <span>Moved from {previousLocation.name}</span>
                     </div>
                 )}
@@ -86,7 +86,7 @@ export function ActiveShift() {
                                 Active Shift
                             </span>
                             {previousLocation && (
-                                <span className="flex items-center gap-1 text-micro text-gray-400 dark:text-gray-500">
+                                <span className="flex items-center gap-1 text-micro text-amber-600 dark:text-amber-500">
                                     <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                                     </svg>

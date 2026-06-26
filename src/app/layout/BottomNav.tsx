@@ -160,7 +160,7 @@ export function BottomNav() {
                                             </div>
                                             <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{item.name}</span>
                                             {badge > 0 && (
-                                                <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-white text-micro flex items-center justify-center">{badge}</span>
+                                                <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-600 text-white text-micro flex items-center justify-center">{badge}</span>
                                             )}
                                             <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-400" />
                                         </Link>
@@ -235,7 +235,7 @@ export function BottomNav() {
                         <DotsThreeOutlineIcon weight={moreActive ? 'fill' : 'regular'} className="w-6 h-6" />
                         <span className="text-caption">More</span>
                         {!menuOpen && moreBadge > 0 && (
-                            <span className="absolute top-1.5 right-[calc(50%-1.25rem)] min-w-4 h-4 px-1 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                            <span className="absolute top-1.5 right-[calc(50%-1.25rem)] min-w-4 h-4 px-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">
                                 {moreBadge}
                             </span>
                         )}

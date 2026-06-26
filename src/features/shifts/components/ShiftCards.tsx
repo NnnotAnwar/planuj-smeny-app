@@ -76,11 +76,11 @@ function UserShiftCard({ userShift, onSelectUser }: { userShift: NonNullable<Shi
   // Emerald/Green if standard, Yellow/Amber if location changed.
   const bg = isChange
     ? 'bg-linear-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/30 dark:to-amber-900/30 border-yellow-200 dark:border-yellow-500/20'
-    : 'bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border-emerald-200 dark:border-emerald-500/20';
+    : 'bg-linear-to-r from-emerald-50 to-emerald-50 dark:from-emerald-900/30 dark:to-emerald-900/30 border-emerald-200 dark:border-emerald-500/20';
 
   const box = isChange
     ? 'bg-yellow-500 text-white shadow-md'
-    : 'bg-emerald-500 text-white shadow-md';
+    : 'bg-emerald-600 text-white shadow-md';
 
   const label = isChange
     ? 'text-yellow-700 dark:text-yellow-400'

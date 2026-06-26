@@ -63,8 +63,23 @@ html.dark {
   background-color: #020617; /* slate-950 */
 }
 
+/* Background gradient stops — defaults match the brand combo (emerald-slate-snow);
+   ThemeContext overrides these per colour scheme. */
+:root {
+  --grad-from: #f8fafc;
+  --grad-via: #f1f5f9;
+  --grad-to: #e0e7ff;
+}
+
+.dark {
+  --grad-from: #020617;
+  --grad-via: #0f172a;
+  --grad-to: #1e2937;
+}
+
 body {
-  @apply antialiased bg-linear-to-br from-slate-100 via-gray-50 to-zinc-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950 transition-colors duration-500 bg-fixed;
+  background: linear-gradient(to bottom right, var(--grad-from), var(--grad-via), var(--grad-to));
+  transition: background 0.5s ease;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);

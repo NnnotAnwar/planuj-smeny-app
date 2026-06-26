@@ -1,7 +1,7 @@
 .emerald-scrollbar {
   /* Для Firefox */
   scrollbar-width: thin;
-  scrollbar-color: #10b981 transparent; /* Изумрудный ползунок, прозрачный трек */
+  scrollbar-color: var(--color-emerald-600) transparent;
 }
 
 /* Для Chrome, Edge и Safari */
@@ -15,10 +15,10 @@
 }
 
 .emerald-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #10b981; /* Цвет tailwind bg-emerald-500 */
+  background-color: var(--color-emerald-600);
   border-radius: 8px;
 }
 
 .emerald-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #059669; /* Цвет при наведении bg-emerald-600 */
+  background-color: var(--color-emerald-700);
 }

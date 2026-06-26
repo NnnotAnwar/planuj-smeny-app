@@ -171,7 +171,7 @@ function AdminPanel() {
                     {canAdd && (
                         <button
                             onClick={handleAdd}
-                            className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-small-strong transition-all active:scale-95 shadow-lg shadow-emerald-500/25"
+                            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-small-strong transition-all active:scale-95 shadow-lg shadow-emerald-500/25"
                         >
                             {safeTab === 'employees' ? (
                                 <PaperPlaneTiltIcon weight="bold" className="w-4 h-4" />

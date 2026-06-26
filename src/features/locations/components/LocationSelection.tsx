@@ -101,7 +101,7 @@ function LocationButton({ location, isActive, onClick }: { location: Location, i
     <button
       onClick={onClick}
       className={`group flex items-center gap-4 md:m-px p-2 w-full rounded-lg transition-all duration-200 cursor-pointer border ${isActive
-        ? 'bg-emerald-500 text-white border-emerald-400 shadow-sm shadow-emerald-500/20'
+        ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-500/20'
         : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/5 text-gray-700 dark:text-gray-300'
         }`}
     >
