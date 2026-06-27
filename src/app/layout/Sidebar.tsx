@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 
 import { formatTime } from '@shared/utils/date';
 import { Clock } from '@shared/components/Clock';
-import { MapPinIcon, SignOutIcon, CaretDownIcon } from '@phosphor-icons/react';
+import { MapPinIcon, SignOutIcon, CaretRightIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -128,29 +129,100 @@ function SidebarNavSection({
   );
 }
 
+/** Picker trigger card — mirrors CurrentPost's size exactly so swapping between
+ *  the two never shifts the layout. */
+function LocationPickerTrigger({
+  selected,
+  onClick,
+  t,
+}: {
+  selected?: { name: string };
+  onClick: () => void;
+  t: TranslateFn;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group w-full text-left rounded-2xl border p-3 cursor-pointer transition-all active:scale-[0.985] bg-gray-100 dark:bg-[color-mix(in_srgb,var(--grad-to)_85%,black)] border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-400/60"
+    >
+      <div className="flex items-center justify-between mb-1">
+        <div className="uppercase text-[10px] font-semibold tracking-[1px] text-gray-500 dark:text-slate-400">
+          {t('sidebar.availablePosts')}
+        </div>
+        <CaretRightIcon className="w-3.5 h-3.5 text-gray-400 transition-transform group-hover:translate-x-0.5" />
+      </div>
+      <div className="flex items-start gap-2.5">
+        <div className="mt-0.5 rounded-lg p-1 bg-emerald-100 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400">
+          <MapPinIcon className="w-4 h-4" weight="fill" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[15px] font-semibold leading-tight tracking-[-0.2px] text-gray-900 dark:text-white truncate">
+            {selected ? selected.name : t('location.select')}
+          </div>
+          <div className="mt-0.5 text-xs text-gray-500 dark:text-slate-400">{t('location.change')}</div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 /**
- * "Change location" — a single expandable element. Collapsed it shows just the
- * current/selected post; expanding reveals the shared LocationPicker (recent +
- * search) inline. The list flows (scroll={false}) and the sidebar's own scroll
- * region handles overflow, so it never clips or traps a nested scrollbar.
+ * The sidebar "hero" slot. On the dashboard it shows the location picker trigger;
+ * elsewhere (while on shift) it shows the live CurrentPost — both the same height,
+ * so navigating never shifts the layout. Tapping either opens the shared
+ * LocationPicker in a flyout popover anchored to the RIGHT of the sidebar, so it
+ * never overlaps the nav.
  */
-function LocationControl({
+function LocationHero({
   locations,
   selectedLocationId,
-  isOnShift,
+  activeShift,
+  currentLocation,
+  isDashboard,
   onLocationSelect,
   t,
 }: {
   locations: Array<{ id: string; name: string; archived_at?: string | null }>;
   selectedLocationId: string | null;
-  isOnShift: boolean;
+  activeShift: Shift | null;
+  currentLocation?: { id: string; name: string };
+  isDashboard: boolean;
   onLocationSelect: (id: string) => void;
   t: TranslateFn;
 }) {
   const { recentIds, recordPick } = useRecentLocations();
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
 
   const selected = locations.find((l) => l.id === selectedLocationId);
+  const showPost = !!activeShift && !isDashboard;
+
+  const place = useCallback(() => {
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    // Flyout sits just to the right of the sidebar, vertically clamped to stay on screen.
+    const top = Math.max(8, Math.min(r.top, window.innerHeight - 420));
+    setPos({ left: r.right + 8, top });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (open) place();
+  }, [open, place]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onMove = () => place();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    window.addEventListener('resize', onMove);
+    window.addEventListener('scroll', onMove, true);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('resize', onMove);
+      window.removeEventListener('scroll', onMove, true);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open, place]);
 
   const handleSelect = (id: string) => {
     recordPick(id);
@@ -159,42 +231,37 @@ function LocationControl({
   };
 
   return (
-    <div className="px-0.5">
-      <div className="uppercase text-micro text-gray-500 dark:text-slate-500 mb-1 px-2.5">
-        {t('sidebar.availablePosts')}
-      </div>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-(--grad-to) hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-slate-200"
-      >
-        <MapPinIcon weight="fill" className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-        <span className="flex-1 truncate text-left">{selected ? selected.name : t('location.select')}</span>
-        <CaretDownIcon className={`w-3.5 h-3.5 shrink-0 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-      </button>
+    <div ref={ref} className="mb-4">
+      {showPost && activeShift ? (
+        <CurrentPost currentLocation={currentLocation} activeShift={activeShift} onSelect={() => setOpen(true)} t={t} />
+      ) : (
+        <LocationPickerTrigger selected={selected} onClick={() => setOpen(true)} t={t} />
+      )}
 
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="overflow-hidden"
-          >
-            <div className="pt-2">
+      {open &&
+        pos &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-59" onClick={() => setOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, x: -8, scale: 0.98 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              role="dialog"
+              className="fixed z-60 w-72 max-h-[70vh] flex flex-col rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-(--grad-to) shadow-2xl p-2"
+              style={{ left: pos.left, top: pos.top }}
+            >
               <LocationPicker
                 locations={locations}
                 selectedLocationId={selectedLocationId}
                 recentIds={recentIds}
-                isOnShift={isOnShift}
+                isOnShift={!!activeShift}
                 onSelect={handleSelect}
-                scroll={false}
               />
-            </div>
-          </motion.div>
+            </motion.div>
+          </>,
+          document.body,
         )}
-      </AnimatePresence>
     </div>
   );
 }
@@ -208,13 +275,6 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
 
   // Current location is the heart of the experience
   const currentLocation = locations.find((l) => l.id === selectedLocationId);
-  const isOnShift = !!activeShift;
-
-  const handleCurrentPostClick = () => {
-    if (currentLocation) {
-      onLocationSelect(currentLocation.id);
-    }
-  };
 
   return (
     <header className="sticky top-0 z-50 md:h-dvh w-full md:w-80 bg-white/90 dark:bg-(--grad-to) backdrop-blur-xl text-gray-900 dark:text-slate-100 border-b md:border-b-0 md:border-r border-gray-200 dark:border-slate-800 flex flex-col">
@@ -272,17 +332,18 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
           </Link>
         )}
 
-        {/* SIGNATURE HERO — the live "current shift" post. Hidden on the
-            dashboard, where the main content already shows the active shift;
-            shown on every other route so you never lose sight of where you are. */}
-        {activeShift && currentRoute.pathname !== '/' && (
-          <CurrentPost
-            currentLocation={currentLocation}
-            activeShift={activeShift}
-            onSelect={handleCurrentPostClick}
-            t={t}
-          />
-        )}
+        {/* HERO — picker trigger on the dashboard, live current-post elsewhere;
+            same height so navigating never shifts the layout. Opens the picker
+            flyout to the right of the sidebar. */}
+        <LocationHero
+          locations={locations}
+          selectedLocationId={selectedLocationId}
+          activeShift={activeShift}
+          currentLocation={currentLocation}
+          isDashboard={currentRoute.pathname === '/'}
+          onLocationSelect={onLocationSelect}
+          t={t}
+        />
 
         {/* NAVIGATION — grouped into Work / Manage / System */}
         {NAV_SECTIONS.map((section) => (
@@ -293,15 +354,6 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
             currentPath={currentRoute.pathname}
           />
         ))}
-
-        {/* LOCATIONS — single expandable picker (on every route, not just home) */}
-        <LocationControl
-          locations={locations}
-          selectedLocationId={selectedLocationId}
-          isOnShift={isOnShift}
-          onLocationSelect={onLocationSelect}
-          t={t}
-        />
 
         </div> {/* close scroll region */}
 
