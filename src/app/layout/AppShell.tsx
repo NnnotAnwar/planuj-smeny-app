@@ -11,6 +11,7 @@ import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
+import { CommandPalette } from '../CommandPalette';
 import { LocationPopup, type LocationPopupVariant } from '@features/locations/components/LocationPopup';
 import { type User, type Shift, type Location } from '@shared/types';
 
@@ -44,6 +45,19 @@ export function AppShell() {
   // Failed shift actions (start/end/move) are surfaced via the toast store; the
   // store auto-dismisses each entry.
   const toasts = useToasts();
+
+  // Command palette (⌘K / Ctrl+K) open state + global hotkey.
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // "You're already here" — a top push-style toast (auto-dismisses).
   const [hereToast, setHereToast] = useState<string | null>(null);
@@ -155,6 +169,15 @@ export function AppShell() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* COMMAND PALETTE (⌘K) */}
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        locations={locations}
+        selectedLocationId={selectedLocationId}
+        onSelectLocation={handleLocationSelect}
+      />
 
       {/* GLOBAL OVERLAYS */}
       <AnimatePresence>

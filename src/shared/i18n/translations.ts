@@ -40,6 +40,10 @@ export const en = {
     // Dashboard
     'dashboard.greeting': 'Hello, {name}!',
     'home.noActivity': 'No one is on shift right now.',
+    'cmd.placeholder': 'Search or jump to…',
+    'cmd.pages': 'Pages',
+    'cmd.locations': 'Locations',
+    'cmd.empty': 'No results',
 
     // Settings
     'settings.preferences': 'Preferences',
@@ -374,6 +378,10 @@ export const cs: Record<TranslationKey, string> = {
 
     'dashboard.greeting': 'Dobrý den, {name}!',
     'home.noActivity': 'Nikdo teď není ve směně.',
+    'cmd.placeholder': 'Hledat nebo přejít…',
+    'cmd.pages': 'Stránky',
+    'cmd.locations': 'Místa',
+    'cmd.empty': 'Žádné výsledky',
 
     'settings.preferences': 'Předvolby',
     'settings.title': 'Nastavení',
