@@ -44,13 +44,15 @@ function CurrentPost({
 }: {
   currentLocation?: { id: string; name: string };
   activeShift: Shift;
-  onSelect: () => void;
+  onSelect?: () => void;
   t: TranslateFn;
 }) {
   return (
     <div
       onClick={onSelect}
-      className="group mb-4 rounded-2xl border p-3 cursor-pointer transition-all active:scale-[0.985] bg-gray-100 dark:bg-[color-mix(in_srgb,var(--grad-to)_85%,black)] border-emerald-200 dark:border-emerald-400/40 hover:border-emerald-300 dark:hover:border-emerald-400/70"
+      className={`group rounded-2xl border p-3 transition-all bg-gray-100 dark:bg-[color-mix(in_srgb,var(--grad-to)_85%,black)] border-emerald-200 dark:border-emerald-400/40 ${
+        onSelect ? 'cursor-pointer active:scale-[0.985] hover:border-emerald-300 dark:hover:border-emerald-400/70' : ''
+      }`}
     >
       <div className="flex items-center justify-between mb-1">
         <div className="uppercase text-[10px] font-semibold tracking-[1px] text-gray-500 dark:text-slate-400">
@@ -233,7 +235,7 @@ function LocationHero({
   return (
     <div ref={ref} className="mb-4">
       {showPost && activeShift ? (
-        <CurrentPost currentLocation={currentLocation} activeShift={activeShift} onSelect={() => setOpen(true)} t={t} />
+        <CurrentPost currentLocation={currentLocation} activeShift={activeShift} t={t} />
       ) : (
         <LocationPickerTrigger selected={selected} onClick={() => setOpen(true)} t={t} />
       )}
