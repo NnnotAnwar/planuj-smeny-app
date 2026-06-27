@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { ArrowClockwiseIcon } from '@phosphor-icons/react';
 import { type AppOutletContext } from './AppShell';
 
 import { ActiveShift } from '@features/shifts/components/ActiveShift';
@@ -9,6 +11,8 @@ import { MobileLocationField } from '@features/locations/components/MobileLocati
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { Clock } from '@shared/components/Clock';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { usePullToRefresh } from '@shared/hooks/usePullToRefresh';
+import { shiftKeys } from '@features/shifts/shiftKeys';
 import { type ShiftDisplayData } from '@shared/types';
 import { formatTime } from '@shared/utils/date';
 
@@ -25,6 +29,16 @@ export function HomePage() {
   // Which worker's profile modal is open (from tapping an active-shift card).
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const t = useTranslation();
+  const qc = useQueryClient();
+
+  // Pull down (at the top) to refresh the board + locations.
+  const { pull, refreshing, threshold } = usePullToRefresh(async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: shiftKeys.all }),
+      qc.invalidateQueries({ queryKey: ['locations'] }),
+      new Promise((r) => setTimeout(r, 500)), // keep the spinner visible briefly
+    ]);
+  });
 
   if (!user) return null;
 
@@ -75,6 +89,22 @@ export function HomePage() {
 
   return (
     <>
+      {/* PULL-TO-REFRESH indicator (mobile) — fades/rotates with the pull. */}
+      {(pull > 0 || refreshing) && (
+        <div
+          className="md:hidden fixed left-1/2 -translate-x-1/2 z-30 top-[calc(0.5rem+env(safe-area-inset-top,0px))] pointer-events-none"
+          style={{ opacity: refreshing ? 1 : Math.min(pull / threshold, 1) }}
+        >
+          <div className="w-9 h-9 rounded-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg flex items-center justify-center">
+            <ArrowClockwiseIcon
+              weight="bold"
+              className={`w-5 h-5 text-emerald-500 ${refreshing ? 'animate-spin' : ''}`}
+              style={refreshing ? undefined : { transform: `rotate(${pull * 2.5}deg)` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* 1. CLOCK (Desktop Only) */}
       <div className="hidden md:flex items-center justify-center mb-8 pt-2">
         <div className="text-2xl font-black dark:text-white tracking-tight">
