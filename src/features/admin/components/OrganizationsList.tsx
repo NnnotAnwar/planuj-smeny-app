@@ -3,7 +3,7 @@ import type { Organization } from '@/shared/types';
 import { DataTable, type Column } from '@/shared/components/DataTable';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { ActionButtons } from './ActionButtons';
-import { LoadingState, EmptyState } from './AdminStateViews';
+import { EmptyState } from './AdminStateViews';
 
 function OrgIdentity({ org }: { org: Organization }) {
     return (
@@ -44,7 +44,6 @@ export function OrganizationsList({
             rowKey={(org) => org.id}
             columns={columns}
             isLoading={isLoading}
-            loadingState={<LoadingState label={t('admin.nounOrganizations')} />}
             emptyState={<EmptyState label={t('admin.nounOrganizations')} />}
         />
     );

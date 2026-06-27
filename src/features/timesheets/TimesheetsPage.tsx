@@ -430,7 +430,6 @@ function TimesheetsInner() {
                         rows={filteredMembers}
                         rowKey={(m) => m.id}
                         isLoading={membersQ.isLoading}
-                        loadingState={<div className="py-20 text-center text-label text-gray-400 animate-pulse">{t('state.loading', { label: t('admin.nounEmployees') })}</div>}
                         emptyState={<div className="py-20 text-center text-label text-gray-400">{t('state.empty', { label: t('admin.nounEmployees') })}</div>}
                         onRowClick={(m) => { setSelectedId(m.id); setSearch(''); }}
                         columns={[

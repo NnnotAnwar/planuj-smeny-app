@@ -7,7 +7,7 @@ import { DataTable, type Column } from '@/shared/components/DataTable';
 import { canManageMember, RANK } from '@shared/auth/permissions';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { ActionButtons } from './ActionButtons';
-import { LoadingState, EmptyState } from './AdminStateViews';
+import { EmptyState } from './AdminStateViews';
 
 /** Small "A" badge with a tap/hover "Administrator" tooltip. */
 function AdminBadgeWithTooltip() {
@@ -142,7 +142,6 @@ export function EmployeesList({
             rowKey={(emp) => emp.id}
             columns={columns}
             isLoading={isLoading}
-            loadingState={<LoadingState label={t('admin.nounEmployees')} />}
             emptyState={<EmptyState label={t('admin.nounEmployees')} />}
             onRowClick={onView}
         />

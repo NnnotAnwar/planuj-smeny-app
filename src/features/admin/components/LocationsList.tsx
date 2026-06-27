@@ -2,7 +2,7 @@ import { MapPinIcon } from '@phosphor-icons/react';
 import { DataTable, type Column } from '@/shared/components/DataTable';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { ActionButtons } from './ActionButtons';
-import { LoadingState, EmptyState } from './AdminStateViews';
+import { EmptyState } from './AdminStateViews';
 
 export interface LocationRow {
     id: string;
@@ -55,7 +55,6 @@ export function LocationsList({
             rowKey={(loc) => loc.id}
             columns={columns}
             isLoading={isLoading}
-            loadingState={<LoadingState label={t('admin.nounLocations')} />}
             emptyState={<EmptyState label={t('admin.nounLocations')} />}
         />
     );

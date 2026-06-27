@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Skeleton } from './Skeleton';
 
 /**
  * A single column definition for {@link DataTable}.
@@ -70,10 +71,13 @@ export function DataTable<T>({
   emptyState,
   onRowClick,
 }: DataTableProps<T>) {
-  if (isLoading && rows.length === 0) return <>{loadingState ?? null}</>;
-  if (rows.length === 0) return <>{emptyState ?? null}</>;
+  // Loading with no rows yet: a caller-supplied state wins, otherwise show a
+  // skeleton table (header + shimmer rows) so the layout doesn't jump.
+  const showSkeleton = isLoading && rows.length === 0;
+  if (showSkeleton && loadingState) return <>{loadingState}</>;
+  if (!showSkeleton && rows.length === 0) return <>{emptyState ?? null}</>;
 
-  const hasFooter = columns.some((c) => c.footer !== undefined);
+  const hasFooter = !showSkeleton && columns.some((c) => c.footer !== undefined);
 
   return (
     <div className="bg-white dark:bg-gray-900/40 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
@@ -92,7 +96,22 @@ export function DataTable<T>({
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-          {rows.map((row) => (
+          {showSkeleton
+            ? Array.from({ length: 6 }).map((_, r) => (
+                <tr key={`skeleton-${r}`}>
+                  {columns.map((col) => (
+                    <td
+                      key={col.key}
+                      className={`${cellPad} ${ALIGN[col.align ?? 'left']} ${col.width ?? ''} ${col.hideOnMobile ? mobileHidden : ''}`}
+                    >
+                      <Skeleton
+                        className={`h-3.5 ${col.align === 'right' ? 'ml-auto' : ''} ${col.width ? 'w-12' : 'w-2/3'}`}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            : rows.map((row) => (
             <tr
               key={rowKey(row)}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
