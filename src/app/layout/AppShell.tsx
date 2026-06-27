@@ -5,6 +5,7 @@ import { WarningCircleIcon, XIcon, MapPinIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
+import { usePushNotifications } from '@features/notifications/usePushNotifications';
 import { useLocationManagement } from '@features/locations/hooks/useLocationManagement';
 import { useToasts, toastStore } from '@shared/toast/toastStore';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
@@ -41,6 +42,9 @@ export function AppShell() {
   const { user, isAuthChecking, isLoading: isAuthLoading } = useAuthContext();
   const { activeShift, allActiveShifts, locations, selectedLocationId, setSelectedLocationId, handleChangeLocation, isChangingLocation } = useShiftContext();
   const t = useTranslation();
+
+  // Register for push notifications (native only; no-op on web / when signed out).
+  usePushNotifications(user?.id);
 
   // Failed shift actions (start/end/move) are surfaced via the toast store; the
   // store auto-dismisses each entry.
