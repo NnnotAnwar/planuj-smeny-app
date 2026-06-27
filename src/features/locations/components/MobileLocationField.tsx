@@ -4,6 +4,7 @@ import { MapPinIcon, CaretUpDownIcon, XIcon } from '@phosphor-icons/react';
 import { type Location } from '@shared/types';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { useRecentLocations } from '../useRecentLocations';
+import { useBackHandler } from '@shared/hooks/useBackHandler';
 import { LocationPicker } from './LocationPicker';
 
 /**
@@ -31,6 +32,8 @@ export function MobileLocationField({
     const [open, setOpen] = useState(false);
 
     const selected = locations.find((l) => l.id === selectedLocationId);
+
+    useBackHandler(open, () => setOpen(false));
 
     // Lock body scroll while the sheet is open.
     useEffect(() => {

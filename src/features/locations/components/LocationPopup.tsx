@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { MapPinIcon, ArrowsLeftRightIcon, type Icon } from '@phosphor-icons/react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { useBackHandler } from '@shared/hooks/useBackHandler';
 import type { TranslationKey } from '@shared/i18n/translations';
 
 /**
@@ -38,6 +39,8 @@ const COPY: Record<LocationPopupVariant, { subKey: TranslationKey; icon: Icon; t
 export function LocationPopup({ locationName, variant, isBusy, onConfirm, onCancel }: LocationPopupProps) {
     const t = useTranslation();
     const { subKey, icon: VariantIcon, tint } = COPY[variant];
+
+    useBackHandler(!isBusy, onCancel);
 
     return (
         <motion.div

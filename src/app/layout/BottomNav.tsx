@@ -11,6 +11,7 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { useTheme } from '@app/providers/ThemeContext';
 import { usePreferences } from '@shared/preferences/PreferencesContext';
 import { getFullInitials } from '@shared/utils/getInitials';
+import { useBackHandler } from '@shared/hooks/useBackHandler';
 import { useNavItems, NAV_SECTIONS, SECTION_LABEL_KEYS } from '../navigation';
 import { LANGUAGES } from '@shared/i18n/translations';
 
@@ -93,6 +94,9 @@ export function BottomNav() {
     // When the sheet is open only "More" is lit; otherwise it's lit on its routes.
     const moreActive = menuOpen || moreItems.some((i) => i.route === pathname);
     const moreBadge = moreItems.reduce((sum, i) => sum + i.badgeCount, 0);
+
+    // Hardware back / Esc closes the sheet instead of navigating.
+    useBackHandler(menuOpen, () => setMenuOpen(false));
 
     // Lock body scroll while the sheet is open.
     useEffect(() => {

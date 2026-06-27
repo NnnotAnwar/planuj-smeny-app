@@ -3,6 +3,7 @@ import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
+import { popBackHandler } from './shared/hooks/useBackHandler';
 
 // Providers (Global State)
 import { AuthProvider } from './features/auth/AuthContext';
@@ -58,6 +59,8 @@ function BackButtonHandler() {
 
     let listener: PluginListenerHandle | undefined;
     CapacitorApp.addListener('backButton', () => {
+      // Dismiss any open overlay (sheet / palette / modal) before navigating.
+      if (popBackHandler()) return;
       if (window.history.length > 1) {
         navigate(-1);
       } else {

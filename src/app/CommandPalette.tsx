@@ -7,6 +7,7 @@ import { MagnifyingGlassIcon, MapPinIcon, type Icon } from '@phosphor-icons/reac
 import { useNavItems } from './navigation';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { useRecentLocations } from '@features/locations/useRecentLocations';
+import { useBackHandler } from '@shared/hooks/useBackHandler';
 
 /**
  * --- COMMAND PALETTE (⌘K / Ctrl+K) ---
@@ -50,6 +51,9 @@ export function CommandPalette({ open, onClose, locations, selectedLocationId, o
     const [active, setActive] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+
+    // Hardware back closes the palette before navigating.
+    useBackHandler(open, onClose);
 
     const q = query.trim().toLowerCase();
 

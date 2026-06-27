@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { XIcon, WarningIcon } from '@phosphor-icons/react';
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { useBackHandler } from '@shared/hooks/useBackHandler';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 
@@ -27,6 +28,9 @@ export function Modal({
 }) {
     const t = useTranslation();
     const panelRef = useRef<HTMLDivElement>(null);
+
+    // Android hardware back closes the modal before navigating.
+    useBackHandler(true, onClose);
 
     useEffect(() => {
         // Lock background scroll while the modal is open.
