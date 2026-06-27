@@ -75,14 +75,14 @@ export function MobileLocationField({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setOpen(false)}
-                            className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm md:hidden"
+                            className="fixed inset-0 z-70 bg-black/40 backdrop-blur-sm md:hidden"
                         />
                         <motion.div
                             initial={{ y: '100%' }}
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ type: 'spring', stiffness: 360, damping: 36 }}
-                            className="fixed inset-x-0 bottom-0 z-[71] md:hidden flex flex-col max-h-[78vh] rounded-t-3xl bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-white/10 pb-[env(safe-area-inset-bottom,0px)]"
+                            className="fixed inset-x-0 bottom-0 z-71 md:hidden flex flex-col max-h-[78vh] rounded-t-3xl bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-white/10 pb-[env(safe-area-inset-bottom,0px)]"
                         >
                             <div className="flex items-center justify-between px-4 pt-3 pb-2 shrink-0">
                                 <div className="mx-auto absolute left-1/2 -translate-x-1/2 top-1.5 h-1 w-10 rounded-full bg-gray-300 dark:bg-white/15" />

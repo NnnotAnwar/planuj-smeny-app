@@ -80,7 +80,7 @@ export function BottomNav() {
                         initial="closed"
                         animate="open"
                         exit="closed"
-                        className="md:hidden fixed inset-x-0 top-0 z-[60] bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] flex flex-col bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl pt-[env(safe-area-inset-top,0px)]"
+                        className="md:hidden fixed inset-x-0 top-0 z-60 bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] flex flex-col bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl pt-[env(safe-area-inset-top,0px)]"
                     >
                         {/* Header — just "Menu", no logo */}
                         <div className="flex justify-between items-center px-5 h-14 shrink-0 border-b border-gray-200/70 dark:border-white/5">

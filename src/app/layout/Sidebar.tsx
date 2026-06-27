@@ -107,14 +107,14 @@ function SidebarNavSection({
             to={item.route}
             className={`group flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all ${
               active
-                ? 'bg-gray-100 dark:bg-[color-mix(in_srgb,var(--grad-to)_85%,black)] text-gray-900 dark:text-white font-medium border-l-2 border-emerald-500 -ml-0.5 pl-[14px]'
-                : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-[color:var(--grad-to)]/80 hover:text-gray-900 dark:hover:text-white'
+                ? 'bg-gray-100 dark:bg-[color-mix(in_srgb,var(--grad-to)_85%,black)] text-gray-900 dark:text-white font-medium border-l-2 border-emerald-500 -ml-0.5 pl-3.5'
+                : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-(--grad-to)/80 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <item.icon className="w-4 h-4 opacity-80" />
             <span className="flex-1">{item.label}</span>
             {item.badgeCount > 0 && (
-              <span className="ml-auto bg-emerald-500 dark:bg-emerald-400 text-white dark:text-[#0B1120] text-[10px] font-bold px-1.5 rounded-full min-w-[17px] h-[17px] flex items-center justify-center">
+              <span className="ml-auto bg-emerald-500 dark:bg-emerald-400 text-white dark:text-[#0B1120] text-[10px] font-bold px-1.5 rounded-full min-w-4.25 h-4.25 flex items-center justify-center">
                 {item.badgeCount}
               </span>
             )}
@@ -187,7 +187,7 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 md:h-dvh w-full md:w-80 bg-white/90 dark:bg-[color:var(--grad-to)] backdrop-blur-xl text-gray-900 dark:text-slate-100 border-b md:border-b-0 md:border-r border-gray-200 dark:border-slate-800 flex flex-col">
+    <header className="sticky top-0 z-50 md:h-dvh w-full md:w-80 bg-white/90 dark:bg-(--grad-to) backdrop-blur-xl text-gray-900 dark:text-slate-100 border-b md:border-b-0 md:border-r border-gray-200 dark:border-slate-800 flex flex-col">
       <div className="flex flex-col h-full px-3 pt-[calc(0.25rem+env(safe-area-inset-top,0px))] pb-1 md:pt-2.5 md:pb-2.5">
         {/* Top brand row - restore original mobile header with centered time */}
         <div className="shrink-0 flex justify-between items-center h-10 md:h-12 relative md:mb-4">
