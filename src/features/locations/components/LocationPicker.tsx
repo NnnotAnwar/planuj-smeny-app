@@ -23,6 +23,9 @@ interface LocationPickerProps {
     recentIds: string[];
     isOnShift: boolean;
     onSelect: (locationId: string) => void;
+    /** When true (default) the list scrolls inside a bounded host (sheet); when
+     *  false the list flows and the host (e.g. a scrollable sidebar) scrolls. */
+    scroll?: boolean;
 }
 
 export function LocationPicker({
@@ -31,6 +34,7 @@ export function LocationPicker({
     recentIds,
     isOnShift,
     onSelect,
+    scroll = true,
 }: LocationPickerProps) {
     const t = useTranslation();
     const [query, setQuery] = useState('');
@@ -77,7 +81,7 @@ export function LocationPicker({
     };
 
     return (
-        <div className="flex flex-col min-h-0 h-full">
+        <div className={`flex flex-col min-h-0 ${scroll ? 'h-full' : ''}`}>
             <SearchInput
                 value={query}
                 onChange={setQuery}
@@ -86,7 +90,7 @@ export function LocationPicker({
                 inputClassName="py-2 pl-8 pr-3"
             />
 
-            <div className="flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-3 emerald-scrollbar">
+            <div className={scroll ? 'flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-3 emerald-scrollbar' : 'space-y-3'}>
                 {q ? (
                     results.length > 0 ? (
                         <div className="space-y-0.5">{results.map(renderRow)}</div>

@@ -1,8 +1,10 @@
+import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 
 import { formatTime } from '@shared/utils/date';
 import { Clock } from '@shared/components/Clock';
-import { MapPinIcon, SignOutIcon } from '@phosphor-icons/react';
+import { MapPinIcon, SignOutIcon, CaretDownIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -127,11 +129,12 @@ function SidebarNavSection({
 }
 
 /**
- * Always-visible location section (desktop): the shared LocationPicker — recent
- * posts first, then all, with search — fills the remaining sidebar height and
- * scrolls internally, so it stays usable no matter how many locations exist.
+ * "Change location" — a single expandable element. Collapsed it shows just the
+ * current/selected post; expanding reveals the shared LocationPicker (recent +
+ * search) inline. The list flows (scroll={false}) and the sidebar's own scroll
+ * region handles overflow, so it never clips or traps a nested scrollbar.
  */
-function SidebarLocations({
+function LocationControl({
   locations,
   selectedLocationId,
   isOnShift,
@@ -145,26 +148,53 @@ function SidebarLocations({
   t: TranslateFn;
 }) {
   const { recentIds, recordPick } = useRecentLocations();
+  const [open, setOpen] = useState(false);
+
+  const selected = locations.find((l) => l.id === selectedLocationId);
 
   const handleSelect = (id: string) => {
     recordPick(id);
     onLocationSelect(id);
+    setOpen(false);
   };
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col px-0.5">
-      <div className="uppercase text-micro text-gray-500 dark:text-slate-500 mb-1 px-2.5 shrink-0">
+    <div className="px-0.5">
+      <div className="uppercase text-micro text-gray-500 dark:text-slate-500 mb-1 px-2.5">
         {t('sidebar.availablePosts')}
       </div>
-      <div className="flex-1 min-h-0">
-        <LocationPicker
-          locations={locations}
-          selectedLocationId={selectedLocationId}
-          recentIds={recentIds}
-          isOnShift={isOnShift}
-          onSelect={handleSelect}
-        />
-      </div>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-(--grad-to) hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-slate-200"
+      >
+        <MapPinIcon weight="fill" className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+        <span className="flex-1 truncate text-left">{selected ? selected.name : t('location.select')}</span>
+        <CaretDownIcon className={`w-3.5 h-3.5 shrink-0 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="overflow-hidden"
+          >
+            <div className="pt-2">
+              <LocationPicker
+                locations={locations}
+                selectedLocationId={selectedLocationId}
+                recentIds={recentIds}
+                isOnShift={isOnShift}
+                onSelect={handleSelect}
+                scroll={false}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -217,7 +247,10 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
         </div>
 
         {/* All heavy sidebar content is hidden on mobile (BottomNav + HomePage handle mobile UX) */}
-        <div className="hidden md:flex md:flex-col flex-1 min-h-0 overflow-hidden py-1">
+        <div className="hidden md:flex md:flex-col flex-1 min-h-0 py-1">
+
+        {/* Scrollable region: profile → nav → locations. Footer stays pinned. */}
+        <div className="flex-1 min-h-0 overflow-y-auto emerald-scrollbar -mx-1 px-1">
 
         {/* USER — secondary, quiet (styled like mobile profile) */}
         {user && (
@@ -259,21 +292,21 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
           />
         ))}
 
-        {/* LOCATIONS — always-visible scrollable picker (only on home) */}
-        {currentRoute.pathname === '/' ? (
-          <SidebarLocations
+        {/* LOCATIONS — single expandable picker (only on home) */}
+        {currentRoute.pathname === '/' && (
+          <LocationControl
             locations={locations}
             selectedLocationId={selectedLocationId}
             isOnShift={isOnShift}
             onLocationSelect={onLocationSelect}
             t={t}
           />
-        ) : (
-          <div className="flex-1" />
         )}
 
+        </div> {/* close scroll region */}
+
         {/* FOOTER — minimal, clear action */}
-        <div className="pt-3 mt-auto border-t border-gray-200 dark:border-slate-800">
+        <div className="pt-3 border-t border-gray-200 dark:border-slate-800 shrink-0">
           <button
             onClick={logout}
             className="w-full flex items-center justify-center gap-2 text-sm text-red-600 dark:text-red-400 py-1.5 rounded-xl bg-white dark:bg-gray-900/40 border border-red-100 dark:border-red-900/20 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
