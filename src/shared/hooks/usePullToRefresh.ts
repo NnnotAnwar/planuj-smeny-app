@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { haptics } from '@shared/utils/haptics';
 
 /**
  * --- PULL TO REFRESH ---
@@ -56,6 +57,7 @@ export function usePullToRefresh(
                 return;
             }
             refreshingRef.current = true;
+            haptics.medium();
             setRefreshing(true);
             setPullBoth(threshold);
             try {

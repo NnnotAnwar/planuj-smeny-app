@@ -1,7 +1,6 @@
 import { useShiftContext } from '../ShiftContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { Capacitor } from '@capacitor/core';
+import { haptics } from '@shared/utils/haptics';
 
 /**
  * --- CHECK-IN COMPONENT ---
@@ -19,10 +18,8 @@ export function CheckIn() {
   /**
    * Handler: When user clicks "Start Shift".
    */
-  const onStartShiftClick = async () => {
-    if (Capacitor.isNativePlatform()) {
-      try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch (e) { console.warn(e); }
-    }
+  const onStartShiftClick = () => {
+    haptics.heavy();
     handleStartShift();
   };
 

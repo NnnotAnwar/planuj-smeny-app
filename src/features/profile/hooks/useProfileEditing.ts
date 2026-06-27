@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, type SyntheticEvent } from 'react';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { authService } from '@features/auth/authService';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { haptics } from '@shared/utils/haptics';
 import type { NameChangeRequest } from '@shared/types';
 
 /**
@@ -110,6 +111,7 @@ export function useProfileEditing() {
         setUsername(normalizedUsername);
         setBusyUser(false);
         setUserSaved(true);
+        haptics.success();
     };
 
     // --- name (admins) ---
@@ -133,6 +135,7 @@ export function useProfileEditing() {
         await refreshUser();
         setBusyName(false);
         setNameSaved(true);
+        haptics.success();
     };
 
     // --- name change request (staff) ---

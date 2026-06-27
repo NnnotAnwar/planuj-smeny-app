@@ -2,8 +2,7 @@ import { LiveClockIcon } from '@shared/components/LiveClockIcon';
 import { useAuthContext } from '../../auth/AuthContext';
 import { useShiftContext } from '../ShiftContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { Capacitor } from '@capacitor/core';
+import { haptics } from '@shared/utils/haptics';
 
 import { formatTime } from '@shared/utils/date';
 
@@ -31,10 +30,8 @@ export function ActiveShift() {
      * Handler: When user clicks "End Shift".
      * Includes haptic feedback (vibration) for mobile users.
      */
-    const onEndShiftClick = async () => {
-        if (Capacitor.isNativePlatform()) {
-            try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch (e) { console.warn(e); }
-        }
+    const onEndShiftClick = () => {
+        haptics.heavy();
         handleEndShift();
     };
 

@@ -5,6 +5,7 @@ import { type Location } from '@shared/types';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { useRecentLocations } from '../useRecentLocations';
 import { useBackHandler } from '@shared/hooks/useBackHandler';
+import { haptics } from '@shared/utils/haptics';
 import { LocationPicker } from './LocationPicker';
 
 /**
@@ -44,6 +45,7 @@ export function MobileLocationField({
     }, [open]);
 
     const handleSelect = (id: string) => {
+        haptics.light();
         recordPick(id);
         onLocationSelect(id);
         setOpen(false);
