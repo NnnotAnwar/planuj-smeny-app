@@ -77,7 +77,7 @@ export function LocationPicker({
     };
 
     return (
-        <div className="flex flex-col min-h-0">
+        <div className="flex flex-col min-h-0 h-full">
             <SearchInput
                 value={query}
                 onChange={setQuery}

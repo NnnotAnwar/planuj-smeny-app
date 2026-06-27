@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 
 import { formatTime } from '@shared/utils/date';
 import { Clock } from '@shared/components/Clock';
-import { MapPinIcon, SignOutIcon, CaretUpDownIcon } from '@phosphor-icons/react';
+import { MapPinIcon, SignOutIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -129,11 +127,11 @@ function SidebarNavSection({
 }
 
 /**
- * "Change location" trigger + popover picker (desktop). Keeps the sidebar
- * compact: the full searchable list lives in a portal popover anchored to the
- * trigger, instead of an always-on list that competes for vertical space.
+ * Always-visible location section (desktop): the shared LocationPicker — recent
+ * posts first, then all, with search — fills the remaining sidebar height and
+ * scrolls internally, so it stays usable no matter how many locations exist.
  */
-function LocationControl({
+function SidebarLocations({
   locations,
   selectedLocationId,
   isOnShift,
@@ -147,78 +145,26 @@ function LocationControl({
   t: TranslateFn;
 }) {
   const { recentIds, recordPick } = useRecentLocations();
-  const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const [pos, setPos] = useState<{ left: number; width: number; top?: number; bottom?: number } | null>(null);
-
-  const selected = locations.find((l) => l.id === selectedLocationId);
-
-  const place = useCallback(() => {
-    const r = triggerRef.current?.getBoundingClientRect();
-    if (!r) return;
-    const width = Math.max(r.width, 248);
-    // Open downward if there's room, otherwise upward (the trigger sits low).
-    const openDown = r.bottom + 380 <= window.innerHeight;
-    setPos(
-      openDown
-        ? { left: r.left, width, top: r.bottom + 6 }
-        : { left: r.left, width, bottom: window.innerHeight - r.top + 6 },
-    );
-  }, []);
-
-  useLayoutEffect(() => {
-    if (open) place();
-  }, [open, place]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onMove = () => place();
-    window.addEventListener('resize', onMove);
-    return () => window.removeEventListener('resize', onMove);
-  }, [open, place]);
 
   const handleSelect = (id: string) => {
     recordPick(id);
     onLocationSelect(id);
-    setOpen(false);
   };
 
   return (
-    <div className="mb-1 px-0.5">
-      <div className="uppercase text-[10px] font-semibold tracking-[1px] text-gray-500 dark:text-slate-500 mb-1 px-2.5">
+    <div className="flex-1 min-h-0 flex flex-col px-0.5">
+      <div className="uppercase text-micro text-gray-500 dark:text-slate-500 mb-1 px-2.5 shrink-0">
         {t('sidebar.availablePosts')}
       </div>
-      <button
-        ref={triggerRef}
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[color:var(--grad-to)] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-slate-200"
-      >
-        <MapPinIcon weight="fill" className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-        <span className="flex-1 truncate text-left">{selected ? selected.name : t('location.select')}</span>
-        <CaretUpDownIcon className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-      </button>
-
-      {open &&
-        pos &&
-        createPortal(
-          <>
-            <div className="fixed inset-0 z-[59]" onClick={() => setOpen(false)} />
-            <div
-              className="fixed z-[60] rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-[color:var(--grad-to)] shadow-2xl p-2 flex flex-col max-h-[60vh]"
-              style={{ left: pos.left, width: pos.width, top: pos.top, bottom: pos.bottom }}
-            >
-              <LocationPicker
-                locations={locations}
-                selectedLocationId={selectedLocationId}
-                recentIds={recentIds}
-                isOnShift={isOnShift}
-                onSelect={handleSelect}
-              />
-            </div>
-          </>,
-          document.body,
-        )}
+      <div className="flex-1 min-h-0">
+        <LocationPicker
+          locations={locations}
+          selectedLocationId={selectedLocationId}
+          recentIds={recentIds}
+          isOnShift={isOnShift}
+          onSelect={handleSelect}
+        />
+      </div>
     </div>
   );
 }
@@ -313,19 +259,18 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
           />
         ))}
 
-        {/* LOCATIONS — "Change location" trigger + popover (only on home) */}
-        {currentRoute.pathname === '/' && (
-          <LocationControl
+        {/* LOCATIONS — always-visible scrollable picker (only on home) */}
+        {currentRoute.pathname === '/' ? (
+          <SidebarLocations
             locations={locations}
             selectedLocationId={selectedLocationId}
             isOnShift={isOnShift}
             onLocationSelect={onLocationSelect}
             t={t}
           />
+        ) : (
+          <div className="flex-1" />
         )}
-
-        {/* Push the footer to the bottom */}
-        <div className="flex-1" />
 
         {/* FOOTER — minimal, clear action */}
         <div className="pt-3 mt-auto border-t border-gray-200 dark:border-slate-800">
