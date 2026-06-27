@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { MagnifyingGlassIcon, MapPinIcon, type Icon } from '@phosphor-icons/react';
 
 import { useNavItems } from './navigation';
@@ -39,7 +39,11 @@ interface CommandPaletteProps {
 export function CommandPalette({ open, onClose, locations, selectedLocationId, onSelectLocation }: CommandPaletteProps) {
     const t = useTranslation();
     const navigate = useNavigate();
+    const { pathname } = useLocation();
     const navItems = useNavItems();
+
+    // Picking a location is only allowed on the dashboard.
+    const locationsEnabled = pathname === '/';
     const { recentIds, recordPick } = useRecentLocations();
 
     const [query, setQuery] = useState('');
@@ -66,6 +70,7 @@ export function CommandPalette({ open, onClose, locations, selectedLocationId, o
     );
 
     const locationItems: CmdItem[] = useMemo(() => {
+        if (!locationsEnabled) return [];
         const available = locations.filter((l) => !l.archived_at || l.id === selectedLocationId);
         const byId = new Map(available.map((l) => [l.id, l]));
         // Recent-first when not searching; plain filtered list while typing.
@@ -82,7 +87,7 @@ export function CommandPalette({ open, onClose, locations, selectedLocationId, o
                 onClose();
             },
         }));
-    }, [locations, selectedLocationId, recentIds, q, recordPick, onSelectLocation, onClose]);
+    }, [locationsEnabled, locations, selectedLocationId, recentIds, q, recordPick, onSelectLocation, onClose]);
 
     const groups = useMemo(
         () =>

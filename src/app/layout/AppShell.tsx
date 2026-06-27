@@ -110,7 +110,7 @@ export function AppShell() {
   return (
     <div className="App min-h-dvh w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
       {/* SIDEBAR — persistent dispatch board / navigation (desktop) + header (mobile) */}
-      <Sidebar onLocationSelect={handleLocationSelect} />
+      <Sidebar onLocationSelect={handleLocationSelect} onOpenSearch={() => setPaletteOpen(true)} />
 
       {/* MAIN CONTENT AREA — bottom padding clears the mobile tab bar (+ the
           floating check-in button on Home); md+ uses the sidebar instead. */}

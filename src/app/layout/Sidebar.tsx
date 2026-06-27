@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 import { formatTime } from '@shared/utils/date';
 import { Clock } from '@shared/components/Clock';
-import { MapPinIcon, SignOutIcon, CaretRightIcon } from '@phosphor-icons/react';
+import { MapPinIcon, SignOutIcon, CaretRightIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -31,7 +31,14 @@ import { NotificationsBell } from '@features/notifications/NotificationsBell';
 
 interface SidebarProps {
   onLocationSelect: (locationId: string | null) => void;
+  onOpenSearch: () => void;
 }
+
+/** "⌘K" on Apple platforms, "Ctrl K" elsewhere — for the search hint. */
+const SHORTCUT_LABEL =
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent)
+    ? '⌘K'
+    : 'Ctrl K';
 
 /** The signature element — shows the active shift location ("Aktuální směna").
  *  Only rendered when a shift has been started (no "Vybraná směna" panel when idle).
@@ -268,7 +275,7 @@ function LocationHero({
   );
 }
 
-export function Sidebar({ onLocationSelect }: SidebarProps) {
+export function Sidebar({ onLocationSelect, onOpenSearch }: SidebarProps) {
   const { user, logout } = useAuthContext();
   const { locations, selectedLocationId, activeShift } = useShiftContext();
   const t = useTranslation();
@@ -302,8 +309,15 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
             </div>
           </div>
 
-          {/* Mobile: notifications bell */}
-          <div className="md:hidden z-10">
+          {/* Mobile: search + notifications bell */}
+          <div className="md:hidden z-10 flex items-center gap-0.5">
+            <button
+              onClick={onOpenSearch}
+              aria-label={t('cmd.search')}
+              className="p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-emerald-500/5 dark:hover:bg-white/5 active:scale-90 transition-all"
+            >
+              <MagnifyingGlassIcon weight="bold" className="w-6 h-6" />
+            </button>
             <NotificationsBell />
           </div>
         </div>
@@ -311,8 +325,20 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
         {/* All heavy sidebar content is hidden on mobile (BottomNav + HomePage handle mobile UX) */}
         <div className="hidden md:flex md:flex-col flex-1 min-h-0 py-1">
 
-        {/* Scrollable region: profile → nav → locations. Footer stays pinned. */}
+        {/* Scrollable region: search → profile → hero → nav. Footer stays pinned. */}
         <div className="flex-1 min-h-0 overflow-y-auto emerald-scrollbar -mx-1 px-1">
+
+        {/* SEARCH — opens the ⌘K command palette; the kbd hint makes it discoverable */}
+        <button
+          onClick={onOpenSearch}
+          className="w-full flex items-center gap-2.5 mb-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-(--grad-to) text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+        >
+          <MagnifyingGlassIcon weight="bold" className="w-4 h-4 shrink-0" />
+          <span className="flex-1 text-left text-sm">{t('cmd.search')}…</span>
+          <kbd className="font-sans text-micro normal-case tracking-normal px-1.5 py-0.5 rounded-md bg-gray-200/70 dark:bg-white/10 text-gray-500 dark:text-slate-300">
+            {SHORTCUT_LABEL}
+          </kbd>
+        </button>
 
         {/* USER — secondary, quiet (styled like mobile profile) */}
         {user && (
