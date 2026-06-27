@@ -42,7 +42,7 @@ export function ProfileEditor() {
             <form
               onSubmit={async (e) => {
                 if (Capacitor.isNativePlatform()) {
-                  try { await Keyboard.hide(); } catch {}
+                  try { await Keyboard.hide(); } catch { /* keyboard already hidden */ }
                 }
                 await saveUsername(e);
               }}
@@ -104,7 +104,7 @@ export function ProfileEditor() {
                     <form
                       onSubmit={async (e) => {
                         if (Capacitor.isNativePlatform()) {
-                          try { await Keyboard.hide(); } catch {}
+                          try { await Keyboard.hide(); } catch { /* keyboard already hidden */ }
                         }
                         await saveName(e);
                       }}

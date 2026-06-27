@@ -20,7 +20,7 @@ export async function shareOrExport(
   }
 
   // Native PDF: generate data and share
-  const data = await exportShifts(format, context, { returnData: true } as any);
+  const data = await exportShifts(format, context, { returnData: true });
 
   if (!data?.base64) {
     console.warn('No PDF data for sharing');

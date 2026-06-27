@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App as CapacitorApp } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 
 // Providers (Global State)
 import { AuthProvider } from './features/auth/AuthContext';
@@ -56,7 +56,7 @@ function BackButtonHandler() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    let listener: any;
+    let listener: PluginListenerHandle | undefined;
     CapacitorApp.addListener('backButton', () => {
       if (window.history.length > 1) {
         navigate(-1);

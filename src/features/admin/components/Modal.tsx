@@ -41,7 +41,7 @@ export function Modal({
             if (Capacitor.isNativePlatform()) {
                 try {
                     await Keyboard.hide();
-                } catch {}
+                } catch { /* keyboard already hidden */ }
             }
         };
 
@@ -76,12 +76,12 @@ export function Modal({
                 hideNativeKeyboard();
             }
         };
-        document.addEventListener('mousedown', handleBackdrop as any, true);
+        document.addEventListener('mousedown', handleBackdrop as EventListener, true);
 
         return () => {
             document.body.style.overflow = prevOverflow;
             document.removeEventListener('keydown', onKeyDown);
-            document.removeEventListener('mousedown', handleBackdrop as any, true);
+            document.removeEventListener('mousedown', handleBackdrop as EventListener, true);
         };
     }, [onClose]);
 
