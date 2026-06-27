@@ -5,14 +5,14 @@ import {
     DotsThreeOutlineIcon,
     XIcon,
     SignOutIcon,
-    PaletteIcon,
     CaretRightIcon,
 } from '@phosphor-icons/react';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useTheme } from '@app/providers/ThemeContext';
-import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { usePreferences } from '@shared/preferences/PreferencesContext';
 import { getFullInitials } from '@shared/utils/getInitials';
-import { useNavItems } from '../navigation';
+import { useNavItems, NAV_SECTIONS, SECTION_LABEL_KEYS } from '../navigation';
+import { LANGUAGES } from '@shared/i18n/translations';
 
 /**
  * --- BOTTOM NAVIGATION (mobile) ---
@@ -38,10 +38,42 @@ const itemVariants: Variants = {
     open: { opacity: 1, x: 0 },
 };
 
+/** Compact iOS-style segmented control for the More sheet's quick preferences. */
+function MiniSegmented<T extends string>({
+    value,
+    onChange,
+    options,
+}: {
+    value: T;
+    onChange: (value: T) => void;
+    options: { value: T; label: string }[];
+}) {
+    return (
+        <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
+            {options.map((o) => {
+                const active = o.value === value;
+                return (
+                    <button
+                        key={o.value}
+                        onClick={() => onChange(o.value)}
+                        aria-pressed={active}
+                        className={`flex-1 px-2 py-1.5 rounded-lg text-small-strong transition-colors ${
+                            active
+                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                                : 'text-gray-500 dark:text-gray-400'
+                        }`}
+                    >
+                        {o.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
 export function BottomNav() {
     const { user, logout } = useAuthContext();
-    const { resolvedTheme, setTheme } = useTheme();
-    const isDark = resolvedTheme === 'dark';
+    const { theme, setTheme } = useTheme();
     const { pathname } = useLocation();
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -50,7 +82,7 @@ export function BottomNav() {
             ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim()
             : user?.username ?? '';
 
-    const t = useTranslation();
+    const { language, setLanguage, t } = usePreferences();
     const navItems = useNavItems();
 
     // Primary bar destinations vs. those tucked into the "More" sheet — both
@@ -115,42 +147,61 @@ export function BottomNav() {
                                 </motion.div>
                             )}
 
-                            {/* Services */}
-                            <motion.div
-                                variants={itemVariants}
-                                className="rounded-2xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 overflow-hidden"
-                            >
-                                {moreItems.map((item, i) => (
-                                        <Link
-                                            key={item.route}
-                                            to={item.route}
-                                            onClick={() => setMenuOpen(false)}
-                                            className={`flex items-center gap-3 p-4 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors ${i > 0 ? 'border-t border-gray-100 dark:border-white/5' : ''}`}
-                                        >
-                                            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                                <item.icon weight="bold" className="w-4 h-4" />
-                                            </div>
-                                            <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{item.label}</span>
-                                            {item.badgeCount > 0 && (
-                                                <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-600 text-white text-micro flex items-center justify-center">{item.badgeCount}</span>
-                                            )}
-                                            <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-400" />
-                                        </Link>
-                                ))}
+                            {/* NAVIGATION — grouped into Manage / System (matches the sidebar) */}
+                            {NAV_SECTIONS.map((section) => {
+                                const sectionItems = moreItems.filter((i) => i.section === section);
+                                if (sectionItems.length === 0) return null;
+                                return (
+                                    <motion.div key={section} variants={itemVariants} className="space-y-1.5">
+                                        <p className="px-1 text-micro text-gray-400 dark:text-gray-500">{t(SECTION_LABEL_KEYS[section])}</p>
+                                        <div className="rounded-2xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 overflow-hidden">
+                                            {sectionItems.map((item, i) => (
+                                                <Link
+                                                    key={item.route}
+                                                    to={item.route}
+                                                    onClick={() => setMenuOpen(false)}
+                                                    className={`flex items-center gap-3 p-4 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors ${i > 0 ? 'border-t border-gray-100 dark:border-white/5' : ''}`}
+                                                >
+                                                    <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                                        <item.icon weight="bold" className="w-4 h-4" />
+                                                    </div>
+                                                    <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{item.label}</span>
+                                                    {item.badgeCount > 0 && (
+                                                        <span className="min-w-5 h-5 px-1.5 rounded-full bg-emerald-600 text-white text-micro flex items-center justify-center">{item.badgeCount}</span>
+                                                    )}
+                                                    <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-400" />
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
 
-                                {/* Dark mode */}
-                                <button
-                                    onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                                    className="w-full flex items-center gap-3 p-4 border-t border-gray-100 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-left"
-                                >
-                                    <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 flex items-center justify-center shrink-0">
-                                        <PaletteIcon weight="bold" className="w-4 h-4" />
+                            {/* APPEARANCE — quick theme + language (full options live in Settings) */}
+                            <motion.div variants={itemVariants} className="space-y-1.5">
+                                <p className="px-1 text-micro text-gray-400 dark:text-gray-500">{t('settings.appearance')}</p>
+                                <div className="rounded-2xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 p-4 space-y-3">
+                                    <div>
+                                        <p className="text-small-strong text-gray-600 dark:text-gray-300 mb-1.5">{t('settings.theme')}</p>
+                                        <MiniSegmented
+                                            value={theme}
+                                            onChange={setTheme}
+                                            options={[
+                                                { value: 'system', label: t('settings.theme.system') },
+                                                { value: 'light', label: t('settings.theme.light') },
+                                                { value: 'dark', label: t('settings.theme.dark') },
+                                            ]}
+                                        />
                                     </div>
-                                    <span className="flex-1 text-body-strong text-gray-900 dark:text-white">Dark mode</span>
-                                    <span className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${isDark ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${isDark ? 'translate-x-5' : ''}`} />
-                                    </span>
-                                </button>
+                                    <div>
+                                        <p className="text-small-strong text-gray-600 dark:text-gray-300 mb-1.5">{t('settings.language')}</p>
+                                        <MiniSegmented
+                                            value={language}
+                                            onChange={setLanguage}
+                                            options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
+                                        />
+                                    </div>
+                                </div>
                             </motion.div>
                         </div>
 
@@ -163,6 +214,9 @@ export function BottomNav() {
                                 <SignOutIcon weight="bold" className="w-5 h-5" />
                                 {t('nav.logout')}
                             </button>
+                            <p className="mt-2 text-center text-micro normal-case tracking-normal text-gray-400 dark:text-gray-500">
+                                Planuj Směny v{__APP_VERSION__}
+                            </p>
                         </motion.div>
                     </motion.div>
                 )}

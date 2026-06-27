@@ -3,9 +3,18 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
+import { readFileSync } from 'node:fs'
+
+// App version, read from package.json at build time and injected as a global so
+// the UI always shows the real release version (no manual constant to forget,
+// and independent of the native versionName).
+const pkgVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkgVersion),
+  },
   plugins: [
     react(),
     tailwindcss(),
