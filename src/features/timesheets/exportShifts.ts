@@ -294,7 +294,7 @@ function allFileStem(periodLabel: string): string {
 }
 
 /** PDF: each employee on their own page. */
-function exportAllPDF(ctx: ExportAllContext) {
+function exportAllPDF(ctx: ExportAllContext, opts: ExportOptions = {}) {
     const groups = ctx.groups.filter((g) => g.shifts.length > 0);
     const doc = new jsPDF();
     groups.forEach((g, i) => {
@@ -306,11 +306,14 @@ function exportAllPDF(ctx: ExportAllContext) {
             locationName: ctx.locationName,
         });
     });
+    if (opts.returnData) {
+        return { base64: doc.output('datauristring').split(',')[1] };
+    }
     doc.save(`${allFileStem(ctx.periodLabel)}.pdf`);
 }
 
 /** CSV: one file, with a leading Employee column and a per-employee total row. */
-function exportAllCSV(ctx: ExportAllContext) {
+function exportAllCSV(ctx: ExportAllContext, opts: ExportOptions = {}) {
     const header = ['Employee', 'Date', 'Day', 'Location', 'Start', 'End', 'Gross (h)', 'Break (h)', 'Net (h)'];
     const lines: string[] = [];
     lines.push(`Timesheets — ${ctx.periodLabel}`);
@@ -340,12 +343,16 @@ function exportAllCSV(ctx: ExportAllContext) {
         );
     }
 
-    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const csv = '﻿' + lines.join('\r\n');
+    if (opts.returnData) {
+        return { text: csv };
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     triggerDownload(blob, `${allFileStem(ctx.periodLabel)}.csv`);
 }
 
 /** Excel: one workbook, one sheet per employee. */
-async function exportAllExcel(ctx: ExportAllContext) {
+async function exportAllExcel(ctx: ExportAllContext, opts: ExportOptions = {}) {
     const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
 
@@ -384,12 +391,23 @@ async function exportAllExcel(ctx: ExportAllContext) {
     }
 
     if (!any) return;
+    if (opts.returnData) {
+        const buffer = XLSX.write(wb, { type: 'array' });
+        const b64 = btoa(
+            new Uint8Array(buffer as ArrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''),
+        );
+        return { base64: b64 };
+    }
     XLSX.writeFile(wb, `${allFileStem(ctx.periodLabel)}.xlsx`);
 }
 
-export async function exportAllShifts(format: ExportFormat, ctx: ExportAllContext): Promise<void> {
+export async function exportAllShifts(
+    format: ExportFormat,
+    ctx: ExportAllContext,
+    opts: ExportOptions = {},
+): Promise<{ base64?: string; text?: string } | void> {
     if (!ctx.groups.some((g) => g.shifts.length > 0)) return;
-    if (format === 'pdf') return exportAllPDF(ctx);
-    if (format === 'csv') return exportAllCSV(ctx);
-    return exportAllExcel(ctx);
+    if (format === 'pdf') return exportAllPDF(ctx, opts);
+    if (format === 'csv') return exportAllCSV(ctx, opts);
+    return exportAllExcel(ctx, opts);
 }

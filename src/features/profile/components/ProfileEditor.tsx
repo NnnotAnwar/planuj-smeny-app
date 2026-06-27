@@ -40,11 +40,14 @@ export function ProfileEditor() {
         <div className="space-y-4">
             {/* USERNAME */}
             <form
-              onSubmit={async (e) => {
+              onSubmit={(e) => {
+                // Prevent the native form submission synchronously — must happen
+                // before any await, or the page reloads (esp. on device).
+                e.preventDefault();
                 if (Capacitor.isNativePlatform()) {
-                  try { await Keyboard.hide(); } catch { /* keyboard already hidden */ }
+                  Keyboard.hide().catch(() => { /* keyboard already hidden */ });
                 }
-                await saveUsername(e);
+                void saveUsername(e);
               }}
               className="space-y-2"
             >
@@ -102,11 +105,12 @@ export function ProfileEditor() {
 
                 {!isStaff ? (
                     <form
-                      onSubmit={async (e) => {
+                      onSubmit={(e) => {
+                        e.preventDefault();
                         if (Capacitor.isNativePlatform()) {
-                          try { await Keyboard.hide(); } catch { /* keyboard already hidden */ }
+                          Keyboard.hide().catch(() => { /* keyboard already hidden */ });
                         }
-                        await saveName(e);
+                        void saveName(e);
                       }}
                       className={`${cardClass} p-5 space-y-4`}
                     >

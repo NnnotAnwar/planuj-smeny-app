@@ -31,8 +31,8 @@ import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } f
 import { formatClock, monthShort, weekdayShort } from '@shared/utils/date';
 
 import { timesheetService } from './timesheetService';
-import { exportAllShifts, type ExportFormat } from './exportShifts';
-import { shareOrExport } from '@shared/utils/shareExport';
+import { type ExportFormat } from './exportShifts';
+import { shareOrExport, shareOrExportAll } from '@shared/utils/shareExport';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
 import { ShiftEditorModal, type ShiftFormValues } from './components/ShiftEditorModal';
 
@@ -77,9 +77,14 @@ function ExportMenu({
                 onClick={() => setOpen(!open)}
                 disabled={disabled}
                 title={title}
+                aria-busy={busy}
                 className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
             >
-                <TriggerIcon weight="bold" className={`w-4 h-4 ${busy ? 'animate-pulse' : ''}`} />
+                {busy ? (
+                    <span className="w-4 h-4 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin" />
+                ) : (
+                    <TriggerIcon weight="bold" className="w-4 h-4" />
+                )}
             </button>
             <AnimatePresence>
                 {open && (
@@ -139,6 +144,7 @@ function TimesheetsInner() {
     const [editing, setEditing] = useState<{ shift: Shift | null } | null>(null);
     const [deleting, setDeleting] = useState<Shift | null>(null);
     const [exportOpen, setExportOpen] = useState(false);
+    const [exporting, setExporting] = useState(false);
     const [exportAllOpen, setExportAllOpen] = useState(false);
     const [exportingAll, setExportingAll] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
@@ -225,10 +231,15 @@ function TimesheetsInner() {
         await invalidate();
     };
 
-    const doExport = (fmt: ExportFormat) => {
+    const doExport = async (fmt: ExportFormat) => {
         if (!selected) return;
-        shareOrExport({ employeeName: memberName(selected), periodLabel, shifts, locationName }, fmt);
         setExportOpen(false);
+        setExporting(true);
+        try {
+            await shareOrExport({ employeeName: memberName(selected), periodLabel, shifts, locationName }, fmt);
+        } finally {
+            setExporting(false);
+        }
     };
 
     // Export every member's timesheet for the selected period in one document.
@@ -252,11 +263,11 @@ function TimesheetsInner() {
                 .filter((g) => g.shifts.length > 0)
                 .sort((a, b) => a.employeeName.localeCompare(b.employeeName));
 
-            await exportAllShifts(fmt, {
+            await shareOrExportAll({
                 periodLabel,
                 locationName: (id) => locMap.get(id) ?? t('common.unknown'),
                 groups,
-            });
+            }, fmt);
         } finally {
             setExportingAll(false);
         }
@@ -381,7 +392,8 @@ function TimesheetsInner() {
                             open={exportOpen}
                             setOpen={setExportOpen}
                             onPick={doExport}
-                            disabled={shifts.length === 0}
+                            disabled={shifts.length === 0 || exporting}
+                            busy={exporting}
                             title={t('ts.exportThis')}
                             Icon={DownloadSimpleIcon}
                         />
