@@ -73,12 +73,12 @@ function Setting({ label, hint, children }: { label: string; hint?: string; chil
 
 /** Dynamic app version from Capacitor (native) or fallback. */
 function useAppVersion() {
-  const [version, setVersion] = useState('1.7.2');
+  const [version, setVersion] = useState('1.7.3');
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       App.getInfo()
-        .then((info) => setVersion(info.version || '1.7.2'))
+        .then((info) => setVersion(info.version || '1.7.3'))
         .catch(() => {});
     }
   }, []);
