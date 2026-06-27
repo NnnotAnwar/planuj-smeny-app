@@ -272,8 +272,10 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
           </Link>
         )}
 
-        {/* SIGNATURE HERO — only show "Aktuální směna" when shift is active */}
-        {activeShift && (
+        {/* SIGNATURE HERO — the live "current shift" post. Hidden on the
+            dashboard, where the main content already shows the active shift;
+            shown on every other route so you never lose sight of where you are. */}
+        {activeShift && currentRoute.pathname !== '/' && (
           <CurrentPost
             currentLocation={currentLocation}
             activeShift={activeShift}
