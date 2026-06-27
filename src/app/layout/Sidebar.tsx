@@ -292,16 +292,14 @@ export function Sidebar({ onLocationSelect }: SidebarProps) {
           />
         ))}
 
-        {/* LOCATIONS — single expandable picker (only on home) */}
-        {currentRoute.pathname === '/' && (
-          <LocationControl
-            locations={locations}
-            selectedLocationId={selectedLocationId}
-            isOnShift={isOnShift}
-            onLocationSelect={onLocationSelect}
-            t={t}
-          />
-        )}
+        {/* LOCATIONS — single expandable picker (on every route, not just home) */}
+        <LocationControl
+          locations={locations}
+          selectedLocationId={selectedLocationId}
+          isOnShift={isOnShift}
+          onLocationSelect={onLocationSelect}
+          t={t}
+        />
 
         </div> {/* close scroll region */}
 
