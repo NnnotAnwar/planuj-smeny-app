@@ -222,7 +222,7 @@ function AdminPanel() {
                     onChange={setSearchQuery}
                     placeholder={t('admin.search', { what: safeTab === 'employees' ? t('admin.nounEmployees') : safeTab === 'locations' ? t('admin.nounLocations') : t('admin.nounOrganizations') })}
                     className="w-full md:w-64"
-                    inputClassName="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 focus:border-emerald-500/50 rounded-xl py-2 pl-9 pr-4 text-micro outline-none transition-all dark:text-white"
+                    inputClassName="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 focus:border-emerald-500/50 rounded-xl py-2 pl-9 pr-4 text-sm outline-none transition-all dark:text-white"
                     iconClassName="left-3 top-2.5"
                 />
             </div>
