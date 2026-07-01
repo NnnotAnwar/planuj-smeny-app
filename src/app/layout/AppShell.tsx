@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Outlet, useSearchParams } from 'react-router-dom';
-import { WarningCircleIcon, XIcon, MapPinIcon } from '@phosphor-icons/react';
+import { WarningCircleIcon, CheckCircleIcon, InfoIcon, XIcon, MapPinIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -140,24 +140,52 @@ export function AppShell() {
       {/* ACTION ERROR TOASTS — surface failed shift actions (start/end/move). */}
       <div className="fixed left-1/2 -translate-x-1/2 z-[200] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 w-[calc(100%-2rem)] max-w-md space-y-2">
         <AnimatePresence>
-          {toasts.map((t) => (
-            <motion.div
-              key={t.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              role="alert"
-              className="w-full"
-            >
-              <div className="flex items-start gap-3 bg-red-500 text-white rounded-2xl px-4 py-3 shadow-2xl shadow-red-500/30">
-                <WarningCircleIcon weight="fill" className="w-5 h-5 shrink-0 mt-0.5" />
-                <p className="flex-1 text-sm font-bold leading-snug">{t.message}</p>
-                <button onClick={() => toastStore.dismiss(t.id)} aria-label="Dismiss" className="shrink-0 -m-1 p-1 hover:bg-white/20 rounded-lg transition-colors">
-                  <XIcon weight="bold" className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-          ))}
+          {toasts.map((toastItem) => {
+            // Colour + icon by intent so success/undo reads differently from an error.
+            const tone =
+              toastItem.type === 'success'
+                ? 'bg-emerald-600 shadow-emerald-600/30'
+                : toastItem.type === 'info'
+                  ? 'bg-gray-900 dark:bg-gray-700 shadow-black/30'
+                  : 'bg-red-500 shadow-red-500/30';
+            const ToastIcon =
+              toastItem.type === 'success'
+                ? CheckCircleIcon
+                : toastItem.type === 'info'
+                  ? InfoIcon
+                  : WarningCircleIcon;
+            return (
+              <motion.div
+                key={toastItem.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                role="alert"
+                className="w-full"
+              >
+                <div className={`flex items-center gap-3 text-white rounded-2xl px-4 py-3 shadow-2xl ${tone}`}>
+                  <ToastIcon weight="fill" className="w-5 h-5 shrink-0" />
+                  <p className="flex-1 text-sm font-bold leading-snug">{toastItem.message}</p>
+                  {/* Inline action (e.g. Undo) — dismisses via the action path so
+                      the toast's onExpire (the deferred commit) is cancelled. */}
+                  {toastItem.action && (
+                    <button
+                      onClick={() => {
+                        toastItem.action!.onClick();
+                        toastStore.dismiss(toastItem.id, true);
+                      }}
+                      className="shrink-0 -my-1 px-2.5 py-1.5 rounded-lg text-sm font-black underline underline-offset-2 hover:bg-white/20 transition-colors"
+                    >
+                      {toastItem.action.label}
+                    </button>
+                  )}
+                  <button onClick={() => toastStore.dismiss(toastItem.id)} aria-label="Dismiss" className="shrink-0 -m-1 p-1 hover:bg-white/20 rounded-lg transition-colors">
+                    <XIcon weight="bold" className="w-4 h-4" />
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
 
