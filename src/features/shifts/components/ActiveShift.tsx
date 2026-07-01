@@ -139,6 +139,7 @@ export function ActiveShift() {
                         variant="danger"
                         size="lg"
                         icon={StopIcon}
+                        iconWeight="fill"
                         loading={isEnding}
                         onClick={onEndClick}
                         fullWidth
@@ -153,12 +154,13 @@ export function ActiveShift() {
             <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-4 shadow-2xl md:hidden transition-all duration-300">
                 <Button
                     variant="danger"
-                    size="lg"
+                    size="xl"
                     icon={StopIcon}
+                    iconWeight="fill"
                     loading={isEnding}
                     onClick={onEndClick}
                     fullWidth
-                    className="rounded-2xl py-4"
+                    className="rounded-2xl"
                 >
                     {endLabel}
                 </Button>

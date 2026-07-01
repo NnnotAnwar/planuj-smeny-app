@@ -1,5 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { CircleNotchIcon, type Icon } from '@phosphor-icons/react';
+import { CircleNotchIcon, type Icon, type IconWeight } from '@phosphor-icons/react';
 
 /**
  * --- BUTTON ---
@@ -17,16 +17,25 @@ import { CircleNotchIcon, type Icon } from '@phosphor-icons/react';
  */
 
 type Variant = 'primary' | 'danger' | 'secondary' | 'ghost';
-type Size = 'sm' | 'md' | 'lg';
+type Size = 'sm' | 'md' | 'lg' | 'xl';
 
 const BASE =
     'inline-flex items-center justify-center gap-2 rounded-xl font-bold transition-all ' +
     'active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap select-none';
 
 const SIZES: Record<Size, string> = {
-    sm: 'text-sm px-3 min-h-9',
+    sm: 'text-sm px-3 min-h-9 gap-1.5',
     md: 'text-sm px-4 min-h-11', // 44px — the mobile touch-target floor
     lg: 'text-base px-6 min-h-12',
+    xl: 'text-lg px-6 min-h-14 gap-2.5 tracking-tight', // hero CTAs (Start/End shift)
+};
+
+// Icons scale with the button so a big CTA doesn't get a tiny glyph.
+const ICON_SIZES: Record<Size, string> = {
+    sm: 'w-4 h-4',
+    md: 'w-4 h-4',
+    lg: 'w-5 h-5',
+    xl: 'w-6 h-6',
 };
 
 const VARIANTS: Record<Variant, string> = {
@@ -49,14 +58,17 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     loading?: boolean;
     /** Phosphor icon rendered before the label (hidden while loading). */
     icon?: Icon;
+    /** Weight for the leading icon — e.g. 'fill' for media-style Play/Stop. */
+    iconWeight?: IconWeight;
     fullWidth?: boolean;
     children?: ReactNode;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-    { variant = 'primary', size = 'md', loading = false, icon: LeadingIcon, fullWidth, disabled, className = '', children, ...rest },
+    { variant = 'primary', size = 'md', loading = false, icon: LeadingIcon, iconWeight = 'bold', fullWidth, disabled, className = '', children, ...rest },
     ref,
 ) {
+    const iconClass = ICON_SIZES[size];
     return (
         <button
             ref={ref}
@@ -66,9 +78,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
             {...rest}
         >
             {loading ? (
-                <CircleNotchIcon weight="bold" className="w-4 h-4 animate-spin" />
+                <CircleNotchIcon weight="bold" className={`${iconClass} animate-spin`} />
             ) : (
-                LeadingIcon && <LeadingIcon weight="bold" className="w-4 h-4" />
+                LeadingIcon && <LeadingIcon weight={iconWeight} className={iconClass} />
             )}
             {children}
         </button>
