@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { XIcon, WarningIcon } from '@phosphor-icons/react';
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { Button } from '@shared/components/Button';
 import { useBackHandler } from '@shared/hooks/useBackHandler';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
@@ -184,20 +185,12 @@ export function ConfirmDialog({
                 )}
 
                 <div className="flex gap-2">
-                    <button
-                        onClick={onClose}
-                        disabled={isBusy}
-                        className="flex-1 px-4 py-2.5 rounded-xl text-label text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-                    >
+                    <Button variant="secondary" fullWidth onClick={onClose} disabled={isBusy}>
                         {t('common.cancel')}
-                    </button>
-                    <button
-                        onClick={handleConfirm}
-                        disabled={isBusy}
-                        className="flex-1 px-4 py-2.5 rounded-xl text-label text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60 shadow-lg shadow-red-500/20"
-                    >
+                    </Button>
+                    <Button variant="danger" fullWidth loading={isBusy} onClick={handleConfirm}>
                         {isBusy ? t('common.working') : (confirmLabel ?? t('common.delete'))}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </Modal>

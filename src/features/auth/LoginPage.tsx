@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AtIcon, LockIcon, EyeIcon, EyeSlashIcon, SunIcon, MoonIcon, WarningCircleIcon } from '@phosphor-icons/react';
 import { useTheme } from '@app/providers/ThemeContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { Button } from '@shared/components/Button';
 import { authService } from './authService';
 
 /**
@@ -156,16 +157,9 @@ export function LoginPage() {
               )}
             </AnimatePresence>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-body-strong text-white bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/25 active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 transition-all"
-            >
-              {isLoading && (
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              )}
+            <Button type="submit" size="lg" fullWidth loading={isLoading} className="shadow-lg shadow-emerald-500/25">
               {isLoading ? t('auth.signingIn') : t('auth.signIn')}
-            </button>
+            </Button>
           </form>
         </div>
 

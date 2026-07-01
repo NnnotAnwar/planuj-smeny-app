@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { Button } from '@shared/components/Button';
 
 /**
  * --- ADMIN FORM CONTROLS ---
@@ -45,21 +46,12 @@ export function FormActions({
     const t = useTranslation();
     return (
         <div className="flex gap-2 pt-1">
-            <button
-                type="button"
-                onClick={onCancel}
-                disabled={isBusy}
-                className="flex-1 px-4 py-2.5 rounded-xl text-label text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-            >
+            <Button type="button" variant="secondary" fullWidth onClick={onCancel} disabled={isBusy}>
                 {t('common.cancel')}
-            </button>
-            <button
-                type="submit"
-                disabled={isBusy}
-                className="flex-1 px-4 py-2.5 rounded-xl text-label text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-60 shadow-lg shadow-emerald-500/20"
-            >
+            </Button>
+            <Button type="submit" variant="primary" fullWidth loading={isBusy}>
                 {isBusy ? t('common.saving') : submitLabel}
-            </button>
+            </Button>
         </div>
     );
 }

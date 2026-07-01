@@ -16,6 +16,7 @@ import {
 import { supabase } from '@shared/api/supabaseClient';
 import { useTheme } from '@app/providers/ThemeContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { Button } from '@shared/components/Button';
 import { authService } from './authService';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
 
@@ -222,12 +223,14 @@ export function AcceptInvitePage() {
                     <p className="text-body text-gray-500 dark:text-gray-400 mt-2">
                         {t('invite.invalidDesc')}
                     </p>
-                    <button
+                    <Button
+                        size="lg"
+                        fullWidth
                         onClick={() => navigate('/login', { replace: true })}
-                        className="mt-6 w-full py-3 rounded-xl text-body-strong text-white bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all"
+                        className="mt-6 shadow-lg shadow-emerald-500/25"
                     >
                         {t('invite.goSignIn')}
-                    </button>
+                    </Button>
                 </motion.div>
             </PageShell>
         );
@@ -362,14 +365,9 @@ export function AcceptInvitePage() {
                             )}
                         </AnimatePresence>
 
-                        <button
-                            type="submit"
-                            disabled={busy}
-                            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-body-strong text-white bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/25 active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 transition-all"
-                        >
-                            {busy && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+                        <Button type="submit" size="lg" fullWidth loading={busy} className="shadow-lg shadow-emerald-500/25">
                             {busy ? t('invite.joining') : t('invite.join', { org: info?.org ?? '' })}
-                        </button>
+                        </Button>
                     </form>
                 </div>
             </motion.div>
