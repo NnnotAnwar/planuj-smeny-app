@@ -9,6 +9,8 @@ import {
 import { useTheme, COMBO_LIST } from '@app/providers/ThemeContext';
 import { usePreferences } from '@shared/preferences/PreferencesContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
+import { useAuthContext } from '@features/auth/AuthContext';
+import { useNotificationPrefs } from '@features/notifications/notificationPrefs';
 import { LANGUAGES } from '@shared/i18n/translations';
 
 const APP_NAME = 'Planuj Směny';
@@ -87,6 +89,32 @@ function LinkRow({ icon, label, href }: { icon: React.ReactNode; label: string; 
   );
 }
 
+/** iOS-style on/off switch. */
+function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-40 ${checked ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+    >
+      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : ''}`} />
+    </button>
+  );
+}
+
+/** A label + toggle row for a settings card. */
+function ToggleRow({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3 p-4">
+      <span className={`text-body-strong text-gray-900 dark:text-white ${disabled ? 'opacity-50' : ''}`}>{label}</span>
+      <Toggle checked={checked} onChange={onChange} disabled={disabled} />
+    </div>
+  );
+}
+
 /** A plain, non-interactive info row (used for legal items that aren't linked yet). */
 function StaticRow({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
@@ -104,6 +132,9 @@ export default function SettingsPage() {
   const { language, setLanguage, timeFormat, setTimeFormat, defaultLocationId, setDefaultLocationId, t } =
     usePreferences();
   const { locations } = useShiftContext();
+  const { user } = useAuthContext();
+  const { prefs, update: updatePrefs } = useNotificationPrefs();
+  const isReviewer = (user?.role.rank ?? 0) >= 30;
   const isDark = resolvedTheme === 'dark';
 
   const activeLabel = COMBO_LIST.find((o) => o.key === comboKey)?.label;
@@ -221,6 +252,20 @@ export default function SettingsPage() {
               ))}
             </select>
           </Setting>
+        </div>
+      </div>
+
+      {/* NOTIFICATIONS — push preferences (gate delivery per category) */}
+      <div className="space-y-2">
+        <h3 className="px-1 text-label text-gray-400">{t('settings.notifications')}</h3>
+        <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
+          <ToggleRow label={t('settings.notif.push')} checked={prefs.push_enabled} onChange={(v) => updatePrefs({ push_enabled: v })} />
+          <ToggleRow label={t('settings.notif.shifts')} checked={prefs.shifts} onChange={(v) => updatePrefs({ shifts: v })} disabled={!prefs.push_enabled} />
+          <ToggleRow label={t('settings.notif.account')} checked={prefs.account} onChange={(v) => updatePrefs({ account: v })} disabled={!prefs.push_enabled} />
+          {isReviewer && (
+            <ToggleRow label={t('settings.notif.requests')} checked={prefs.requests} onChange={(v) => updatePrefs({ requests: v })} disabled={!prefs.push_enabled} />
+          )}
+          <p className="px-4 py-3 text-caption text-gray-400">{t('settings.notif.pushHint')}</p>
         </div>
       </div>
 

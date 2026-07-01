@@ -14,11 +14,14 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+type PrefCategory = 'shifts' | 'account' | 'requests';
+
 interface PushMessage {
     userId: string;
     title: string;
     body: string;
     route?: string;
+    category?: PrefCategory;
 }
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -89,7 +92,21 @@ async function projectId(): Promise<string> {
 
 // --- Send to all of a user's devices ------------------------------------------
 
-async function sendToUser({ userId, title, body, route }: PushMessage): Promise<number> {
+/** Respect the recipient's notification preferences (missing row = all on). */
+async function prefsAllow(userId: string, category?: PrefCategory): Promise<boolean> {
+    const { data } = await admin
+        .from('notification_preferences')
+        .select('push_enabled, shifts, account, requests')
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (!data) return true;
+    if (!data.push_enabled) return false;
+    return category ? data[category] !== false : true;
+}
+
+async function sendToUser({ userId, title, body, route, category }: PushMessage): Promise<number> {
+    if (!(await prefsAllow(userId, category))) return 0;
+
     const { data: tokens } = await admin.from('device_tokens').select('token').eq('user_id', userId);
     if (!tokens || tokens.length === 0) return 0;
 
@@ -159,26 +176,26 @@ async function messagesFromWebhook(table: string, record: Record<string, unknown
         switch (action) {
             case 'create': {
                 const when = shiftWhen(nu);
-                return [{ userId: target, title: 'New shift', body: `${actor} added a shift${when ? `: ${when}` : ' to your schedule'}.`, route: '/overview' }];
+                return [{ userId: target, title: 'New shift', body: `${actor} added a shift${when ? `: ${when}` : ' to your schedule'}.`, route: '/overview', category: 'shifts' }];
             }
             case 'update': {
                 const when = shiftWhen(nu);
-                return [{ userId: target, title: 'Shift changed', body: `${actor} updated your shift${when ? `: ${when}` : ''}.`, route: '/overview' }];
+                return [{ userId: target, title: 'Shift changed', body: `${actor} updated your shift${when ? `: ${when}` : ''}.`, route: '/overview', category: 'shifts' }];
             }
             case 'delete': {
                 const when = shiftWhen(ol);
-                return [{ userId: target, title: 'Shift removed', body: `${actor} removed your shift${when ? `: ${when}` : ''}.`, route: '/overview' }];
+                return [{ userId: target, title: 'Shift removed', body: `${actor} removed your shift${when ? `: ${when}` : ''}.`, route: '/overview', category: 'shifts' }];
             }
             case 'name_request_approved':
-                return [{ userId: target, title: 'Name change approved', body: 'Your name change request was approved.', route: '/profile' }];
+                return [{ userId: target, title: 'Name change approved', body: 'Your name change request was approved.', route: '/profile', category: 'account' }];
             case 'name_request_rejected':
-                return [{ userId: target, title: 'Name change declined', body: 'Your name change request was declined.', route: '/profile' }];
+                return [{ userId: target, title: 'Name change declined', body: 'Your name change request was declined.', route: '/profile', category: 'account' }];
             case 'profile_updated': {
                 const changes = (details.changes as { field: string }[] | undefined) ?? [];
                 const fields = changes.map((c) => c.field).join(', ') || 'profile';
                 // Regular users have no admin screen for this — open the app on the
                 // in-app notifications feed (client reads ?openNotifications=1).
-                return [{ userId: target, title: 'Profile updated', body: `${actor} updated your ${fields}.`, route: '/?openNotifications=1' }];
+                return [{ userId: target, title: 'Profile updated', body: `${actor} updated your ${fields}.`, route: '/?openNotifications=1', category: 'account' }];
             }
             default:
                 return [];
@@ -201,6 +218,7 @@ async function messagesFromWebhook(table: string, record: Record<string, unknown
             title: 'New name-change request',
             body: 'A team member requested a name change.',
             route: '/requests',
+            category: 'requests' as const,
         }));
     }
 

@@ -65,6 +65,12 @@ export const en = {
     'settings.defaultLocation': 'Default clock-in location',
     'settings.defaultLocation.none': 'No default',
     'settings.defaultLocation.hint': 'Pre-selected when you open the app to start a shift.',
+    'settings.notifications': 'Notifications',
+    'settings.notif.push': 'Push notifications',
+    'settings.notif.pushHint': 'Applies to push on your devices; the in-app feed always shows everything.',
+    'settings.notif.shifts': 'Shift changes',
+    'settings.notif.account': 'Account & profile',
+    'settings.notif.requests': 'Requests to review',
     'settings.version': 'Version {version} • {year}',
 
     // Common
@@ -408,6 +414,12 @@ export const cs: Record<TranslationKey, string> = {
     'settings.defaultLocation': 'Výchozí místo pro příchod',
     'settings.defaultLocation.none': 'Bez výchozího',
     'settings.defaultLocation.hint': 'Předvybráno při otevření aplikace pro zahájení směny.',
+    'settings.notifications': 'Oznámení',
+    'settings.notif.push': 'Push oznámení',
+    'settings.notif.pushHint': 'Platí pro push na vašich zařízeních; kanál v aplikaci zobrazuje vše.',
+    'settings.notif.shifts': 'Změny směn',
+    'settings.notif.account': 'Účet a profil',
+    'settings.notif.requests': 'Žádosti ke schválení',
     'settings.version': 'Verze {version} • {year}',
 
     'settings.about': 'O aplikaci',
