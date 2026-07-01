@@ -194,6 +194,16 @@ export const ShiftAuditLogSchema = z.object({
       old_name: z.string().nullable().optional(),
       new_name: z.string().nullable().optional(),
       note: z.string().nullable().optional(),
+      // Admin profile edits (name / role / organization changed from the panel).
+      changes: z
+        .array(
+          z.object({
+            field: z.string(),
+            old: z.string().nullable().optional(),
+            new: z.string().nullable().optional(),
+          }),
+        )
+        .optional(),
     })
     .default({}),
   created_at: z.string(),

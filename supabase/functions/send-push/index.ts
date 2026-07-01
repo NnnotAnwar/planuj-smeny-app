@@ -41,7 +41,7 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
 
 function b64url(data: string | Uint8Array): string {
     const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
-    let s = btoa(String.fromCharCode(...bytes));
+    const s = btoa(String.fromCharCode(...bytes));
     return s.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
@@ -141,17 +141,45 @@ async function messagesFromWebhook(table: string, record: Record<string, unknown
         const actor = displayName(record, details);
         if (!target) return [];
 
+        // "5 Jul at San Carlo" from a shift snapshot, for richer bodies.
+        const shiftWhen = (snap: Record<string, unknown> | undefined | null): string => {
+            if (!snap) return '';
+            const parts: string[] = [];
+            if (typeof snap.started_at === 'string') {
+                try {
+                    parts.push(new Date(snap.started_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+                } catch { /* ignore */ }
+            }
+            if (typeof snap.location_name === 'string' && snap.location_name) parts.push(`at ${snap.location_name}`);
+            return parts.join(' ');
+        };
+        const nu = details.new as Record<string, unknown> | undefined;
+        const ol = details.old as Record<string, unknown> | undefined;
+
         switch (action) {
-            case 'create':
-                return [{ userId: target, title: 'New shift', body: `${actor} added a shift to your schedule.`, route: '/overview' }];
-            case 'update':
-                return [{ userId: target, title: 'Shift changed', body: `${actor} updated one of your shifts.`, route: '/overview' }];
-            case 'delete':
-                return [{ userId: target, title: 'Shift removed', body: `${actor} removed one of your shifts.`, route: '/overview' }];
+            case 'create': {
+                const when = shiftWhen(nu);
+                return [{ userId: target, title: 'New shift', body: `${actor} added a shift${when ? `: ${when}` : ' to your schedule'}.`, route: '/overview' }];
+            }
+            case 'update': {
+                const when = shiftWhen(nu);
+                return [{ userId: target, title: 'Shift changed', body: `${actor} updated your shift${when ? `: ${when}` : ''}.`, route: '/overview' }];
+            }
+            case 'delete': {
+                const when = shiftWhen(ol);
+                return [{ userId: target, title: 'Shift removed', body: `${actor} removed your shift${when ? `: ${when}` : ''}.`, route: '/overview' }];
+            }
             case 'name_request_approved':
                 return [{ userId: target, title: 'Name change approved', body: 'Your name change request was approved.', route: '/profile' }];
             case 'name_request_rejected':
                 return [{ userId: target, title: 'Name change declined', body: 'Your name change request was declined.', route: '/profile' }];
+            case 'profile_updated': {
+                const changes = (details.changes as { field: string }[] | undefined) ?? [];
+                const fields = changes.map((c) => c.field).join(', ') || 'profile';
+                // Regular users have no admin screen for this — open the app on the
+                // in-app notifications feed (client reads ?openNotifications=1).
+                return [{ userId: target, title: 'Profile updated', body: `${actor} updated your ${fields}.`, route: '/?openNotifications=1' }];
+            }
             default:
                 return [];
         }

@@ -287,6 +287,11 @@ export const en = {
     'notif.nameApproved': 'Your name change was approved',
     'notif.nameDeclined': 'Your name change was declined',
     'notif.account': 'Account activity',
+    'notif.profileUpdated': 'Your profile was updated',
+    'notif.field.name': 'Name',
+    'notif.field.role': 'Role',
+    'notif.field.organization': 'Organization',
+    'audit.actionProfileUpdated': 'Updated a profile',
 
     // Profile
     'profile.account': 'Account',
@@ -619,6 +624,11 @@ export const cs: Record<TranslationKey, string> = {
     'notif.nameApproved': 'Vaše změna jména byla schválena',
     'notif.nameDeclined': 'Vaše změna jména byla zamítnuta',
     'notif.account': 'Aktivita účtu',
+    'notif.profileUpdated': 'Váš profil byl upraven',
+    'notif.field.name': 'Jméno',
+    'notif.field.role': 'Role',
+    'notif.field.organization': 'Organizace',
+    'audit.actionProfileUpdated': 'Upravil(a) profil',
 
     'profile.account': 'Účet',
     'profile.my': 'Můj profil',

@@ -8,6 +8,7 @@ import {
     AtIcon,
     CheckCircleIcon,
     XCircleIcon,
+    UserGearIcon,
     XIcon,
     type Icon,
 } from '@phosphor-icons/react';
@@ -32,6 +33,20 @@ function fmtWhen(iso: string): string {
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
+const FIELD_LABEL: Record<string, TranslationKey> = {
+    name: 'notif.field.name',
+    role: 'notif.field.role',
+    organization: 'notif.field.organization',
+};
+
+/** "Role: Manager · Organization: Acme" from a profile_updated audit entry. */
+function fmtProfileChanges(changes: { field: string; new?: string | null }[] | undefined, t: Translate): string | undefined {
+    if (!changes || changes.length === 0) return undefined;
+    return changes
+        .map((c) => `${t(FIELD_LABEL[c.field] ?? 'notif.field.name')}: ${c.new || '—'}`)
+        .join(' · ');
+}
+
 /** Map an audit entry to an employee-facing notification (icon, title, detail). */
 function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: string; title: string; detail?: string } {
     const d = entry.details;
@@ -48,6 +63,8 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
             return { Icon: CheckCircleIcon, tint: 'text-emerald-500', title: t('notif.nameApproved'), detail: d.new_name || undefined };
         case 'name_request_rejected':
             return { Icon: XCircleIcon, tint: 'text-red-500', title: t('notif.nameDeclined'), detail: d.note || undefined };
+        case 'profile_updated':
+            return { Icon: UserGearIcon, tint: 'text-blue-500', title: t('notif.profileUpdated'), detail: fmtProfileChanges(d.changes, t) };
         default:
             return { Icon: BellIcon, tint: 'text-gray-400', title: t('notif.account') };
     }

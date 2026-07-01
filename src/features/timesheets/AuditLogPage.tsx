@@ -10,6 +10,7 @@ import {
     AtIcon,
     CheckCircleIcon,
     XCircleIcon,
+    UserGearIcon,
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
@@ -33,6 +34,7 @@ const ACTION: Record<string, ActionMeta> = {
     username_change: { labelKey: 'audit.actionUsername', Icon: AtIcon, badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400' },
     name_request_approved: { labelKey: 'audit.actionNameApproved', Icon: CheckCircleIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
     name_request_rejected: { labelKey: 'audit.actionNameDeclined', Icon: XCircleIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    profile_updated: { labelKey: 'audit.actionProfileUpdated', Icon: UserGearIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
 };
 
 const FALLBACK_META: ActionMeta = { labelKey: 'audit.actionGeneric', Icon: ClockCounterClockwiseIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' };
