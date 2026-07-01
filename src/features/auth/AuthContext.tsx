@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { authService } from './authService';
 import { type User } from '@shared/types';
 import { supabase } from '@shared/api/supabaseClient';
+import { removeDeviceToken } from '@features/notifications/pushService';
 
 /**
  * --- AUTH CONTEXT ---
@@ -75,6 +76,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Sign out; the SIGNED_OUT listener clears the user and the guard redirects.
   const logout = useCallback(async () => {
+    // Unregister this device's push token first (so a shared device stops
+    // receiving the signed-out user's notifications). Must run while the session
+    // is still valid (RLS lets a user delete only their own tokens).
+    const token = localStorage.getItem('push-token');
+    if (token) {
+      await removeDeviceToken(token).catch(() => {});
+      localStorage.removeItem('push-token');
+    }
     await authService.signOut();
   }, []);
 

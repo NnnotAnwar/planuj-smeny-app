@@ -34,6 +34,7 @@ export function usePushNotifications(userId: string | undefined): void {
 
             handles.push(
                 await PushNotifications.addListener('registration', (token) => {
+                    localStorage.setItem('push-token', token.value); // so logout can unregister it
                     void saveDeviceToken(userId, token.value, Capacitor.getPlatform());
                 }),
                 await PushNotifications.addListener('registrationError', (err) => {

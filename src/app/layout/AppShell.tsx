@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useSearchParams } from 'react-router-dom';
 import { WarningCircleIcon, XIcon, MapPinIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { usePushNotifications } from '@features/notifications/usePushNotifications';
+import { openNotificationsPanel } from '@features/notifications/notificationsPanel';
 import { useLocationManagement } from '@features/locations/hooks/useLocationManagement';
 import { useToasts, toastStore } from '@shared/toast/toastStore';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
@@ -45,6 +46,17 @@ export function AppShell() {
 
   // Register for push notifications (native only; no-op on web / when signed out).
   usePushNotifications(user?.id);
+
+  // Deep link: a tapped push may ask to open the notifications bell (used for
+  // events with no dedicated screen). Read + clear the flag, fire the signal.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (!searchParams.get('openNotifications')) return;
+    openNotificationsPanel();
+    const next = new URLSearchParams(searchParams);
+    next.delete('openNotifications');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Failed shift actions (start/end/move) are surfaced via the toast store; the
   // store auto-dismisses each entry.

@@ -17,6 +17,7 @@ import { formatClock, formatDateTime, monthShort } from '@shared/utils/date';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import type { TranslationKey } from '@shared/i18n/translations';
 import { useNotifications } from './useNotifications';
+import { subscribeOpenNotifications } from './notificationsPanel';
 
 
 function fmtClock(iso?: string | null): string {
@@ -86,6 +87,9 @@ export function NotificationsBell() {
     const ref = useRef<HTMLDivElement>(null);
     const { notifications, unread, isUnread, markSeen, dismiss, clearAll, isLoading } = useNotifications();
     const t = useTranslation();
+
+    // Open when a deep-linked push asks for the notifications panel.
+    useEffect(() => subscribeOpenNotifications(() => setOpen(true)), []);
 
     // Closing commits "seen" (so unread highlight persists while open).
     const close = () => {
