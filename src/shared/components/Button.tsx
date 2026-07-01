@@ -16,7 +16,7 @@ import { CircleNotchIcon, type Icon, type IconWeight } from '@phosphor-icons/rea
  *    whichever colour motif the user picked.
  */
 
-type Variant = 'primary' | 'danger' | 'secondary' | 'ghost';
+type Variant = 'primary' | 'danger' | 'secondary' | 'tonal' | 'ghost';
 type Size = 'sm' | 'md' | 'lg' | 'xl';
 
 const BASE =
@@ -47,6 +47,10 @@ const VARIANTS: Record<Variant, string> = {
     secondary:
         'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 ' +
         'hover:bg-gray-50 dark:hover:bg-white/5',
+    // Soft accent tint — an inviting-but-not-loud action (e.g. Edit, Request).
+    tonal:
+        'bg-emerald-50 dark:bg-emerald-900/15 text-emerald-600 dark:text-emerald-400 ' +
+        'border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/25',
     // Lowest emphasis — tertiary / dismissive actions.
     ghost: 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5',
 };

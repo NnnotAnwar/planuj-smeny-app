@@ -229,13 +229,9 @@ export function ProfileEditor() {
                                     </div>
                                 </form>
                             ) : (
-                                <button
-                                    onClick={openRequest}
-                                    className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-body-strong text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/25 transition-colors"
-                                >
-                                    <PaperPlaneTiltIcon weight="bold" className="w-4 h-4" />
+                                <Button variant="tonal" size="lg" fullWidth icon={PaperPlaneTiltIcon} onClick={openRequest}>
                                     {t('profile.editor.requestNameChange')}
-                                </button>
+                                </Button>
                             ))}
                     </div>
                 )}

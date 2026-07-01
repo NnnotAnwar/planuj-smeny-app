@@ -5,6 +5,7 @@ import { GearIcon, PencilSimpleIcon, CheckIcon, ClockUserIcon } from '@phosphor-
 import { useAuthContext } from '@features/auth/AuthContext';
 import { isSuperAdmin, canViewAdminPanel } from '@shared/auth/permissions';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { Button } from '@shared/components/Button';
 import { PageLoader } from '@shared/components/PageLoader';
 import type { ProfileDetail } from '@shared/types';
 import { profileService } from './profileService';
@@ -59,13 +60,14 @@ export default function ProfilePage() {
         </div>
         {isSelf && (
           <div className="shrink-0 flex items-center gap-2">
-            <button
+            <Button
+              variant="tonal"
+              size="sm"
+              icon={isEditing ? CheckIcon : PencilSimpleIcon}
               onClick={() => setIsEditing((v) => !v)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-small-strong text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/25 transition-colors"
             >
-              {isEditing ? <CheckIcon weight="bold" className="w-4 h-4" /> : <PencilSimpleIcon weight="bold" className="w-4 h-4" />}
               {isEditing ? t('profile.done') : t('profile.edit')}
-            </button>
+            </Button>
             {!isEditing && (
               <Link
                 to="/settings"
