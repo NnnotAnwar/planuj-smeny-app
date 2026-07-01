@@ -40,6 +40,7 @@ export const en = {
     // Dashboard
     'dashboard.greeting': 'Hello, {name}!',
     'home.noActivity': 'No one is on shift right now.',
+    'home.noActivityHint': 'Pick a location and tap Start when you arrive.',
     'cmd.placeholder': 'Search or jump to…',
     'cmd.search': 'Search',
     'cmd.pages': 'Pages',
@@ -184,6 +185,7 @@ export const en = {
     'common.working': 'Working…',
     'common.create': 'Create',
     'common.delete': 'Delete',
+    'common.edit': 'Edit',
     'common.approve': 'Approve',
     'common.reject': 'Reject',
     'common.undo': 'Undo',
@@ -398,6 +400,7 @@ export const cs: Record<TranslationKey, string> = {
 
     'dashboard.greeting': 'Dobrý den, {name}!',
     'home.noActivity': 'Nikdo teď není ve směně.',
+    'home.noActivityHint': 'Vyberte místo a po příchodu klepněte na Začít.',
     'cmd.placeholder': 'Hledat nebo přejít…',
     'cmd.search': 'Hledat',
     'cmd.pages': 'Stránky',
@@ -541,6 +544,7 @@ export const cs: Record<TranslationKey, string> = {
     'common.working': 'Provádím…',
     'common.create': 'Vytvořit',
     'common.delete': 'Smazat',
+    'common.edit': 'Upravit',
     'common.approve': 'Schválit',
     'common.reject': 'Zamítnout',
     'common.undo': 'Zpět',

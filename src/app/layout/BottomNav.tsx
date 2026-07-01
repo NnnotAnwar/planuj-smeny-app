@@ -261,13 +261,17 @@ export function BottomNav() {
                             moreActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'
                         }`}
                     >
-                        <DotsThreeOutlineIcon weight={moreActive ? 'fill' : 'regular'} className="w-6 h-6" />
+                        {/* Icon + badge share a relative wrapper, so the badge pins to
+                            the icon's corner instead of a fragile 50%-based offset. */}
+                        <span className="relative">
+                            <DotsThreeOutlineIcon weight={moreActive ? 'fill' : 'regular'} className="w-6 h-6" />
+                            {!menuOpen && moreBadge > 0 && (
+                                <span className="absolute -top-1 -right-2 min-w-4 h-4 px-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">
+                                    {moreBadge}
+                                </span>
+                            )}
+                        </span>
                         <span className="text-caption">{t('nav.more')}</span>
-                        {!menuOpen && moreBadge > 0 && (
-                            <span className="absolute top-1.5 right-[calc(50%-1.25rem)] min-w-4 h-4 px-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">
-                                {moreBadge}
-                            </span>
-                        )}
                     </button>
                 </div>
             </nav>

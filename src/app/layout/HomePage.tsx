@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowClockwiseIcon } from '@phosphor-icons/react';
+import { ArrowClockwiseIcon, CoffeeIcon } from '@phosphor-icons/react';
 import { type AppOutletContext } from './AppShell';
 
 import { ActiveShift } from '@features/shifts/components/ActiveShift';
@@ -130,8 +130,12 @@ export function HomePage() {
 
       <div className={`space-y-4 ${activeShift ? 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : ''} md:pb-0`}>
         {board.length === 0 ? (
-          <div className="py-10 text-center text-body text-gray-400 dark:text-gray-500">
-            {t('home.noActivity')}
+          <div className="py-12 flex flex-col items-center text-center">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 dark:text-gray-500 mb-3">
+              <CoffeeIcon weight="duotone" className="w-7 h-7" />
+            </div>
+            <p className="text-body-strong text-gray-500 dark:text-gray-400">{t('home.noActivity')}</p>
+            <p className="mt-1 text-caption text-gray-400 dark:text-gray-500 max-w-xs">{t('home.noActivityHint')}</p>
           </div>
         ) : (
           board.map(({ location, colleagues, userCard }) => (
