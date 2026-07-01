@@ -29,8 +29,16 @@ export function ActiveShift() {
     // Two-step confirm: first tap arms, second tap (within the window) ends.
     const [confirming, setConfirming] = useState(false);
     const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // When a shift starts, the End button mounts exactly where Start was. On
+    // touch the synthesized post-tap click can "fall through" onto it — so we
+    // ignore any End tap in the first moments after the active shift appears.
+    const armedAt = useRef(0);
 
     const elapsed = useElapsed(activeShift?.started_at);
+
+    useEffect(() => {
+        armedAt.current = Date.now();
+    }, [activeShift?.id]);
 
     useEffect(() => {
         return () => {
@@ -47,6 +55,8 @@ export function ActiveShift() {
         : '';
 
     const onEndClick = () => {
+        // Swallow the stray click that can follow starting a shift (see armedAt).
+        if (Date.now() - armedAt.current < 800) return;
         if (!confirming) {
             // Arm — give a medium tap and auto-disarm after 3s if not confirmed.
             haptics.medium();
