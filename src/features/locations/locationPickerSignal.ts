@@ -15,6 +15,9 @@ export function subscribeOpenLocationPicker(fn: Listener): () => void {
     };
 }
 
-export function openLocationPicker(): void {
+/** Opens any subscribed picker. Returns false if nothing is listening (e.g. on
+ *  desktop, where the mobile field isn't mounted) so the caller can fall back. */
+export function openLocationPicker(): boolean {
     listeners.forEach((l) => l());
+    return listeners.size > 0;
 }

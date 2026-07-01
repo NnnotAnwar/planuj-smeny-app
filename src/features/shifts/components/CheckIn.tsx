@@ -3,6 +3,7 @@ import { useShiftContext } from '../ShiftContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { haptics } from '@shared/utils/haptics';
 import { Button } from '@shared/components/Button';
+import { toast } from '@shared/toast/toastStore';
 import { openLocationPicker } from '@features/locations/locationPickerSignal';
 
 /**
@@ -23,11 +24,12 @@ export function CheckIn() {
 
     const onStartShiftClick = () => {
         if (!selectedLocationId) {
-            // Guide, don't block: opening the picker is the feedback (a toast here
-            // would overlay the sheet and hide its lowest option). The hint text
-            // under the button explains why.
+            // Guide, don't block. On mobile this opens the location sheet (feedback
+            // enough on its own). On desktop nothing is subscribed, so fall back to
+            // a toast explaining why — never a silent no-op.
             haptics.error();
-            openLocationPicker();
+            const opened = openLocationPicker();
+            if (!opened) toast(t('shifts.selectLocation'), 'info');
             return;
         }
         haptics.heavy();
