@@ -70,9 +70,14 @@ export function useShiftRealtime(user: User | null) {
                             qc.invalidateQueries({ queryKey: boardKey });
                         } else if (payload.eventType === 'UPDATE') {
                             if (row.ended_at) {
-                                // Shift ended.
+                                // A shift of ours gained an end time. Only clear the
+                                // active card if THIS row is the one we hold as active —
+                                // otherwise an admin editing a past (already-ended) shift
+                                // would wrongly kick the user out of their live shift.
                                 if (row.user_id === userId) {
-                                    qc.setQueryData<Shift | null>(activeKey, null);
+                                    qc.setQueryData<Shift | null>(activeKey, (prev) =>
+                                        prev && prev.id === row.id ? null : prev,
+                                    );
                                     qc.invalidateQueries({ queryKey: historyKey });
                                 }
                                 qc.setQueryData<ShiftWithProfile[]>(boardKey, (b = []) =>
