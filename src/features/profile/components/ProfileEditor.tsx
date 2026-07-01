@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react';
 import { useProfileEditing } from '../hooks/useProfileEditing';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { Button } from '@shared/components/Button';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 
@@ -89,13 +90,15 @@ export function ProfileEditor() {
                         </p>
                     )}
 
-                    <button
+                    <Button
                         type="submit"
-                        disabled={busyUser || usernameLocked || !usernameDirty}
-                        className="w-full px-4 py-3 rounded-xl text-body-strong text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/25"
+                        size="lg"
+                        fullWidth
+                        loading={busyUser}
+                        disabled={usernameLocked || !usernameDirty}
                     >
                         {busyUser ? t('common.saving') : t('profile.editor.saveUsername')}
-                    </button>
+                    </Button>
                 </div>
             </form>
 
@@ -132,13 +135,9 @@ export function ProfileEditor() {
                                 <CheckCircleIcon weight="fill" className="w-4 h-4" /> {t('profile.editor.nameUpdated')}
                             </p>
                         )}
-                        <button
-                            type="submit"
-                            disabled={busyName || !nameDirty}
-                            className="w-full px-4 py-3 rounded-xl text-body-strong text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/25"
-                        >
+                        <Button type="submit" size="lg" fullWidth loading={busyName} disabled={!nameDirty}>
                             {busyName ? t('common.saving') : t('profile.editor.saveName')}
-                        </button>
+                        </Button>
                     </form>
                 ) : (
                     <div className={`${cardClass} p-5 space-y-4`}>
@@ -221,21 +220,12 @@ export function ProfileEditor() {
                                         <p className="text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{reqErr}</p>
                                     )}
                                     <div className="flex gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={closeRequest}
-                                            className="flex-1 px-4 py-2.5 rounded-xl text-small-strong text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                                        >
+                                        <Button type="button" variant="secondary" fullWidth onClick={closeRequest} disabled={busyReq}>
                                             {t('common.cancel')}
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={busyReq}
-                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-small-strong text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-50"
-                                        >
-                                            <PaperPlaneTiltIcon weight="bold" className="w-4 h-4" />
+                                        </Button>
+                                        <Button type="submit" variant="primary" fullWidth loading={busyReq} icon={PaperPlaneTiltIcon}>
                                             {busyReq ? t('profile.editor.sending') : t('profile.editor.sendRequest')}
-                                        </button>
+                                        </Button>
                                     </div>
                                 </form>
                             ) : (
