@@ -147,6 +147,10 @@ export const en = {
     'shifts.movedFrom': 'Moved from {location}',
     'shifts.startedAt': 'Started at {time}',
     'shifts.unknownLocation': 'Unknown location',
+    'shifts.durationHM': '{h}h {m}m',
+    'shifts.durationM': '{m}m',
+    'shifts.onShift': 'On shift',
+    'shifts.confirmEnd': 'Tap again to end',
 
     // Locations
     'location.startAt': 'Start your shift at',
@@ -502,6 +506,10 @@ export const cs: Record<TranslationKey, string> = {
     'shifts.movedFrom': 'Přesunuto z {location}',
     'shifts.startedAt': 'Začátek v {time}',
     'shifts.unknownLocation': 'Neznámé místo',
+    'shifts.durationHM': '{h} h {m} min',
+    'shifts.durationM': '{m} min',
+    'shifts.onShift': 'Na směně',
+    'shifts.confirmEnd': 'Klepněte znovu pro ukončení',
 
     'location.startAt': 'Začít směnu na',
     'location.moveTo': 'Přesunout směnu na',

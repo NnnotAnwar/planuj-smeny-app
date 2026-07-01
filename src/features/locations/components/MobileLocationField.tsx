@@ -6,6 +6,7 @@ import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { useRecentLocations } from '../useRecentLocations';
 import { useBackHandler } from '@shared/hooks/useBackHandler';
 import { haptics } from '@shared/utils/haptics';
+import { subscribeOpenLocationPicker } from '../locationPickerSignal';
 import { LocationPicker } from './LocationPicker';
 
 /**
@@ -35,6 +36,10 @@ export function MobileLocationField({
     const selected = locations.find((l) => l.id === selectedLocationId);
 
     useBackHandler(open, () => setOpen(false));
+
+    // Open on request from elsewhere (e.g. tapping "Start shift" with no location
+    // picked) — turns a dead-end into a guided next step.
+    useEffect(() => subscribeOpenLocationPicker(() => setOpen(true)), []);
 
     // Lock body scroll while the sheet is open.
     useEffect(() => {
