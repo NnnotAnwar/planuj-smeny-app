@@ -107,6 +107,17 @@ export function monthShort(date: Date): string {
   return date.toLocaleDateString(locale, { month: 'short' });
 }
 
+/**
+ * `YYYY-MM` for an ISO instant in the *local* timezone — the month the user
+ * actually sees the shift on. Use this to bucket shifts by month instead of the
+ * UTC string prefix, which mis-files shifts near midnight (e.g. 01:56 on Jul 1
+ * local is 23:56 Jun 30 UTC).
+ */
+export function monthKey(isoString: string): string {
+  const d = new Date(isoString);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 /** Localised full month for a Date (e.g. "June" / "červen"). */
 export function monthLong(date: Date): string {
   return date.toLocaleDateString(locale, { month: 'long' });

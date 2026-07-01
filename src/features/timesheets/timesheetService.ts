@@ -38,12 +38,16 @@ export interface AuditLogQuery {
     offset?: number;
 }
 
-/** UTC [start, end) ISO bounds for a `YYYY-MM` month (matches the UI's filter). */
+/**
+ * [start, end) ISO bounds for a `YYYY-MM` month, based on the *local* calendar
+ * month (converted to UTC instants for the query). Matches the UI's local-month
+ * filter, so a shift at e.g. 01:56 on Jul 1 local lands in July, not June.
+ */
 function monthBounds(month: string): { start: string; end: string } {
     const [y, m] = month.split('-').map(Number);
     return {
-        start: new Date(Date.UTC(y, m - 1, 1)).toISOString(),
-        end: new Date(Date.UTC(y, m, 1)).toISOString(),
+        start: new Date(y, m - 1, 1).toISOString(),
+        end: new Date(y, m, 1).toISOString(),
     };
 }
 

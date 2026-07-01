@@ -28,7 +28,7 @@ import { getFullInitials } from '@shared/utils/getInitials';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type Shift, type Profile } from '@shared/types';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from '@features/shifts/shiftStats';
-import { formatClock, monthShort, weekdayShort } from '@shared/utils/date';
+import { formatClock, monthShort, monthKey, weekdayShort } from '@shared/utils/date';
 
 import { timesheetService } from './timesheetService';
 import { type ExportFormat } from './exportShifts';
@@ -182,7 +182,7 @@ function TimesheetsInner() {
 
     const shifts = useMemo(() => {
         const all = shiftsQ.data ?? [];
-        return month ? all.filter((s) => s.started_at.startsWith(month)) : all;
+        return month ? all.filter((s) => monthKey(s.started_at) === month) : all;
     }, [shiftsQ.data, month]);
 
     const totals = useMemo(() => {

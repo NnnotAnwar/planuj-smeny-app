@@ -19,7 +19,7 @@ import { type Shift } from '@shared/types';
 import { DataTable, type Column } from '@shared/components/DataTable';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from './shiftStats';
-import { formatClock, monthShort, weekdayShort, weekdayShortLabels } from '@shared/utils/date';
+import { formatClock, monthShort, monthKey, weekdayShort, weekdayShortLabels } from '@shared/utils/date';
 import { type ExportFormat } from '@features/timesheets/exportShifts';
 import { shareOrExport } from '@shared/utils/shareExport';
 
@@ -55,7 +55,7 @@ export default function OverviewPage() {
 
   const stats = useMemo(() => {
     const filtered = selectedMonth
-      ? userShifts.filter(s => s.started_at.startsWith(selectedMonth))
+      ? userShifts.filter(s => monthKey(s.started_at) === selectedMonth)
       : userShifts;
 
     const shifts = [...filtered].sort(

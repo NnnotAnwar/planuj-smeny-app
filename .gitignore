@@ -45,3 +45,4 @@ old_migrations
 *.sw?
 
 planuj-smeny-app-firebase-adminsdk-fbsvc-4f9de2ce53.json
+android/app/google-services.json
