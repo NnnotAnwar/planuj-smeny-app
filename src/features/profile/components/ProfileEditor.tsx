@@ -10,6 +10,7 @@ import {
 import { useProfileEditing } from '../hooks/useProfileEditing';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
+import { Input, Textarea } from '@shared/components/Input';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 
@@ -19,8 +20,6 @@ import { Keyboard } from '@capacitor/keyboard';
  * direct name edit vs. staff name-change request).
  */
 
-const fieldClass =
-    'w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none text-gray-900 dark:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed';
 const cardClass =
     'bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm';
 
@@ -59,7 +58,7 @@ export function ProfileEditor() {
                             <AtIcon weight="bold" className="w-3.5 h-3.5 text-emerald-500" />
                             {t('profile.editor.username')}
                         </label>
-                        <input
+                        <Input
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             placeholder="username"
@@ -67,7 +66,6 @@ export function ProfileEditor() {
                             autoCorrect="off"
                             spellCheck={false}
                             disabled={usernameLocked}
-                            className={fieldClass}
                         />
                         {usernameLocked ? (
                             <p className="flex items-center gap-1.5 text-caption text-amber-600 dark:text-amber-400 mt-1.5">
@@ -120,11 +118,11 @@ export function ProfileEditor() {
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="text-small-strong text-gray-600 dark:text-gray-300 mb-1.5 block">{t('profile.field.firstName')}</label>
-                                <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t('profile.field.firstName')} className={fieldClass} />
+                                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t('profile.field.firstName')} />
                             </div>
                             <div>
                                 <label className="text-small-strong text-gray-600 dark:text-gray-300 mb-1.5 block">{t('profile.field.lastName')}</label>
-                                <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t('profile.field.lastName')} className={fieldClass} />
+                                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t('profile.field.lastName')} />
                             </div>
                         </div>
                         {nameErr && (
@@ -199,21 +197,20 @@ export function ProfileEditor() {
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <label className="text-small-strong text-gray-600 dark:text-gray-300 mb-1.5 block">{t('profile.editor.newFirstName')}</label>
-                                            <input value={reqFirst} onChange={(e) => setReqFirst(e.target.value)} placeholder={t('profile.field.firstName')} className={fieldClass} />
+                                            <Input value={reqFirst} onChange={(e) => setReqFirst(e.target.value)} placeholder={t('profile.field.firstName')} />
                                         </div>
                                         <div>
                                             <label className="text-small-strong text-gray-600 dark:text-gray-300 mb-1.5 block">{t('profile.editor.newLastName')}</label>
-                                            <input value={reqLast} onChange={(e) => setReqLast(e.target.value)} placeholder={t('profile.field.lastName')} className={fieldClass} />
+                                            <Input value={reqLast} onChange={(e) => setReqLast(e.target.value)} placeholder={t('profile.field.lastName')} />
                                         </div>
                                     </div>
                                     <div>
                                         <label className="text-small-strong text-gray-600 dark:text-gray-300 mb-1.5 block">{t('profile.editor.note')}</label>
-                                        <textarea
+                                        <Textarea
                                             value={reqNote}
                                             onChange={(e) => setReqNote(e.target.value)}
                                             rows={2}
                                             placeholder={t('profile.editor.notePlaceholder')}
-                                            className={fieldClass}
                                         />
                                     </div>
                                     {reqErr && (

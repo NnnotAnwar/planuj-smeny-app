@@ -4,6 +4,7 @@ import { AtIcon, LockIcon, EyeIcon, EyeSlashIcon, SunIcon, MoonIcon, WarningCirc
 import { useTheme } from '@app/providers/ThemeContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
+import { Input } from '@shared/components/Input';
 import { authService } from './authService';
 
 /**
@@ -100,10 +101,10 @@ export function LoginPage() {
             {/* Email / Username */}
             <div>
               <label htmlFor="login" className="text-micro text-gray-400 ml-1">{t('auth.emailOrUsername')}</label>
-              <div className="relative mt-1.5">
-                <AtIcon weight="bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
+              <div className="mt-1.5">
+                <Input
                   id="login"
+                  icon={AtIcon}
                   type="text"
                   required
                   autoComplete="username"
@@ -112,7 +113,6 @@ export function LoginPage() {
                   value={loginInput}
                   onChange={(e) => setLoginInput(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-xl pl-10 pr-3 py-3 text-body text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -120,26 +120,27 @@ export function LoginPage() {
             {/* Password */}
             <div>
               <label htmlFor="password" className="text-micro text-gray-400 ml-1">{t('auth.password')}</label>
-              <div className="relative mt-1.5">
-                <LockIcon weight="bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
+              <div className="mt-1.5">
+                <Input
                   id="password"
+                  icon={LockIcon}
                   type={showPassword ? 'text' : 'password'}
                   required
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-xl pl-10 pr-11 py-3 text-body text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400"
+                  trailing={
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                    >
+                      {showPassword ? <EyeSlashIcon weight="bold" className="w-4 h-4" /> : <EyeIcon weight="bold" className="w-4 h-4" />}
+                    </button>
+                  }
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-                >
-                  {showPassword ? <EyeSlashIcon weight="bold" className="w-4 h-4" /> : <EyeIcon weight="bold" className="w-4 h-4" />}
-                </button>
               </div>
             </div>
 

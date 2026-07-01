@@ -17,6 +17,7 @@ import { supabase } from '@shared/api/supabaseClient';
 import { useTheme } from '@app/providers/ThemeContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
+import { Input } from '@shared/components/Input';
 import { authService } from './authService';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
 
@@ -71,9 +72,6 @@ function PageShell({ children }: { children: ReactNode }) {
         </div>
     );
 }
-
-const INPUT =
-    'w-full bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-xl py-3 text-body text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400';
 
 export function AcceptInvitePage() {
     const navigate = useNavigate();
@@ -285,71 +283,64 @@ export function AcceptInvitePage() {
 
                         <div>
                             <label htmlFor="username" className="text-micro text-gray-400 ml-1">{t('profile.field.username')}</label>
-                            <div className="relative mt-1.5">
-                                <AtIcon weight="bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input
+                            <div className="mt-1.5">
+                                <Input
                                     id="username"
+                                    icon={AtIcon}
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
                                     placeholder="username"
                                     autoCapitalize="none"
                                     autoCorrect="off"
                                     spellCheck={false}
-                                    className={`${INPUT} pl-10 pr-3.5`}
                                 />
                             </div>
                             <p className="text-caption text-gray-400 mt-1.5 ml-1">{t('invite.usernameHint')}</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <input
+                            <Input
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
                                 placeholder={t('profile.field.firstName')}
                                 autoComplete="given-name"
-                                className={`${INPUT} px-3.5`}
                             />
-                            <input
+                            <Input
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
                                 placeholder={t('profile.field.lastName')}
                                 autoComplete="family-name"
-                                className={`${INPUT} px-3.5`}
                             />
                         </div>
 
-                        <div className="relative">
-                            <LockIcon weight="bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type={showPwd ? 'text' : 'password'}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder={t('auth.password')}
-                                autoComplete="new-password"
-                                autoFocus
-                                className={`${INPUT} pl-10 pr-11`}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPwd((v) => !v)}
-                                aria-label={showPwd ? t('auth.hidePassword') : t('auth.showPassword')}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-                            >
-                                {showPwd ? <EyeSlashIcon weight="bold" className="w-4 h-4" /> : <EyeIcon weight="bold" className="w-4 h-4" />}
-                            </button>
-                        </div>
+                        <Input
+                            icon={LockIcon}
+                            type={showPwd ? 'text' : 'password'}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder={t('auth.password')}
+                            autoComplete="new-password"
+                            autoFocus
+                            trailing={
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPwd((v) => !v)}
+                                    aria-label={showPwd ? t('auth.hidePassword') : t('auth.showPassword')}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                                >
+                                    {showPwd ? <EyeSlashIcon weight="bold" className="w-4 h-4" /> : <EyeIcon weight="bold" className="w-4 h-4" />}
+                                </button>
+                            }
+                        />
 
-                        <div className="relative">
-                            <LockIcon weight="bold" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type={showPwd ? 'text' : 'password'}
-                                value={confirm}
-                                onChange={(e) => setConfirm(e.target.value)}
-                                placeholder={t('auth.confirmPassword')}
-                                autoComplete="new-password"
-                                className={`${INPUT} pl-10 pr-3.5`}
-                            />
-                        </div>
+                        <Input
+                            icon={LockIcon}
+                            type={showPwd ? 'text' : 'password'}
+                            value={confirm}
+                            onChange={(e) => setConfirm(e.target.value)}
+                            placeholder={t('auth.confirmPassword')}
+                            autoComplete="new-password"
+                        />
 
                         <AnimatePresence>
                             {error && (

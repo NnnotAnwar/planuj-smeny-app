@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
+import { Input } from '@shared/components/Input';
 
 /**
  * --- ADMIN FORM CONTROLS ---
  * Small shared building blocks so every admin form looks identical.
  */
 
+// Selects still share the field look; text inputs now come from the shared <Input>.
 const FIELD_CLASS =
     'w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-xl px-3 py-2.5 text-body text-gray-900 dark:text-white outline-none transition-all placeholder:text-gray-400 disabled:opacity-50';
 
@@ -20,7 +22,7 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 }
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-    return <input {...props} className={FIELD_CLASS} />;
+    return <Input {...props} />;
 }
 
 export function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
