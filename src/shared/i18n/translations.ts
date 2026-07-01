@@ -152,6 +152,7 @@ export const en = {
     'shifts.durationM': '{m}m',
     'shifts.onShift': 'On shift',
     'shifts.confirmEnd': 'Tap again to end',
+    'shifts.swipeToEnd': 'Swipe to end shift',
 
     // Locations
     'location.startAt': 'Start your shift at',
@@ -513,6 +514,7 @@ export const cs: Record<TranslationKey, string> = {
     'shifts.durationM': '{m} min',
     'shifts.onShift': 'Na směně',
     'shifts.confirmEnd': 'Klepněte znovu pro ukončení',
+    'shifts.swipeToEnd': 'Přejeďte pro ukončení směny',
 
     'location.startAt': 'Začít směnu na',
     'location.moveTo': 'Přesunout směnu na',

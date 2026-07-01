@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { StopIcon, ArrowLeftIcon } from '@phosphor-icons/react';
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { StopIcon, ArrowLeftIcon, CaretDoubleRightIcon } from '@phosphor-icons/react';
 import { LiveClockIcon } from '@shared/components/LiveClockIcon';
 import { useAuthContext } from '../../auth/AuthContext';
 import { useShiftContext } from '../ShiftContext';
@@ -11,40 +12,18 @@ import { formatTime } from '@shared/utils/date';
 
 /**
  * --- ACTIVE SHIFT COMPONENT ---
- * The status of the running shift, with a live elapsed-time readout and a
- * two-step "End shift" button.
+ * Status of the running shift, with a live elapsed-time readout.
  *
- * UX notes:
- *  • Live duration — the worker's real question is "how long have I been on?",
- *    so we show a ticking "2h 34m", not just the start time.
- *  • Guarded end — ending a shift is irreversible (it writes the timesheet), so
- *    the red button asks for a confirming second tap instead of firing on a
- *    single accidental touch.
+ * Ending is irreversible (it writes the timesheet), so we guard against
+ * accidents differently per input: on mobile a deliberate swipe-to-end gesture;
+ * on desktop a plain single click (a mouse doesn't mis-fire the way a thumb can).
  */
 export function ActiveShift() {
     const { user } = useAuthContext();
     const { activeShift, handleEndShift, locations, isEnding } = useShiftContext();
     const t = useTranslation();
 
-    // Two-step confirm: first tap arms, second tap (within the window) ends.
-    const [confirming, setConfirming] = useState(false);
-    const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    // When a shift starts, the End button mounts exactly where Start was. On
-    // touch the synthesized post-tap click can "fall through" onto it — so we
-    // ignore any End tap in the first moments after the active shift appears.
-    const armedAt = useRef(0);
-
     const elapsed = useElapsed(activeShift?.started_at);
-
-    useEffect(() => {
-        armedAt.current = Date.now();
-    }, [activeShift?.id]);
-
-    useEffect(() => {
-        return () => {
-            if (resetTimer.current) clearTimeout(resetTimer.current);
-        };
-    }, []);
 
     if (!user) return null;
 
@@ -54,17 +33,7 @@ export function ActiveShift() {
             : t('shifts.durationM', { m: elapsed.minutes })
         : '';
 
-    const onEndClick = () => {
-        // Swallow the stray click that can follow starting a shift (see armedAt).
-        if (Date.now() - armedAt.current < 800) return;
-        if (!confirming) {
-            // Arm — give a medium tap and auto-disarm after 3s if not confirmed.
-            haptics.medium();
-            setConfirming(true);
-            resetTimer.current = setTimeout(() => setConfirming(false), 3000);
-            return;
-        }
-        if (resetTimer.current) clearTimeout(resetTimer.current);
+    const onEnd = () => {
         haptics.heavy();
         handleEndShift();
     };
@@ -89,15 +58,12 @@ export function ActiveShift() {
         );
     }
 
-    const endLabel = isEnding ? t('shifts.ending') : confirming ? t('shifts.confirmEnd') : t('shifts.end');
-
     return (
         <>
             {/* --- MOBILE STATUS --- */}
             <div className="mb-6 flex flex-col items-center md:hidden">
                 <div className="flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 text-body text-emerald-700 dark:text-emerald-400">
                     <LiveClockIcon className="h-4 w-4" isActive={true} />
-                    {/* microcopy: state + live duration reads clearer than a bare time. */}
                     {t('shifts.onShift')} · {durationLabel}
                 </div>
                 <p className="mt-2 text-body-strong text-gray-900 dark:text-white text-center">{locationName}</p>
@@ -135,36 +101,125 @@ export function ActiveShift() {
                     </div>
                 </div>
                 <div className="w-full md:w-auto shrink-0">
+                    {/* Desktop: a single click ends — no confirm. */}
                     <Button
                         variant="danger"
                         size="lg"
                         icon={StopIcon}
                         iconWeight="fill"
                         loading={isEnding}
-                        onClick={onEndClick}
+                        onClick={onEnd}
                         fullWidth
                         className="md:w-auto md:px-8"
                     >
-                        {endLabel}
+                        {isEnding ? t('shifts.ending') : t('shifts.end')}
                     </Button>
                 </div>
             </div>
 
-            {/* --- MOBILE STICKY END BUTTON --- */}
+            {/* --- MOBILE STICKY: swipe to end --- */}
             <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-4 shadow-2xl md:hidden transition-all duration-300">
-                <Button
-                    variant="danger"
-                    size="xl"
-                    icon={StopIcon}
-                    iconWeight="fill"
-                    loading={isEnding}
-                    onClick={onEndClick}
-                    fullWidth
-                    className="rounded-2xl"
-                >
-                    {endLabel}
-                </Button>
+                <SwipeToEnd
+                    busy={isEnding}
+                    label={t('shifts.swipeToEnd')}
+                    busyLabel={t('shifts.ending')}
+                    onEnd={onEnd}
+                />
             </div>
         </>
+    );
+}
+
+/**
+ * Swipe-to-confirm control for ending a shift on touch. A red thumb the user
+ * drags across the track; releasing past ~85% commits, otherwise it springs
+ * back. Deliberate by design, so a stray tap can't end a shift.
+ */
+function SwipeToEnd({
+    busy,
+    label,
+    busyLabel,
+    onEnd,
+}: {
+    busy: boolean;
+    label: string;
+    busyLabel: string;
+    onEnd: () => void;
+}) {
+    const THUMB = 52;
+    const PAD = 4;
+    const trackRef = useRef<HTMLDivElement>(null);
+    const x = useMotionValue(0);
+    const [maxX, setMaxX] = useState(0);
+    const wasBusy = useRef(false);
+
+    // Track width can change (rotation, keyboard) — recompute the travel range.
+    useEffect(() => {
+        const measure = () => {
+            const w = trackRef.current?.offsetWidth ?? 0;
+            setMaxX(Math.max(0, w - THUMB - PAD * 2));
+        };
+        measure();
+        window.addEventListener('resize', measure);
+        return () => window.removeEventListener('resize', measure);
+    }, []);
+
+    // A successful end unmounts this control; if it instead FAILS, `busy` falls
+    // back to false — spring the thumb home so the user can retry.
+    useEffect(() => {
+        if (busy) wasBusy.current = true;
+        else if (wasBusy.current) {
+            wasBusy.current = false;
+            animate(x, 0, { type: 'spring', stiffness: 500, damping: 40 });
+        }
+    }, [busy, x]);
+
+    const labelOpacity = useTransform(x, [0, Math.max(1, maxX * 0.5)], [1, 0]);
+    const fillWidth = useTransform(x, (v) => v + THUMB + PAD);
+
+    const handleDragEnd = () => {
+        if (!busy && maxX > 0 && x.get() >= maxX * 0.85) {
+            haptics.heavy();
+            animate(x, maxX, { type: 'spring', stiffness: 500, damping: 44 });
+            onEnd();
+        } else {
+            animate(x, 0, { type: 'spring', stiffness: 500, damping: 40 });
+        }
+    };
+
+    return (
+        <div
+            ref={trackRef}
+            className="relative h-14 rounded-2xl bg-red-500/10 dark:bg-red-500/15 overflow-hidden select-none"
+        >
+            {/* progress fill trailing the thumb */}
+            <motion.div
+                style={{ width: fillWidth }}
+                className="absolute inset-y-1 left-0 rounded-2xl bg-red-500/20 pointer-events-none"
+            />
+            {/* centred label (stays visible while ending) */}
+            <motion.span
+                style={{ opacity: busy ? 1 : labelOpacity }}
+                className="absolute inset-0 flex items-center justify-center gap-2 text-body-strong text-red-600 dark:text-red-400 pointer-events-none"
+            >
+                {busy ? busyLabel : label}
+                {!busy && <CaretDoubleRightIcon weight="bold" className="w-4 h-4" />}
+            </motion.span>
+            {/* draggable thumb (hidden while the end request is in flight) */}
+            {!busy && (
+                <motion.div
+                    drag="x"
+                    dragConstraints={{ left: 0, right: maxX }}
+                    dragElastic={0}
+                    dragMomentum={false}
+                    style={{ x, width: THUMB }}
+                    onDragEnd={handleDragEnd}
+                    aria-label={label}
+                    className="absolute top-1 bottom-1 left-1 flex items-center justify-center rounded-xl bg-red-500 text-white shadow-lg shadow-red-500/30 touch-none cursor-grab active:cursor-grabbing"
+                >
+                    <StopIcon weight="fill" className="w-6 h-6" />
+                </motion.div>
+            )}
+        </div>
     );
 }
