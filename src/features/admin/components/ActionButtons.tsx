@@ -2,21 +2,24 @@ import { PencilSimpleIcon, TrashIcon } from '@phosphor-icons/react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
- * Edit / delete icon buttons shared by every admin list row.
+ * Edit / delete icon buttons shared by every admin/timesheet list row.
  *
- * The visible icon stays small to suit dense tables, but the tap target is a
- * full 44px on touch (Apple HIG / Material floor) shrinking to 36px on ≥sm where
- * a mouse is precise — so mobile fingers stop hitting the wrong action. Buttons
- * are spaced apart so "delete" isn't a mis-tap away from "edit". Labels are
- * localized for screen readers.
+ * These live in a `table-fixed` actions column that can be as narrow as w-16
+ * (64px) on phones, so the tap area is tall (44px, comfortable) but kept
+ * horizontally compact (icon + tight padding) — two buttons fit the column
+ * instead of spilling over the neighbouring cells. Labels are localized for
+ * screen readers.
  */
+const BTN =
+    'flex items-center justify-center shrink-0 min-h-11 px-1.5 sm:px-2.5 rounded-lg text-gray-400 transition-colors';
+
 export function ActionButtons({ onEdit, onDelete }: { onEdit: () => void; onDelete?: () => void }) {
     const t = useTranslation();
     return (
-        <div className="flex items-center gap-1 sm:gap-0.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-0.5 sm:gap-1" onClick={(e) => e.stopPropagation()}>
             <button
                 onClick={onEdit}
-                className="flex items-center justify-center min-w-11 min-h-11 sm:min-w-9 sm:min-h-9 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
+                className={`${BTN} hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10`}
                 aria-label={t('common.edit')}
             >
                 <PencilSimpleIcon className="w-4 h-4" weight="bold" />
@@ -24,7 +27,7 @@ export function ActionButtons({ onEdit, onDelete }: { onEdit: () => void; onDele
             {onDelete && (
                 <button
                     onClick={onDelete}
-                    className="flex items-center justify-center min-w-11 min-h-11 sm:min-w-9 sm:min-h-9 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                    className={`${BTN} hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10`}
                     aria-label={t('common.delete')}
                 >
                     <TrashIcon className="w-4 h-4" weight="bold" />
