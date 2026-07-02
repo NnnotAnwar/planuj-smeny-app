@@ -45,6 +45,8 @@ export const en = {
     'cmd.search': 'Search',
     'cmd.pages': 'Pages',
     'cmd.locations': 'Locations',
+    'cmd.actions': 'Actions',
+    'cmd.toggleTheme': 'Toggle light / dark',
     'cmd.empty': 'No results',
 
     // Settings
@@ -415,6 +417,8 @@ export const cs: Record<TranslationKey, string> = {
     'cmd.search': 'Hledat',
     'cmd.pages': 'Stránky',
     'cmd.locations': 'Místa',
+    'cmd.actions': 'Akce',
+    'cmd.toggleTheme': 'Přepnout světlý / tmavý',
     'cmd.empty': 'Žádné výsledky',
 
     'settings.preferences': 'Předvolby',
