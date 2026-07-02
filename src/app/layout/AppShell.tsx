@@ -111,7 +111,7 @@ export function AppShell() {
   // We avoid unmounting the whole AppShell when shifts are refreshing in the background (flicker fix).
   if (isAuthChecking || (isAuthLoading && !user) || !user) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-[var(--grad-from)] transition-colors duration-500">
+      <div className="min-h-dvh flex items-center justify-center bg-(--grad-from) transition-colors duration-500">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin shadow-lg shadow-emerald-500/20"></div>
           <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm animate-pulse">Loading experience...</p>
@@ -159,7 +159,7 @@ export function AppShell() {
       <BottomNav />
 
       {/* ACTION ERROR TOASTS — surface failed shift actions (start/end/move). */}
-      <div className="fixed left-1/2 -translate-x-1/2 z-[200] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 w-[calc(100%-2rem)] max-w-md space-y-2">
+      <div className="fixed left-1/2 -translate-x-1/2 z-200 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 w-[calc(100%-2rem)] max-w-md space-y-2">
         <AnimatePresence>
           {toasts.map((toastItem) => {
             // Colour + icon by intent so success/undo reads differently from an error.
@@ -220,7 +220,7 @@ export function AppShell() {
             transition={{ type: 'spring', stiffness: 360, damping: 30 }}
             role="status"
             onClick={() => setHereToast(null)}
-            className="fixed left-1/2 -translate-x-1/2 z-[200] top-[calc(0.75rem+env(safe-area-inset-top))] w-[calc(100%-2rem)] max-w-sm"
+            className="fixed left-1/2 -translate-x-1/2 z-200 top-[calc(0.75rem+env(safe-area-inset-top))] w-[calc(100%-2rem)] max-w-sm"
           >
             <div className="flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 shadow-2xl">
               <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">

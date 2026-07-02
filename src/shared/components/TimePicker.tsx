@@ -131,7 +131,7 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
                             left: pos?.left ?? 0,
                             visibility: pos ? 'visible' : 'hidden',
                         }}
-                        className="z-[70] w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-2xl p-3 overflow-hidden"
+                        className="z-70 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-2xl p-3 overflow-hidden"
                     >
                         <div className="grid grid-cols-2 gap-2">
                             <div>
