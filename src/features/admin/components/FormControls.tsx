@@ -25,7 +25,7 @@ export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
     return <Input {...props} />;
 }
 
-export function SelectInput(props: Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'>) {
+export function SelectInput(props: React.ComponentProps<typeof Select>) {
     return <Select {...props} />;
 }
 

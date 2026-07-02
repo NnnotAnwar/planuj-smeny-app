@@ -39,8 +39,9 @@ const ICON_SIZES: Record<Size, string> = {
 };
 
 const VARIANTS: Record<Variant, string> = {
-    // One dominant, accent-filled CTA — the happy path.
-    primary: 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-700',
+    // One dominant, accent-filled CTA — the happy path. accent-700 so white text
+    // clears WCAG AA (>=4.5:1) on every motif, including the emerald brand.
+    primary: 'bg-emerald-700 text-white shadow-sm shadow-emerald-700/20 hover:bg-emerald-800',
     // Destructive, filled — reserved for irreversible actions. red-600 (not 500)
     // so white text clears WCAG AA (~4.8:1).
     danger: 'bg-red-600 text-white shadow-sm shadow-red-600/20 hover:bg-red-700',
