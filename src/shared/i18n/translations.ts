@@ -28,6 +28,8 @@ export const en = {
 
     // Sidebar
     'sidebar.currentPost': 'Current shift',
+    'sidebar.collapse': 'Collapse sidebar',
+    'sidebar.expand': 'Expand sidebar',
     'sidebar.selectedPost': 'Selected shift',
     'sidebar.onShift': 'Live',
     'sidebar.started': 'Started',
@@ -414,6 +416,8 @@ export const cs: Record<TranslationKey, string> = {
 
     // Sidebar
     'sidebar.currentPost': 'Aktuální směna',
+    'sidebar.collapse': 'Sbalit panel',
+    'sidebar.expand': 'Rozbalit panel',
     'sidebar.selectedPost': 'Vybraná směna',
     'sidebar.onShift': 'Live',
     'sidebar.started': 'Začátek',

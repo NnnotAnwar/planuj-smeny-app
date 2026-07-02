@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 import { formatTime } from '@shared/utils/date';
 import { Clock } from '@shared/components/Clock';
-import { MapPinIcon, SignOutIcon, CaretRightIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
+import { MapPinIcon, SignOutIcon, CaretRightIcon, MagnifyingGlassIcon, SidebarSimpleIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -275,6 +275,94 @@ function LocationHero({
   );
 }
 
+/** Icon-only rail (desktop compact mode). Tooltips via native title; tapping the
+ *  location pin expands the sidebar so the full picker is available. */
+function CollapsedRail({
+  navItems,
+  currentPath,
+  user,
+  onOpenSearch,
+  onExpand,
+  logout,
+  t,
+}: {
+  navItems: ResolvedNavItem[];
+  currentPath: string;
+  user: ReturnType<typeof useAuthContext>['user'];
+  onOpenSearch: () => void;
+  onExpand: () => void;
+  logout: () => void;
+  t: TranslateFn;
+}) {
+  const railBtn = 'relative flex items-center justify-center w-11 h-11 rounded-xl transition-colors shrink-0';
+  return (
+    <div className="hidden md:flex md:flex-col items-center flex-1 min-h-0 py-1 gap-1">
+      <button
+        onClick={onExpand}
+        aria-label={t('sidebar.expand')}
+        title={t('sidebar.expand')}
+        className={`${railBtn} text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5`}
+      >
+        <SidebarSimpleIcon weight="bold" className="w-5 h-5" />
+      </button>
+
+      <button
+        onClick={onOpenSearch}
+        aria-label={t('cmd.search')}
+        title={t('cmd.search')}
+        className={`${railBtn} text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5`}
+      >
+        <MagnifyingGlassIcon weight="bold" className="w-5 h-5" />
+      </button>
+
+      {user && (
+        <Link to="/profile" aria-label={t('nav.profile')} title={user.first_name || user.username} className={railBtn}>
+          <span className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
+            {getFullInitials(user.first_name, user.last_name)}
+          </span>
+        </Link>
+      )}
+
+      <div className="flex-1 min-h-0 overflow-y-auto emerald-scrollbar flex flex-col items-center gap-1 w-full">
+        {navItems.map((item) => {
+          const active = currentPath === item.route;
+          return (
+            <Link
+              key={item.route}
+              to={item.route}
+              aria-label={item.label}
+              title={item.label}
+              className={`${railBtn} ${
+                active
+                  ? 'bg-gray-100 dark:bg-[color-mix(in_srgb,var(--grad-to)_85%,black)] text-emerald-600 dark:text-emerald-400'
+                  : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5'
+              }`}
+            >
+              <item.icon weight={active ? 'fill' : 'regular'} className="w-5 h-5" />
+              {item.badgeCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 ring-2 ring-white dark:ring-(--grad-to)" />
+              )}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className={railBtn}>
+        <NotificationsBell />
+      </div>
+
+      <button
+        onClick={logout}
+        aria-label={t('nav.logout')}
+        title={t('nav.logout')}
+        className={`${railBtn} text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10`}
+      >
+        <SignOutIcon className="w-5 h-5" />
+      </button>
+    </div>
+  );
+}
+
 export function Sidebar({ onLocationSelect, onOpenSearch }: SidebarProps) {
   const { user, logout } = useAuthContext();
   const { locations, selectedLocationId, activeShift } = useShiftContext();
@@ -282,11 +370,21 @@ export function Sidebar({ onLocationSelect, onOpenSearch }: SidebarProps) {
   const navItems = useNavItems();
   const currentRoute = useLocation();
 
+  // Desktop compact "icon-rail" mode, persisted across sessions.
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === '1');
+  const toggleCollapsed = () => {
+    setCollapsed((v) => {
+      const next = !v;
+      localStorage.setItem('sidebar-collapsed', next ? '1' : '0');
+      return next;
+    });
+  };
+
   // Current location is the heart of the experience
   const currentLocation = locations.find((l) => l.id === selectedLocationId);
 
   return (
-    <header className="sticky top-0 z-50 md:h-dvh w-full md:w-80 bg-white/90 dark:bg-(--grad-to) backdrop-blur-xl text-gray-900 dark:text-slate-100 border-b md:border-b-0 md:border-r border-gray-200 dark:border-slate-800 flex flex-col">
+    <header className={`sticky top-0 z-50 md:h-dvh w-full ${collapsed ? 'md:w-20' : 'md:w-80'} bg-white/90 dark:bg-(--grad-to) backdrop-blur-xl text-gray-900 dark:text-slate-100 border-b md:border-b-0 md:border-r border-gray-200 dark:border-slate-800 flex flex-col transition-all duration-300`}>
       <div className="flex flex-col h-full px-3 pt-[calc(0.25rem+env(safe-area-inset-top,0px))] pb-1 md:pt-2.5 md:pb-2.5">
         {/* Top brand row - restore original mobile header with centered time */}
         <div className="shrink-0 flex justify-between items-center h-10 md:h-12 relative md:mb-4">
@@ -297,8 +395,17 @@ export function Sidebar({ onLocationSelect, onOpenSearch }: SidebarProps) {
             <span className="hidden lg:block font-semibold tracking-[-0.2px] text-base text-gray-900 dark:text-white">Planuj Směny</span>
           </div>
 
-          {/* Desktop: notifications bell */}
-          <div className="hidden md:block z-10">
+          {/* Desktop: collapse toggle + notifications bell (hidden when collapsed —
+              they live in the icon rail instead). */}
+          <div className={`z-10 items-center gap-1 ${collapsed ? 'hidden' : 'hidden md:flex'}`}>
+            <button
+              onClick={toggleCollapsed}
+              aria-label={t('sidebar.collapse')}
+              title={t('sidebar.collapse')}
+              className="p-2 rounded-xl text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5 active:scale-90 transition-all"
+            >
+              <SidebarSimpleIcon weight="bold" className="w-5 h-5" />
+            </button>
             <NotificationsBell />
           </div>
 
@@ -323,6 +430,17 @@ export function Sidebar({ onLocationSelect, onOpenSearch }: SidebarProps) {
         </div>
 
         {/* All heavy sidebar content is hidden on mobile (BottomNav + HomePage handle mobile UX) */}
+        {collapsed ? (
+          <CollapsedRail
+            navItems={navItems}
+            currentPath={currentRoute.pathname}
+            user={user}
+            onOpenSearch={onOpenSearch}
+            onExpand={toggleCollapsed}
+            logout={logout}
+            t={t}
+          />
+        ) : (
         <div className="hidden md:flex md:flex-col flex-1 min-h-0 py-1">
 
         {/* Scrollable region: search → profile → hero → nav. Footer stays pinned. */}
@@ -396,7 +514,8 @@ export function Sidebar({ onLocationSelect, onOpenSearch }: SidebarProps) {
           </button>
         </div>
 
-        </div> {/* close md: content wrapper */}
+        </div>
+        )} {/* close md: content wrapper / collapsed rail */}
       </div>
     </header>
   );
