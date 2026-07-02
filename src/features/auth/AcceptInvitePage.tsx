@@ -18,6 +18,7 @@ import { useTheme } from '@app/providers/ThemeContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
 import { Input } from '@shared/components/Input';
+import { FormError } from '@shared/components/FormError';
 import { authService } from './authService';
 import { getRoleBadgeColor } from '@shared/utils/roleColors';
 
@@ -342,19 +343,7 @@ export function AcceptInvitePage() {
                             autoComplete="new-password"
                         />
 
-                        <AnimatePresence>
-                            {error && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="flex items-center gap-2 text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl px-3 py-2.5"
-                                >
-                                    <WarningCircleIcon weight="fill" className="w-4 h-4 shrink-0" />
-                                    <span>{error}</span>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        <FormError message={error} />
 
                         <Button type="submit" size="lg" fullWidth loading={busy} className="shadow-lg shadow-emerald-500/25">
                             {busy ? t('invite.joining') : t('invite.join', { org: info?.org ?? '' })}

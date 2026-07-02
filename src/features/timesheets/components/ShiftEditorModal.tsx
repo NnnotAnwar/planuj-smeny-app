@@ -3,6 +3,8 @@ import { Modal } from '@features/admin/components/Modal';
 import { TimePicker } from '@shared/components/TimePicker';
 import { DatePicker } from '@shared/components/DatePicker';
 import { Select } from '@shared/components/Select';
+import { Button } from '@shared/components/Button';
+import { FormError } from '@shared/components/FormError';
 import type { Location, Shift, Profile } from '@shared/types';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { buildShiftDates } from '../shiftTimes';
@@ -127,27 +129,15 @@ export function ShiftEditorModal({
                     </div>
                 </div>
 
-                {error && (
-                    <p className="text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">
-                        {error}
-                    </p>
-                )}
+                <FormError message={error} />
 
                 <div className="flex gap-2 pt-1">
-                    <button
-                        onClick={onClose}
-                        disabled={busy}
-                        className="flex-1 px-4 py-2.5 rounded-xl text-label text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-                    >
+                    <Button variant="secondary" fullWidth onClick={onClose} disabled={busy}>
                         {t('common.cancel')}
-                    </button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={busy}
-                        className="flex-1 px-4 py-2.5 rounded-xl text-label text-white bg-emerald-500 hover:bg-emerald-600 transition-colors disabled:opacity-60 shadow-lg shadow-emerald-500/20"
-                    >
+                    </Button>
+                    <Button variant="primary" fullWidth loading={busy} onClick={handleSubmit}>
                         {busy ? t('common.saving') : isEdit ? t('shiftEditor.saveChanges') : t('shiftEditor.addTitle')}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </Modal>

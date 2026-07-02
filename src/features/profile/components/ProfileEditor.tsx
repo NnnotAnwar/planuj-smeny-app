@@ -11,6 +11,7 @@ import { useProfileEditing } from '../hooks/useProfileEditing';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
 import { Input, Textarea } from '@shared/components/Input';
+import { FormError } from '@shared/components/FormError';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 
@@ -79,9 +80,7 @@ export function ProfileEditor() {
                         )}
                     </div>
 
-                    {userErr && (
-                        <p className="text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{userErr}</p>
-                    )}
+                    <FormError message={userErr} />
                     {userSaved && !userErr && (
                         <p className="flex items-center gap-1.5 text-small-strong text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-3 py-2">
                             <CheckCircleIcon weight="fill" className="w-4 h-4" /> {t('profile.editor.usernameUpdated')}
@@ -125,9 +124,7 @@ export function ProfileEditor() {
                                 <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t('profile.field.lastName')} />
                             </div>
                         </div>
-                        {nameErr && (
-                            <p className="text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{nameErr}</p>
-                        )}
+                        <FormError message={nameErr} />
                         {nameSaved && !nameErr && (
                             <p className="flex items-center gap-1.5 text-small-strong text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-3 py-2">
                                 <CheckCircleIcon weight="fill" className="w-4 h-4" /> {t('profile.editor.nameUpdated')}
@@ -213,9 +210,7 @@ export function ProfileEditor() {
                                             placeholder={t('profile.editor.notePlaceholder')}
                                         />
                                     </div>
-                                    {reqErr && (
-                                        <p className="text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{reqErr}</p>
-                                    )}
+                                    <FormError message={reqErr} />
                                     <div className="flex gap-2">
                                         <Button type="button" variant="secondary" fullWidth onClick={closeRequest} disabled={busyReq}>
                                             {t('common.cancel')}

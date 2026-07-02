@@ -4,6 +4,9 @@ import { Button } from '@shared/components/Button';
 import { Input } from '@shared/components/Input';
 import { Select } from '@shared/components/Select';
 
+// Re-exported so existing `import { FormError } from './FormControls'` keeps working.
+export { FormError } from '@shared/components/FormError';
+
 /**
  * --- ADMIN FORM CONTROLS ---
  * Small shared building blocks so every admin form looks identical.
@@ -24,13 +27,6 @@ export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
 
 export function SelectInput(props: Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'>) {
     return <Select {...props} />;
-}
-
-export function FormError({ message }: { message: string | null }) {
-    if (!message) return null;
-    return (
-        <p className="text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{message}</p>
-    );
 }
 
 export function FormActions({

@@ -3,6 +3,7 @@ import { XIcon, WarningIcon } from '@phosphor-icons/react';
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
+import { FormError } from '@shared/components/FormError';
 import { useBackHandler } from '@shared/hooks/useBackHandler';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
@@ -180,9 +181,7 @@ export function ConfirmDialog({
                     <p className="text-body text-gray-600 dark:text-gray-300 leading-relaxed">{message}</p>
                 </div>
 
-                {error && (
-                    <p className="text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2">{error}</p>
-                )}
+                <FormError message={error} />
 
                 <div className="flex gap-2">
                     <Button variant="secondary" fullWidth onClick={onClose} disabled={isBusy}>

@@ -1,10 +1,11 @@
 import { useState, type SyntheticEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AtIcon, LockIcon, EyeIcon, EyeSlashIcon, SunIcon, MoonIcon, WarningCircleIcon } from '@phosphor-icons/react';
+import { AtIcon, LockIcon, EyeIcon, EyeSlashIcon, SunIcon, MoonIcon } from '@phosphor-icons/react';
 import { useTheme } from '@app/providers/ThemeContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
 import { Input } from '@shared/components/Input';
+import { FormError } from '@shared/components/FormError';
 import { authService } from './authService';
 
 /**
@@ -144,19 +145,7 @@ export function LoginPage() {
               </div>
             </div>
 
-            <AnimatePresence>
-              {errorMsg && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="flex items-center gap-2 text-small-strong text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl px-3 py-2.5"
-                >
-                  <WarningCircleIcon weight="fill" className="w-4 h-4 shrink-0" />
-                  <span>{errorMsg}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <FormError message={errorMsg} />
 
             <Button type="submit" size="lg" fullWidth loading={isLoading} className="shadow-lg shadow-emerald-500/25">
               {isLoading ? t('auth.signingIn') : t('auth.signIn')}
