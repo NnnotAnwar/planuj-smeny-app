@@ -14,6 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^10.0.0",
     "@capacitor/android": "^8.1.0",
     "@capacitor/app": "^8.0.1",
     "@capacitor/cli": "^8.1.0",

@@ -179,6 +179,11 @@ export const en = {
     'shifts.swipeToEnd': 'Swipe to end shift',
     'offline.banner': "You're offline — changes may not save.",
     'offline.cantStart': "You're offline — can't start a shift.",
+    'lock.title': 'Locked',
+    'lock.subtitle': 'Verify your identity to continue.',
+    'lock.reason': 'Unlock Planuj Směny',
+    'lock.unlock': 'Unlock',
+    'lock.usePasscode': 'Use passcode',
 
     // Locations
     'location.startAt': 'Start your shift at',
@@ -570,6 +575,11 @@ export const cs: Record<TranslationKey, string> = {
     'shifts.swipeToEnd': 'Přejeďte pro ukončení směny',
     'offline.banner': 'Jste offline — změny se nemusí uložit.',
     'offline.cantStart': 'Jste offline — nelze začít směnu.',
+    'lock.title': 'Zamčeno',
+    'lock.subtitle': 'Ověřte svou totožnost pro pokračování.',
+    'lock.reason': 'Odemknout Planuj Směny',
+    'lock.unlock': 'Odemknout',
+    'lock.usePasscode': 'Použít kód',
 
     'location.startAt': 'Začít směnu na',
     'location.moveTo': 'Přesunout směnu na',
