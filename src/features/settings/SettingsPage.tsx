@@ -11,6 +11,7 @@ import { usePreferences } from '@shared/preferences/PreferencesContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useNotificationPrefs } from '@features/notifications/notificationPrefs';
+import { Select } from '@shared/components/Select';
 import { LANGUAGES } from '@shared/i18n/translations';
 
 const APP_NAME = 'Planuj Směny';
@@ -25,9 +26,6 @@ const SUPPORT_EMAIL = 'anuarkairulla@gmail.com';
 
 const cardClass =
   'bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm';
-
-const fieldClass =
-  'w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-emerald-500 rounded-xl px-3 py-2.5 text-body outline-none text-gray-900 dark:text-white transition-colors';
 
 /** iOS-style segmented control for small, mutually exclusive choices. */
 function Segmented<T extends string>({
@@ -239,10 +237,9 @@ export default function SettingsPage() {
           </Setting>
 
           <Setting label={t('settings.defaultLocation')} hint={t('settings.defaultLocation.hint')}>
-            <select
+            <Select
               value={defaultLocationId ?? ''}
               onChange={(e) => setDefaultLocationId(e.target.value || null)}
-              className={fieldClass}
             >
               <option value="">{t('settings.defaultLocation.none')}</option>
               {pickableLocations.map((l) => (
@@ -250,7 +247,7 @@ export default function SettingsPage() {
                   {l.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </Setting>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal } from '@features/admin/components/Modal';
 import { TimePicker } from '@shared/components/TimePicker';
 import { DatePicker } from '@shared/components/DatePicker';
+import { Select } from '@shared/components/Select';
 import type { Location, Shift, Profile } from '@shared/types';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { buildShiftDates } from '../shiftTimes';
@@ -34,9 +35,6 @@ function isoToTime(iso: string): string {
     const d = new Date(iso);
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
-
-const inputClass =
-    'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-body text-gray-900 dark:text-white outline-none focus:border-emerald-500 transition-colors';
 
 export function ShiftEditorModal({
     member,
@@ -101,11 +99,7 @@ export function ShiftEditorModal({
             <div className="space-y-4">
                 <div className="space-y-1.5">
                     <label className="text-label text-gray-400">{t('admin.colLocation')}</label>
-                    <select
-                        value={locationId}
-                        onChange={(e) => setLocationId(e.target.value)}
-                        className={inputClass}
-                    >
+                    <Select value={locationId} onChange={(e) => setLocationId(e.target.value)}>
                         {pickable.length === 0 && <option value="">{t('shiftEditor.noLocations')}</option>}
                         {pickable.map((l) => (
                             <option key={l.id} value={l.id}>
@@ -113,7 +107,7 @@ export function ShiftEditorModal({
                                 {l.archived_at ? t('shiftEditor.archived') : ''}
                             </option>
                         ))}
-                    </select>
+                    </Select>
                 </div>
 
                 <div className="space-y-1.5">

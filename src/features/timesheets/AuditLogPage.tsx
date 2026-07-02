@@ -21,6 +21,7 @@ import { formatClock, formatDateTime, monthShort } from '@shared/utils/date';
 import { timesheetService, type AuditLogQuery } from './timesheetService';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { Select } from '@shared/components/Select';
 import type { TranslationKey } from '@shared/i18n/translations';
 
 const PAGE = 50;
@@ -54,8 +55,6 @@ function fmtSnapshot(s?: ShiftSnapshot | null): string {
     return `${d.getDate()} ${monthShort(d)} · ${fmtClock(s.started_at)}–${fmtClock(s.ended_at)} · ${s.location_name ?? '—'}`;
 }
 
-const selectClass =
-    'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-small text-gray-700 dark:text-gray-200 outline-none focus:border-emerald-500 transition-colors';
 
 /**
  * --- ACTIVITY LOG PAGE ---
@@ -114,15 +113,15 @@ function AuditLogInner() {
 
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-2">
-                <select value={targetUserId} onChange={(e) => setTargetUserId(e.target.value)} className={selectClass}>
+                <Select size="sm" fullWidth={false} value={targetUserId} onChange={(e) => setTargetUserId(e.target.value)}>
                     <option value="">{t('audit.allEmployees')}</option>
                     {members.map((m) => (
                         <option key={m.id} value={m.id}>
                             {memberName(m)}
                         </option>
                     ))}
-                </select>
-                <select value={action} onChange={(e) => setAction(e.target.value)} className={selectClass}>
+                </Select>
+                <Select size="sm" fullWidth={false} value={action} onChange={(e) => setAction(e.target.value)}>
                     <option value="">{t('audit.allActions')}</option>
                     <option value="create">{t('audit.optAddedShift')}</option>
                     <option value="update">{t('audit.optEditedShift')}</option>
@@ -130,11 +129,11 @@ function AuditLogInner() {
                     <option value="username_change">{t('audit.optUsername')}</option>
                     <option value="name_request_approved">{t('audit.optNameApproved')}</option>
                     <option value="name_request_rejected">{t('audit.optNameDeclined')}</option>
-                </select>
-                <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className={selectClass}>
+                </Select>
+                <Select size="sm" fullWidth={false} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
                     <option value="desc">{t('audit.newest')}</option>
                     <option value="asc">{t('audit.oldest')}</option>
-                </select>
+                </Select>
             </div>
 
             <section className="space-y-2">

@@ -527,23 +527,27 @@ function TimesheetsInner() {
                         )}
                     </div>
 
-                    {shiftsQ.isLoading ? (
-                        <div className="py-20 text-center text-label text-gray-400 animate-pulse">{t('state.loading', { label: t('admin.nounShifts') })}</div>
-                    ) : shifts.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center text-center py-16 gap-3">
-                            <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500">
-                                <ClockUserIcon weight="bold" className="w-7 h-7" />
+                    {/* DataTable renders its own skeleton while loading and the rich
+                        empty state below when there are genuinely no shifts. */}
+                    <DataTable
+                        rows={shifts}
+                        rowKey={(s) => s.id}
+                        columns={columns}
+                        isLoading={shiftsQ.isLoading}
+                        emptyState={
+                            <div className="flex flex-col items-center justify-center text-center py-16 gap-3">
+                                <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500">
+                                    <ClockUserIcon weight="bold" className="w-7 h-7" />
+                                </div>
+                                <div>
+                                    <h2 className="text-heading text-gray-900 dark:text-white">{month ? t('ts.noShiftsMonth') : t('ts.noShiftsYet')}</h2>
+                                    <p className="text-body text-gray-400 mt-1">
+                                        {canEdit ? t('ts.emptyHintAdd') : t('ts.emptyHintMonth')}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-heading text-gray-900 dark:text-white">{month ? t('ts.noShiftsMonth') : t('ts.noShiftsYet')}</h2>
-                                <p className="text-body text-gray-400 mt-1">
-                                    {canEdit ? t('ts.emptyHintAdd') : t('ts.emptyHintMonth')}
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        <DataTable rows={shifts} rowKey={(s) => s.id} columns={columns} />
-                    )}
+                        }
+                    />
                 </div>
             )}
 
