@@ -18,6 +18,7 @@ import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type Shift } from '@shared/types';
 import { DataTable, type Column } from '@shared/components/DataTable';
 import { MonthPicker } from '@shared/components/MonthPicker';
+import { Skeleton } from '@shared/components/Skeleton';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from './shiftStats';
 import { formatClock, monthShort, monthKey, weekdayShort, weekdayShortLabels } from '@shared/utils/date';
 import { type ExportFormat } from '@features/timesheets/exportShifts';
@@ -267,8 +268,27 @@ export default function OverviewPage() {
       </header>
 
       {isLoading && !stats.hasData ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <div className="space-y-3" aria-hidden>
+          {/* stat cards */}
+          <div className="grid grid-cols-3 gap-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="bg-white dark:bg-gray-800/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                <Skeleton className="h-3 w-2/3 mb-2" />
+                <Skeleton className="h-6 w-1/2" />
+              </div>
+            ))}
+          </div>
+          {/* chart cards */}
+          <div className="grid sm:grid-cols-2 gap-3">
+            {[0, 1].map((i) => (
+              <div key={i} className="bg-white dark:bg-gray-800/40 p-5 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
+                <Skeleton className="h-3.5 w-24" />
+                {[0, 1, 2].map((j) => (
+                  <Skeleton key={j} className="h-8 w-full" />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       ) : !stats.hasData ? (
         <div className="flex flex-col items-center justify-center text-center py-20 gap-3">

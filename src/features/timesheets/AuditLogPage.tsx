@@ -22,6 +22,7 @@ import { timesheetService, type AuditLogQuery } from './timesheetService';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Select } from '@shared/components/Select';
+import { Skeleton } from '@shared/components/Skeleton';
 import type { TranslationKey } from '@shared/i18n/translations';
 
 const PAGE = 50;
@@ -150,7 +151,18 @@ function AuditLogInner() {
                         </p>
                     </div>
                 ) : isLoading ? (
-                    <div className="py-20 text-center text-label text-gray-400 animate-pulse">{t('audit.loading')}</div>
+                    <div className="space-y-2" aria-hidden>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <div key={i} className="flex items-center gap-3 bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl p-4">
+                                <Skeleton className="w-9 h-9 rounded-xl" />
+                                <div className="flex-1 space-y-2">
+                                    <Skeleton className="h-3.5 w-2/5" />
+                                    <Skeleton className="h-3 w-3/5" />
+                                </div>
+                                <Skeleton className="h-3 w-12" />
+                            </div>
+                        ))}
+                    </div>
                 ) : entries.length === 0 ? (
                     <div className="py-20 text-center text-label text-gray-400">{t('audit.empty')}</div>
                 ) : (

@@ -33,15 +33,6 @@ export function StatCard({
     );
 }
 
-export function LoadingState({ label }: { label: string }) {
-    const t = useTranslation();
-    return (
-        <div className="py-20 text-center text-label text-gray-400 animate-pulse">
-            {t('state.loading', { label })}
-        </div>
-    );
-}
-
 export function EmptyState({ label }: { label: string }) {
     const t = useTranslation();
     return (
