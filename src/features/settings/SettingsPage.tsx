@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import {
   CheckIcon,
   InfoIcon,
@@ -5,6 +7,7 @@ import {
   ShieldCheckIcon,
   FileTextIcon,
   ArrowSquareOutIcon,
+  CaretRightIcon,
 } from '@phosphor-icons/react';
 import { useTheme, COMBO_LIST } from '@app/providers/ThemeContext';
 import { usePreferences } from '@shared/preferences/PreferencesContext';
@@ -69,21 +72,32 @@ function Setting({ label, hint, children }: { label: string; hint?: string; chil
   );
 }
 
-/** A tappable row that opens an external link (or mailto) in the system browser. */
-function LinkRow({ icon, label, href }: { icon: React.ReactNode; label: string; href: string }) {
+const rowClass = 'flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors';
+const rowIconClass = 'w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0';
+
+/**
+ * A mailto row. Deliberately NOT `target="_blank"` — on native/webview that opens
+ * a blank tab that hangs (there's no window for the mail handler to take over).
+ * A same-context mailto lets the OS mail composer open normally.
+ */
+function MailRow({ icon, label, href }: { icon: React.ReactNode; label: string; href: string }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-    >
-      <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
-        {icon}
-      </div>
+    <a href={href} className={rowClass}>
+      <div className={rowIconClass}>{icon}</div>
       <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{label}</span>
       <ArrowSquareOutIcon weight="bold" className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" />
     </a>
+  );
+}
+
+/** A row that navigates to an internal route (privacy / terms). */
+function NavRow({ icon, label, to }: { icon: React.ReactNode; label: string; to: string }) {
+  return (
+    <Link to={to} className={rowClass}>
+      <div className={rowIconClass}>{icon}</div>
+      <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{label}</span>
+      <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" />
+    </Link>
   );
 }
 
@@ -113,18 +127,6 @@ function ToggleRow({ label, checked, onChange, disabled }: { label: string; chec
   );
 }
 
-/** A plain, non-interactive info row (used for legal items that aren't linked yet). */
-function StaticRow({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div className="flex items-center gap-3 p-4">
-      <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
-        {icon}
-      </div>
-      <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{label}</span>
-    </div>
-  );
-}
-
 export default function SettingsPage() {
   const { theme, setTheme, resolvedTheme, comboKey, setComboKey } = useTheme();
   const { language, setLanguage, timeFormat, setTimeFormat, defaultLocationId, setDefaultLocationId, t } =
@@ -137,6 +139,11 @@ export default function SettingsPage() {
 
   const activeLabel = COMBO_LIST.find((o) => o.key === comboKey)?.label;
   const pickableLocations = locations.filter((l) => !l.archived_at);
+
+  // Prefilled support email — subject + a footer with app version & platform so
+  // we get useful context with every report.
+  const supportBody = `\n\n—\n${APP_NAME} ${APP_VERSION} · ${Capacitor.getPlatform()}`;
+  const supportHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t('settings.supportSubject'))}&body=${encodeURIComponent(supportBody)}`;
 
   return (
     <div className="space-y-4 px-1 pb-10">
@@ -280,13 +287,13 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <LinkRow
+          <MailRow
             icon={<LifebuoyIcon weight="bold" className="w-4 h-4" />}
             label={t('settings.support')}
-            href={`mailto:${SUPPORT_EMAIL}`}
+            href={supportHref}
           />
-          <StaticRow icon={<ShieldCheckIcon weight="bold" className="w-4 h-4" />} label={t('settings.privacy')} />
-          <StaticRow icon={<FileTextIcon weight="bold" className="w-4 h-4" />} label={t('settings.terms')} />
+          <NavRow icon={<ShieldCheckIcon weight="bold" className="w-4 h-4" />} label={t('settings.privacy')} to="/privacy" />
+          <NavRow icon={<FileTextIcon weight="bold" className="w-4 h-4" />} label={t('settings.terms')} to="/terms" />
         </div>
       </div>
     </div>

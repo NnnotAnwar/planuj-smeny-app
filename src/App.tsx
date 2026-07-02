@@ -49,6 +49,7 @@ const TimesheetsPage = lazy(() => import('./features/timesheets/TimesheetsPage')
 const AuditLogPage = lazy(() => import('./features/timesheets/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 const ProfilePage = lazy(() => import('./features/profile/ProfilePage'));
+const LegalPage = lazy(() => import('./features/legal/LegalPage').then((m) => ({ default: m.LegalPage })));
 
 /** Handles Android hardware back button: go back in history or exit app. */
 function BackButtonHandler() {
@@ -89,6 +90,10 @@ export default function App() {
               <Routes>
                 {/* PUBLIC: invite acceptance manages its own session (no guard). */}
                 <Route path="/accept-invite" element={<AcceptInvitePage />} />
+
+                {/* PUBLIC: legal pages, linkable from anywhere (incl. app stores). */}
+                <Route path="/privacy" element={<LegalPage doc="privacy" />} />
+                <Route path="/terms" element={<LegalPage doc="terms" />} />
 
                 {/* LOGGED-OUT ONLY: redirects to "/" if already authenticated. */}
                 <Route element={<PublicRoute />}>
