@@ -177,6 +177,8 @@ export const en = {
     'shifts.onShift': 'On shift',
     'shifts.confirmEnd': 'Tap again to end',
     'shifts.swipeToEnd': 'Swipe to end shift',
+    'offline.banner': "You're offline — changes may not save.",
+    'offline.cantStart': "You're offline — can't start a shift.",
 
     // Locations
     'location.startAt': 'Start your shift at',
@@ -566,6 +568,8 @@ export const cs: Record<TranslationKey, string> = {
     'shifts.onShift': 'Na směně',
     'shifts.confirmEnd': 'Klepněte znovu pro ukončení',
     'shifts.swipeToEnd': 'Přejeďte pro ukončení směny',
+    'offline.banner': 'Jste offline — změny se nemusí uložit.',
+    'offline.cantStart': 'Jste offline — nelze začít směnu.',
 
     'location.startAt': 'Začít směnu na',
     'location.moveTo': 'Přesunout směnu na',

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Outlet, useSearchParams } from 'react-router-dom';
-import { WarningCircleIcon, CheckCircleIcon, InfoIcon, XIcon, MapPinIcon } from '@phosphor-icons/react';
+import { WarningCircleIcon, CheckCircleIcon, InfoIcon, XIcon, MapPinIcon, WifiSlashIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -10,6 +10,7 @@ import { openNotificationsPanel } from '@features/notifications/notificationsPan
 import { useLocationManagement } from '@features/locations/hooks/useLocationManagement';
 import { useToasts, toastStore } from '@shared/toast/toastStore';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { useOnline } from '@shared/hooks/useOnline';
 
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
@@ -61,6 +62,9 @@ export function AppShell() {
   // Failed shift actions (start/end/move) are surfaced via the toast store; the
   // store auto-dismisses each entry.
   const toasts = useToasts();
+
+  // Network connectivity — drives the offline banner.
+  const online = useOnline();
 
   // Command palette (⌘K / Ctrl+K) open state + global hotkey.
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -125,6 +129,23 @@ export function AppShell() {
 
   return (
     <div className="App min-h-dvh w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
+      {/* OFFLINE BANNER — unobtrusive top pill; the server-dependent actions
+          (e.g. clocking in) are guarded separately. */}
+      <AnimatePresence>
+        {!online && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            role="status"
+            className="fixed left-1/2 -translate-x-1/2 z-190 top-[calc(0.5rem+env(safe-area-inset-top,0px))] flex items-center gap-2 rounded-full bg-gray-900 dark:bg-gray-700 text-white px-3.5 py-1.5 text-caption shadow-lg"
+          >
+            <WifiSlashIcon weight="bold" className="w-4 h-4 shrink-0" />
+            {t('offline.banner')}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* SIDEBAR — persistent dispatch board / navigation (desktop) + header (mobile) */}
       <Sidebar onLocationSelect={handleLocationSelect} onOpenSearch={() => setPaletteOpen(true)} />
 

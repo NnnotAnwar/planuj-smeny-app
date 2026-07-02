@@ -5,6 +5,7 @@ import { haptics } from '@shared/utils/haptics';
 import { Button } from '@shared/components/Button';
 import { toast } from '@shared/toast/toastStore';
 import { openLocationPicker } from '@features/locations/locationPickerSignal';
+import { useOnline } from '@shared/hooks/useOnline';
 
 /**
  * --- CHECK-IN COMPONENT ---
@@ -23,11 +24,18 @@ import { openLocationPicker } from '@features/locations/locationPickerSignal';
 export function CheckIn() {
     const { selectedLocationId, activeShift, handleStartShift, isStarting } = useShiftContext();
     const t = useTranslation();
+    const online = useOnline();
 
     // If a shift is already running, we don't show the check-in button.
     if (activeShift) return null;
 
     const attemptStart = (guide: 'sheet' | 'hint') => {
+        // Starting a shift needs the server — block it (with a reason) while offline.
+        if (!online) {
+            haptics.error();
+            toast(t('offline.cantStart'), 'error');
+            return;
+        }
         if (!selectedLocationId) {
             haptics.error();
             if (guide === 'sheet') openLocationPicker();
