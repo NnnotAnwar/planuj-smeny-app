@@ -3,16 +3,70 @@ import autoTable from 'jspdf-autotable';
 import { type Shift } from '@shared/types';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from '@features/shifts/shiftStats';
 import { formatClock, monthShort, weekdayShort } from '@shared/utils/date';
+import type { TranslationKey } from '@shared/i18n/translations';
 
 /**
  * --- SHIFT EXPORT ---
  * Builds a member's timesheet as a PDF (jsPDF — with a signature block), an
  * Excel workbook (SheetJS / xlsx, loaded on demand) or a CSV. Mandatory-break
  * math mirrors the Overview/Timesheets tables: −30 min per started 6 h block
- * (−30 min from 6 h, −1 h from 12 h).
+ * (−30 min from 6 h, −1 h from 12 h). All user-facing strings are localized via
+ * the `labels` set the caller passes in (built with makeExportLabels).
  */
 
 export type ExportFormat = 'pdf' | 'excel' | 'csv';
+
+/** Localized strings for the exported documents (built once from `t()`). */
+export interface ExportLabels {
+    title: string;
+    teamTitle: string;
+    employee: string;
+    period: string;
+    generatedOn: string;
+    totalShifts: string;
+    breakLegend: string;
+    total: string;
+    employeeSignature: string;
+    approvedBy: string;
+    colDate: string;
+    colDay: string;
+    colLocation: string;
+    colTime: string;
+    colStart: string;
+    colEnd: string;
+    colGross: string;
+    colBreak: string;
+    colNet: string;
+}
+
+type Translate = (key: TranslationKey, params?: Record<string, string | number>) => string;
+
+/** Build the export label set from a translator — call once in the component. */
+export function makeExportLabels(t: Translate): ExportLabels {
+    return {
+        title: t('export.title'),
+        teamTitle: t('export.teamTitle'),
+        employee: t('export.employee'),
+        period: t('export.period'),
+        generatedOn: t('export.generatedOn'),
+        totalShifts: t('export.totalShifts'),
+        breakLegend: t('export.breakLegend'),
+        total: t('overview.total'),
+        employeeSignature: t('export.employeeSignature'),
+        approvedBy: t('export.approvedBy'),
+        colDate: t('overview.colDate'),
+        colDay: t('export.colDay'),
+        colLocation: t('admin.colLocation'),
+        colTime: t('export.colTime'),
+        colStart: t('export.colStart'),
+        colEnd: t('export.colEnd'),
+        colGross: t('overview.colGross'),
+        colBreak: t('overview.colBreak'),
+        colNet: t('overview.colNet'),
+    };
+}
+
+const hoursHdr = (label: string) => `${label} (h)`;
 
 export interface ExportContext {
     employeeName: string;
@@ -21,9 +75,8 @@ export interface ExportContext {
     /** Shifts to include (any order — sorted oldest→newest for the document). */
     shifts: Shift[];
     locationName: (id: string) => string;
+    labels: ExportLabels;
 }
-
-const BREAK_LEGEND = 'Mandatory breaks deducted: -30 min from 6h, -1h from 12h (per shift).';
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
@@ -108,31 +161,32 @@ function triggerDownload(blob: Blob, filename: string) {
 /** Draw one employee's full timesheet (header → table → signature) on `doc`. */
 function drawTimesheetPDF(doc: jsPDF, ctx: ExportContext) {
     const { rows, totals } = build(ctx);
+    const L = ctx.labels;
 
     doc.setFontSize(20);
     doc.setTextColor(0);
     doc.text('Planuj Smeny', 14, 22);
     doc.setFontSize(11);
     doc.setTextColor(100);
-    doc.text(`Timesheet — ${ctx.employeeName}`, 14, 30);
-    doc.text(`Period: ${ctx.periodLabel}`, 14, 36);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 42);
+    doc.text(`${L.title} — ${ctx.employeeName}`, 14, 30);
+    doc.text(`${L.period}: ${ctx.periodLabel}`, 14, 36);
+    doc.text(`${L.generatedOn}: ${new Date().toLocaleDateString()}`, 14, 42);
 
     doc.setTextColor(0);
     doc.setFontSize(12);
-    doc.text(`Total Shifts: ${totals.count}`, 14, 54);
+    doc.text(`${L.totalShifts}: ${totals.count}`, 14, 54);
     doc.text(
-        `Gross: ${fmtHours(totals.gross)}    Break: ${fmtHours(totals.brk)}    Net: ${fmtHours(totals.net)}`,
+        `${L.colGross}: ${fmtHours(totals.gross)}    ${L.colBreak}: ${fmtHours(totals.brk)}    ${L.colNet}: ${fmtHours(totals.net)}`,
         14,
         60,
     );
     doc.setFontSize(8);
     doc.setTextColor(120);
-    doc.text(BREAK_LEGEND, 14, 66);
+    doc.text(L.breakLegend, 14, 66);
 
     autoTable(doc, {
         startY: 72,
-        head: [['Date', 'Day', 'Location', 'Time', 'Gross', 'Break', 'Net']],
+        head: [[L.colDate, L.colDay, L.colLocation, L.colTime, L.colGross, L.colBreak, L.colNet]],
         body: rows.map((r) => [
             r.date,
             r.day,
@@ -143,7 +197,7 @@ function drawTimesheetPDF(doc: jsPDF, ctx: ExportContext) {
             fmtDuration(r.net),
         ]),
         foot: [
-            ['', '', '', 'Total', fmtHours(totals.gross), fmtHours(totals.brk), fmtHours(totals.net)],
+            ['', '', '', L.total, fmtHours(totals.gross), fmtHours(totals.brk), fmtHours(totals.net)],
         ],
         theme: 'striped',
         headStyles: { fillColor: [16, 185, 129] },
@@ -163,8 +217,8 @@ function drawTimesheetPDF(doc: jsPDF, ctx: ExportContext) {
     doc.setTextColor(0);
     doc.line(14, y, 84, y);
     doc.line(120, y, 190, y);
-    doc.text('Employee signature', 14, y + 5);
-    doc.text('Approved by', 120, y + 5);
+    doc.text(ctx.labels.employeeSignature, 14, y + 5);
+    doc.text(ctx.labels.approvedBy, 120, y + 5);
 }
 
 function exportPDF(ctx: ExportContext, opts: ExportOptions = {}) {
@@ -186,10 +240,11 @@ const csvCell = (v: string | number) => {
 
 function exportCSV(ctx: ExportContext, opts: ExportOptions = {}) {
     const { rows, totals } = build(ctx);
-    const header = ['Date', 'Day', 'Location', 'Start', 'End', 'Gross (h)', 'Break (h)', 'Net (h)'];
+    const L = ctx.labels;
+    const header = [L.colDate, L.colDay, L.colLocation, L.colStart, L.colEnd, hoursHdr(L.colGross), hoursHdr(L.colBreak), hoursHdr(L.colNet)];
     const lines: string[] = [];
-    lines.push(`Timesheet — ${ctx.employeeName} — ${ctx.periodLabel}`);
-    lines.push(BREAK_LEGEND);
+    lines.push(`${L.title} — ${ctx.employeeName} — ${ctx.periodLabel}`);
+    lines.push(L.breakLegend);
     lines.push('');
     lines.push(header.map(csvCell).join(','));
     for (const r of rows) {
@@ -200,7 +255,7 @@ function exportCSV(ctx: ExportContext, opts: ExportOptions = {}) {
         );
     }
     lines.push(
-        ['Total', '', '', '', '', round1(totals.gross), round1(totals.brk), round1(totals.net)]
+        [L.total, '', '', '', '', round1(totals.gross), round1(totals.brk), round1(totals.net)]
             .map(csvCell)
             .join(','),
     );
@@ -221,11 +276,12 @@ async function exportExcel(ctx: ExportContext, opts: ExportOptions = {}) {
     const XLSX = await import('xlsx');
     const { rows, totals } = build(ctx);
 
+    const L = ctx.labels;
     const aoa: (string | number)[][] = [
-        [`Timesheet — ${ctx.employeeName} — ${ctx.periodLabel}`],
-        [BREAK_LEGEND],
+        [`${L.title} — ${ctx.employeeName} — ${ctx.periodLabel}`],
+        [L.breakLegend],
         [],
-        ['Date', 'Day', 'Location', 'Start', 'End', 'Gross (h)', 'Break (h)', 'Net (h)'],
+        [L.colDate, L.colDay, L.colLocation, L.colStart, L.colEnd, hoursHdr(L.colGross), hoursHdr(L.colBreak), hoursHdr(L.colNet)],
         ...rows.map((r) => [
             r.date,
             r.day,
@@ -236,7 +292,7 @@ async function exportExcel(ctx: ExportContext, opts: ExportOptions = {}) {
             round1(r.brk),
             round1(r.net),
         ]),
-        ['Total', '', '', '', '', round1(totals.gross), round1(totals.brk), round1(totals.net)],
+        [L.total, '', '', '', '', round1(totals.gross), round1(totals.brk), round1(totals.net)],
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -252,7 +308,7 @@ async function exportExcel(ctx: ExportContext, opts: ExportOptions = {}) {
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Timesheet');
+    XLSX.utils.book_append_sheet(wb, ws, L.title);
     if (opts.returnData) {
       const buffer = XLSX.write(wb, { type: 'array' });
       const b64 = btoa(
@@ -287,6 +343,7 @@ export interface ExportAllContext {
     periodLabel: string;
     locationName: (id: string) => string;
     groups: { employeeName: string; shifts: Shift[] }[];
+    labels: ExportLabels;
 }
 
 function allFileStem(periodLabel: string): string {
@@ -304,6 +361,7 @@ function exportAllPDF(ctx: ExportAllContext, opts: ExportOptions = {}) {
             periodLabel: ctx.periodLabel,
             shifts: g.shifts,
             locationName: ctx.locationName,
+            labels: ctx.labels,
         });
     });
     if (opts.returnData) {
@@ -314,10 +372,11 @@ function exportAllPDF(ctx: ExportAllContext, opts: ExportOptions = {}) {
 
 /** CSV: one file, with a leading Employee column and a per-employee total row. */
 function exportAllCSV(ctx: ExportAllContext, opts: ExportOptions = {}) {
-    const header = ['Employee', 'Date', 'Day', 'Location', 'Start', 'End', 'Gross (h)', 'Break (h)', 'Net (h)'];
+    const L = ctx.labels;
+    const header = [L.employee, L.colDate, L.colDay, L.colLocation, L.colStart, L.colEnd, hoursHdr(L.colGross), hoursHdr(L.colBreak), hoursHdr(L.colNet)];
     const lines: string[] = [];
-    lines.push(`Timesheets — ${ctx.periodLabel}`);
-    lines.push(BREAK_LEGEND);
+    lines.push(`${L.teamTitle} — ${ctx.periodLabel}`);
+    lines.push(L.breakLegend);
     lines.push('');
     lines.push(header.map(csvCell).join(','));
 
@@ -327,6 +386,7 @@ function exportAllCSV(ctx: ExportAllContext, opts: ExportOptions = {}) {
             periodLabel: ctx.periodLabel,
             shifts: g.shifts,
             locationName: ctx.locationName,
+            labels: L,
         });
         if (rows.length === 0) continue;
         for (const r of rows) {
@@ -337,7 +397,7 @@ function exportAllCSV(ctx: ExportAllContext, opts: ExportOptions = {}) {
             );
         }
         lines.push(
-            [`${g.employeeName} — Total`, '', '', '', '', '', round1(totals.gross), round1(totals.brk), round1(totals.net)]
+            [`${g.employeeName} — ${L.total}`, '', '', '', '', '', round1(totals.gross), round1(totals.brk), round1(totals.net)]
                 .map(csvCell)
                 .join(','),
         );
@@ -367,6 +427,7 @@ async function exportAllExcel(ctx: ExportAllContext, opts: ExportOptions = {}) {
         return candidate;
     };
 
+    const L = ctx.labels;
     let any = false;
     for (const g of ctx.groups) {
         const { rows, totals } = build({
@@ -374,16 +435,17 @@ async function exportAllExcel(ctx: ExportAllContext, opts: ExportOptions = {}) {
             periodLabel: ctx.periodLabel,
             shifts: g.shifts,
             locationName: ctx.locationName,
+            labels: L,
         });
         if (rows.length === 0) continue;
         any = true;
         const aoa: (string | number)[][] = [
-            [`Timesheet — ${g.employeeName} — ${ctx.periodLabel}`],
-            [BREAK_LEGEND],
+            [`${L.title} — ${g.employeeName} — ${ctx.periodLabel}`],
+            [L.breakLegend],
             [],
-            ['Date', 'Day', 'Location', 'Start', 'End', 'Gross (h)', 'Break (h)', 'Net (h)'],
+            [L.colDate, L.colDay, L.colLocation, L.colStart, L.colEnd, hoursHdr(L.colGross), hoursHdr(L.colBreak), hoursHdr(L.colNet)],
             ...rows.map((r) => [r.date, r.day, r.location, r.start, r.end, round1(r.gross), round1(r.brk), round1(r.net)]),
-            ['Total', '', '', '', '', round1(totals.gross), round1(totals.brk), round1(totals.net)],
+            [L.total, '', '', '', '', round1(totals.gross), round1(totals.brk), round1(totals.net)],
         ];
         const ws = XLSX.utils.aoa_to_sheet(aoa);
         ws['!cols'] = [{ wch: 16 }, { wch: 6 }, { wch: 22 }, { wch: 8 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];

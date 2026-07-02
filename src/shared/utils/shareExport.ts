@@ -60,7 +60,7 @@ export async function shareOrExportAll(context: ExportAllContext, format: Export
         return;
     }
     const data = await exportAllShifts(format, context, { returnData: true });
-    const title = `Timesheets — ${context.periodLabel}`;
+    const title = `${context.labels.teamTitle} — ${context.periodLabel}`;
     const ok = await shareNative(format, `Timesheets_${context.periodLabel}`, title, data);
     if (!ok) await exportAllShifts(format, context);
 }

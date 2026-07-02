@@ -21,7 +21,7 @@ import { MonthPicker } from '@shared/components/MonthPicker';
 import { Skeleton } from '@shared/components/Skeleton';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from './shiftStats';
 import { formatClock, monthShort, monthKey, weekdayShort, weekdayShortLabels } from '@shared/utils/date';
-import { type ExportFormat } from '@features/timesheets/exportShifts';
+import { type ExportFormat, makeExportLabels } from '@features/timesheets/exportShifts';
 import { shareOrExport } from '@shared/utils/shareExport';
 
 /**
@@ -205,6 +205,7 @@ export default function OverviewPage() {
       periodLabel,
       shifts: stats.shifts,
       locationName,
+      labels: makeExportLabels(t),
     }, fmt);
     setExportOpen(false);
   };
