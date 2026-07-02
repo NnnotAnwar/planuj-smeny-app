@@ -52,13 +52,14 @@ export const COMBOS: Record<ComboKey, Combo> = {
         },
         gradient: { light: ['#f0fdfa', '#e6fbf6', '#d7f5ee'], dark: ['#08120f', '#0b1714', '#10211c'] },
     },
-    // Orange — warm pumpkin/amber. Action shade (500) deepened so white reads
-    // (~3.6:1 on bold) instead of the old neon-yellow that washed out.
+    // Orange — warm pumpkin/amber. Action shade (600) deepened to #b8410a so
+    // white text on filled buttons clears WCAG AA (~5.3:1) on the brightest
+    // motif; light shades keep the warm sparkle.
     'amber-obsidian': {
         label: 'Amber Chocolate',
         accent: {
             '50': '#fff7ed', '100': '#ffedd5', '200': '#fdd9b5', '300': '#fbbe85', '400': '#f99c4e',
-            '500': '#ea580c', '600': '#cf4a09', '700': '#ab3c0c', '800': '#87310f', '900': '#6e2912', '950': '#401405',
+            '500': '#ea580c', '600': '#b8410a', '700': '#ab3c0c', '800': '#87310f', '900': '#6e2912', '950': '#401405',
         },
         gradient: { light: ['#fff7ed', '#fff1e0', '#ffe8cf'], dark: ['#1a120b', '#1f160d', '#2a1c10'] },
     },

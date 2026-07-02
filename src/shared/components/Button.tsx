@@ -41,8 +41,9 @@ const ICON_SIZES: Record<Size, string> = {
 const VARIANTS: Record<Variant, string> = {
     // One dominant, accent-filled CTA — the happy path.
     primary: 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-700',
-    // Destructive, filled — reserved for irreversible actions.
-    danger: 'bg-red-500 text-white shadow-sm shadow-red-500/20 hover:bg-red-600',
+    // Destructive, filled — reserved for irreversible actions. red-600 (not 500)
+    // so white text clears WCAG AA (~4.8:1).
+    danger: 'bg-red-600 text-white shadow-sm shadow-red-600/20 hover:bg-red-700',
     // Quiet, outlined — secondary choices that shouldn't compete with primary.
     secondary:
         'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 ' +
