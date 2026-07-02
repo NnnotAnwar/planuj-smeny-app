@@ -107,6 +107,13 @@ export const en = {
     'overview.netExplain': 'Net = Gross − mandatory breaks:',
     'overview.total': 'Total',
     'overview.live': 'Live',
+    'overview.noData': 'No data found',
+    'overview.noDataHint': 'Try a different month or clear the filter.',
+    'overview.byLocation': 'Locations',
+    'overview.shareOfTime': 'Share of time',
+    'overview.worked': '{hours} worked',
+    'overview.busiestDays': 'Busiest Days',
+    'overview.entries': '{count} entries',
 
     // Auth
     'auth.welcomeBack': 'Welcome back',
@@ -475,6 +482,13 @@ export const cs: Record<TranslationKey, string> = {
     'overview.netExplain': 'Čistý = hrubý − povinné přestávky:',
     'overview.total': 'Celkem',
     'overview.live': 'Živě',
+    'overview.noData': 'Žádná data',
+    'overview.noDataHint': 'Zkuste jiný měsíc nebo zrušte filtr.',
+    'overview.byLocation': 'Místa',
+    'overview.shareOfTime': 'Podíl času',
+    'overview.worked': '{hours} odpracováno',
+    'overview.busiestDays': 'Nejrušnější dny',
+    'overview.entries': '{count} záznamů',
 
     'auth.welcomeBack': 'Vítejte zpět',
     'auth.portal': 'Planuj Směny · Zaměstnanecký portál',

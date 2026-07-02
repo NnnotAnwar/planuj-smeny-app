@@ -296,8 +296,8 @@ export default function OverviewPage() {
             <CalendarBlankIcon weight="bold" className="w-7 h-7" />
           </div>
           <div>
-            <h2 className="text-heading text-gray-900 dark:text-white">No data found</h2>
-            <p className="text-body text-gray-400 mt-1">Try selecting a different month or clear the filter.</p>
+            <h2 className="text-heading text-gray-900 dark:text-white">{t('overview.noData')}</h2>
+            <p className="text-body text-gray-400 mt-1">{t('overview.noDataHint')}</p>
           </div>
         </div>
       ) : (
@@ -321,9 +321,9 @@ export default function OverviewPage() {
             <div className="bg-white dark:bg-gray-800/40 p-5 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-label text-gray-400 flex items-center gap-1.5">
-                  <MapPinIcon weight="bold" className="w-4 h-4 text-emerald-500" /> Locations
+                  <MapPinIcon weight="bold" className="w-4 h-4 text-emerald-500" /> {t('overview.byLocation')}
                 </h2>
-                <span className="text-micro text-gray-400">Share of time</span>
+                <span className="text-micro text-gray-400">{t('overview.shareOfTime')}</span>
               </div>
               <div className="space-y-4">
                 {stats.locationBreakdown.map((l) => (
@@ -331,7 +331,7 @@ export default function OverviewPage() {
                     <div className="flex items-end justify-between mb-1.5">
                       <div className="flex flex-col">
                         <span className="text-small-strong text-gray-800 dark:text-gray-200 truncate">{locationName(l.id)}</span>
-                        <span className="text-caption text-gray-400 tabular-nums">{fmtHours(l.hours)} worked</span>
+                        <span className="text-caption text-gray-400 tabular-nums">{t('overview.worked', { hours: fmtHours(l.hours) })}</span>
                       </div>
                       <span className="text-metric-sm text-emerald-600 dark:text-emerald-400">{l.percent}%</span>
                     </div>
@@ -351,7 +351,7 @@ export default function OverviewPage() {
             <div className="bg-white dark:bg-gray-800/40 p-5 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-label text-gray-400 flex items-center gap-1.5">
-                  <ChartBarIcon weight="bold" className="w-4 h-4 text-emerald-500" /> Busiest Days
+                  <ChartBarIcon weight="bold" className="w-4 h-4 text-emerald-500" /> {t('overview.busiestDays')}
                 </h2>
                 <TrendUpIcon className="w-4 h-4 text-gray-300" />
               </div>
@@ -416,7 +416,7 @@ export default function OverviewPage() {
                 {selectedMonth ? t('overview.historyMonthly') : t('overview.historyAll')}
               </h2>
               <span className="text-micro text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-lg">
-                {stats.shifts.length} entries
+                {t('overview.entries', { count: stats.shifts.length })}
               </span>
             </div>
             <p className="px-1 mb-3 text-caption leading-relaxed text-gray-400">
