@@ -12,8 +12,13 @@ import { openLocationPicker } from '@features/locations/locationPickerSignal';
  *
  * UX: the button is never disabled for a missing location (a dead, unexplained
  * button is a classic dead-end). Instead, tapping it with nothing selected
- * guides the user forward — it opens the location picker and hints why — so
- * there's always a next step.
+ * guides the user forward — so there's always a next step.
+ *
+ * Desktop and mobile are separate buttons (CSS-toggled), and the location
+ * picker lives in different places: a bottom sheet on mobile, the sidebar on
+ * desktop. The mobile field stays mounted-but-hidden on desktop, so we can't
+ * infer context from "is a picker subscribed" — each button passes its own
+ * guide explicitly (`sheet` opens the mobile sheet; `hint` shows a toast).
  */
 export function CheckIn() {
     const { selectedLocationId, activeShift, handleStartShift, isStarting } = useShiftContext();
@@ -22,14 +27,11 @@ export function CheckIn() {
     // If a shift is already running, we don't show the check-in button.
     if (activeShift) return null;
 
-    const onStartShiftClick = () => {
+    const attemptStart = (guide: 'sheet' | 'hint') => {
         if (!selectedLocationId) {
-            // Guide, don't block. On mobile this opens the location sheet (feedback
-            // enough on its own). On desktop nothing is subscribed, so fall back to
-            // a toast explaining why — never a silent no-op.
             haptics.error();
-            const opened = openLocationPicker();
-            if (!opened) toast(t('shifts.selectLocation'), 'info');
+            if (guide === 'sheet') openLocationPicker();
+            else toast(t('shifts.selectLocation'), 'info');
             return;
         }
         haptics.heavy();
@@ -47,7 +49,7 @@ export function CheckIn() {
                     icon={PlayIcon}
                     iconWeight="fill"
                     loading={isStarting}
-                    onClick={onStartShiftClick}
+                    onClick={() => attemptStart('hint')}
                     className="px-10"
                 >
                     {label}
@@ -61,7 +63,7 @@ export function CheckIn() {
                     icon={PlayIcon}
                     iconWeight="fill"
                     loading={isStarting}
-                    onClick={onStartShiftClick}
+                    onClick={() => attemptStart('sheet')}
                     fullWidth
                     className="rounded-2xl"
                 >
