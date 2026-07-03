@@ -15,6 +15,7 @@ import { useOnline } from '@shared/hooks/useOnline';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { BiometricLock } from '@features/auth/BiometricLock';
+import { useBiometricEnabled } from '@features/auth/biometricSetting';
 import { CommandPalette } from '../CommandPalette';
 import { LocationPopup, type LocationPopupVariant } from '@features/locations/components/LocationPopup';
 import { type User, type Shift, type Location } from '@shared/types';
@@ -66,6 +67,9 @@ export function AppShell() {
 
   // Network connectivity — drives the offline banner.
   const online = useOnline();
+
+  // Biometric app-lock: opt-in per device, only for admins (rank >= 30).
+  const biometricEnabled = useBiometricEnabled();
 
   // Command palette (⌘K / Ctrl+K) open state + global hotkey.
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -130,8 +134,8 @@ export function AppShell() {
 
   return (
     <div className="App min-h-dvh w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
-      {/* BIOMETRIC LOCK — forced for admins (rank >= 30) on native; overlays all. */}
-      <BiometricLock enforce={(user.role.rank ?? 0) >= 30} />
+      {/* BIOMETRIC LOCK — opt-in per device, admins only (rank >= 30). */}
+      <BiometricLock enforce={(user.role.rank ?? 0) >= 30 && biometricEnabled} />
 
       {/* OFFLINE BANNER — unobtrusive top pill; the server-dependent actions
           (e.g. clocking in) are guarded separately. */}

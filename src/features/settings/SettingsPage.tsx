@@ -14,6 +14,7 @@ import { usePreferences } from '@shared/preferences/PreferencesContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useNotificationPrefs } from '@features/notifications/notificationPrefs';
+import { useBiometricEnabled, setBiometricEnabled } from '@features/auth/biometricSetting';
 import { Select } from '@shared/components/Select';
 import { LANGUAGES } from '@shared/i18n/translations';
 
@@ -50,8 +51,8 @@ function Segmented<T extends string>({
             onClick={() => onChange(o.value)}
             aria-pressed={active}
             className={`flex-1 px-3 py-1.5 rounded-lg text-small-strong transition-colors ${active
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
           >
             {o.label}
@@ -134,6 +135,7 @@ export default function SettingsPage() {
   const { locations } = useShiftContext();
   const { user } = useAuthContext();
   const { prefs, update: updatePrefs } = useNotificationPrefs();
+  const biometricEnabled = useBiometricEnabled();
   const isReviewer = (user?.role.rank ?? 0) >= 30;
   const isDark = resolvedTheme === 'dark';
 
@@ -186,8 +188,8 @@ export default function SettingsPage() {
                     title={label}
                     aria-pressed={isActive}
                     className={`group rounded-2xl p-1 transition-all focus:outline-none ${isActive
-                        ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900'
-                        : 'hover:scale-[1.02]'
+                      ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900'
+                      : 'hover:scale-[1.02]'
                       }`}
                   >
                     <div
@@ -258,6 +260,22 @@ export default function SettingsPage() {
           </Setting>
         </div>
       </div>
+
+      {/* SECURITY — biometric app-lock: admins only, and only on native (the
+          lock is a device feature; the toggle would be a no-op on web). */}
+      {isReviewer && Capacitor.isNativePlatform() && (
+        <div className="space-y-2">
+          <h3 className="px-1 text-label text-gray-400">{t('settings.security')}</h3>
+          <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
+            <ToggleRow
+              label={t('settings.biometric.login')}
+              checked={biometricEnabled}
+              onChange={setBiometricEnabled}
+            />
+            <p className="px-4 py-3 text-caption text-gray-400">{t('settings.biometric.hint')}</p>
+          </div>
+        </div>
+      )}
 
       {/* NOTIFICATIONS — push preferences (gate delivery per category) */}
       <div className="space-y-2">

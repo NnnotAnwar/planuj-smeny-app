@@ -1,28 +1,36 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CaretLeftIcon, CaretRightIcon, PlusIcon, MapPinIcon } from '@phosphor-icons/react';
+import { PlusIcon, FilePdfIcon, FileXlsIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
+import { DataTable, type Column } from '@shared/components/DataTable';
+import { MonthPicker } from '@shared/components/MonthPicker';
 import { Skeleton } from '@shared/components/Skeleton';
-import { ActionButtons } from '@features/admin/components/ActionButtons';
 import { ConfirmDialog } from '@features/admin/components/Modal';
 import { timesheetService } from '@features/timesheets/timesheetService';
-import { formatTime, weekdayShort, monthShort } from '@shared/utils/date';
+import { formatTime, weekdayShort } from '@shared/utils/date';
 import type { ScheduledShift } from '@shared/types';
 import { scheduleService, type ScheduledInput } from './scheduleService';
-import { ScheduledShiftEditor, type ScheduledFormValues } from './components/ScheduledShiftEditor';
+import { ScheduledShiftEditor } from './components/ScheduledShiftEditor';
+import { exportSchedule, type ExportScheduleRow } from './exportSchedule';
 
-/** Monday 00:00 (local) of the week containing `d`. */
-function startOfWeek(d: Date): Date {
-    const x = new Date(d);
-    x.setHours(0, 0, 0, 0);
-    const dow = (x.getDay() + 6) % 7; // 0 = Monday
-    x.setDate(x.getDate() - dow);
-    return x;
+function monthStartFromKey(monthKey: string): Date {
+    const [year, month] = monthKey.split('-').map(Number);
+    const d = new Date(year, month - 1, 1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+function monthKeyFromDate(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function formatMonthLabel(date: Date): string {
+    return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
 export default function SchedulePage() {
@@ -33,27 +41,24 @@ export default function SchedulePage() {
 
     const canManage = (user?.role.rank ?? 0) >= 20;
 
-    const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
-    const weekEnd = useMemo(() => {
-        const e = new Date(weekStart);
-        e.setDate(e.getDate() + 7);
-        return e;
-    }, [weekStart]);
-
-    // Editor / delete dialog state.
+    const [selectedMonth, setSelectedMonth] = useState(() => monthKeyFromDate(new Date()));
+    const [activeTab, setActiveTab] = useState<'mine' | 'team'>(canManage ? 'team' : 'mine');
     const [editing, setEditing] = useState<{ shift: ScheduledShift | null; date: string } | null>(null);
     const [deleting, setDeleting] = useState<ScheduledShift | null>(null);
 
-    const startISO = weekStart.toISOString();
-    const endISO = weekEnd.toISOString();
+    const monthStart = useMemo(() => monthStartFromKey(selectedMonth), [selectedMonth]);
+    const monthEnd = useMemo(() => {
+        const d = new Date(monthStart);
+        d.setMonth(d.getMonth() + 1);
+        return d;
+    }, [monthStart]);
 
     const scheduleQ = useQuery({
-        queryKey: ['schedule', startISO],
-        queryFn: () => scheduleService.getRange(startISO, endISO),
+        queryKey: ['schedule', selectedMonth],
+        queryFn: () => scheduleService.getRange(monthStart.toISOString(), monthEnd.toISOString()),
         enabled: !!user,
     });
 
-    // Managers need the member list for the editor's "who" picker.
     const membersQ = useQuery({
         queryKey: ['schedule-members'],
         queryFn: () => timesheetService.getMembers(),
@@ -71,133 +76,198 @@ export default function SchedulePage() {
     });
     const deleteM = useMutation({ mutationFn: (id: string) => scheduleService.remove(id), onSuccess: invalidate });
 
-    // Seven day buckets (Mon→Sun), each with its shifts. Computed before any
-    // early return so the Hook order stays stable.
-    const days = useMemo(() => {
-        const shifts = scheduleQ.data ?? [];
-        return Array.from({ length: 7 }).map((_, i) => {
-            const d = new Date(weekStart);
-            d.setDate(d.getDate() + i);
-            const key = d.toDateString();
-            return { date: d, items: shifts.filter((s) => new Date(s.starts_at).toDateString() === key) };
-        });
-    }, [weekStart, scheduleQ.data]);
-
     if (!user) return null;
 
     const locationName = (id: string | null) => (id ? locations.find((l) => l.id === id)?.name ?? '—' : '—');
     const memberName = (s: ScheduledShift) =>
         `${s.profiles?.first_name ?? ''} ${s.profiles?.last_name ?? ''}`.trim() || s.profiles?.username || '—';
 
-    const weekLabel = `${weekStart.getDate()} ${monthShort(weekStart)} – ${new Date(weekEnd.getTime() - 1).getDate()} ${monthShort(new Date(weekEnd.getTime() - 1))}`;
-    const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const shifts = scheduleQ.data ?? [];
+    const myShifts = shifts.filter((shift) => shift.user_id === user.id);
+    const visibleShifts = activeTab === 'team' && canManage ? shifts : myShifts;
 
-    const submitEditor = async (values: ScheduledFormValues) => {
-        if (editing?.shift) await updateM.mutateAsync({ id: editing.shift.id, v: values });
-        else await createM.mutateAsync(values);
+    const tableRows: ExportScheduleRow[] = visibleShifts.map((shift) => {
+        const startsAt = new Date(shift.starts_at);
+        return {
+            date: startsAt.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
+            day: weekdayShort(startsAt),
+            member: memberName(shift),
+            location: locationName(shift.location_id),
+            start: formatTime(shift.starts_at),
+            end: formatTime(shift.ends_at),
+            note: shift.note ?? '',
+        };
+    });
+
+    const exportContext = {
+        title: activeTab === 'team' && canManage ? t('schedule.exportTitleTeam') : t('schedule.exportTitleMine'),
+        periodLabel: formatMonthLabel(monthStart),
+        rows: tableRows,
+        labels: {
+            title: activeTab === 'team' && canManage ? t('schedule.exportTitleTeam') : t('schedule.exportTitleMine'),
+            period: t('export.period'),
+            generatedOn: t('export.generatedOn'),
+            colDate: t('schedule.colDate'),
+            colDay: t('schedule.colDay'),
+            colMember: t('schedule.colMember'),
+            colLocation: t('schedule.colLocation'),
+            colStart: t('schedule.colStart'),
+            colEnd: t('schedule.colEnd'),
+            colNote: t('schedule.colNote'),
+        },
     };
+
+    const doExport = async (format: 'pdf' | 'excel') => {
+        await exportSchedule(format, exportContext);
+    };
+
+    const columns = useMemo<Column<ExportScheduleRow>[]>(
+        () => {
+            const base: Column<ExportScheduleRow>[] = [
+                {
+                    key: 'date',
+                    header: t('schedule.colDate'),
+                    render: (row) => row.date,
+                    width: 'w-24',
+                },
+                {
+                    key: 'day',
+                    header: t('schedule.colDay'),
+                    render: (row) => row.day,
+                    width: 'w-20 sm:w-24',
+                    hideOnMobile: true,
+                },
+                {
+                    key: 'location',
+                    header: t('schedule.colLocation'),
+                    render: (row) => row.location,
+                    width: 'w-[22%] sm:w-[24%]',
+                },
+                {
+                    key: 'start',
+                    header: t('schedule.colStart'),
+                    render: (row) => row.start,
+                    width: 'w-16',
+                    align: 'center',
+                },
+                {
+                    key: 'end',
+                    header: t('schedule.colEnd'),
+                    render: (row) => row.end,
+                    width: 'w-16',
+                    align: 'center',
+                },
+                {
+                    key: 'note',
+                    header: t('schedule.colNote'),
+                    render: (row) => row.note || '—',
+                },
+            ];
+
+            if (canManage && activeTab === 'team') {
+                return [
+                    base[0],
+                    base[1],
+                    {
+                        key: 'member',
+                        header: t('schedule.colMember'),
+                        render: (row) => row.member ?? '—',
+                        width: 'w-[24%]',
+                    },
+                    base[2],
+                    base[3],
+                    base[4],
+                    base[5],
+                ];
+            }
+
+            return base;
+        },
+        [activeTab, canManage, t],
+    );
+
+    const emptyState = (
+        <div className="rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/50 p-8 text-center">
+            <p className="text-body-strong text-gray-900 dark:text-white">{t('schedule.noShiftsMonth')}</p>
+            <p className="mt-2 text-caption text-gray-500 dark:text-gray-400">{t('schedule.emptyHintMonth')}</p>
+        </div>
+    );
 
     return (
         <div className="space-y-4 px-1 pb-10">
-            <header className="pt-2 flex items-end justify-between gap-3">
+            <header className="pt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div className="space-y-0.5">
                     <p className="text-label text-emerald-500 text-left">{canManage ? t('schedule.roster') : t('schedule.mine')}</p>
                     <h1 className="text-display text-gray-900 dark:text-white">{t('nav.schedule')}</h1>
                 </div>
-                {canManage && (
-                    <Button size="sm" icon={PlusIcon} onClick={() => setEditing({ shift: null, date: isoDate(new Date()) })}>
-                        {t('schedule.add')}
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button size="sm" icon={FileXlsIcon} onClick={() => doExport('excel')}>
+                        {t('schedule.exportExcel')}
                     </Button>
-                )}
+                    <Button size="sm" variant="secondary" icon={FilePdfIcon} onClick={() => doExport('pdf')}>
+                        {t('schedule.exportPdf')}
+                    </Button>
+                    {canManage && (
+                        <Button size="sm" icon={PlusIcon} onClick={() => setEditing({ shift: null, date: monthKeyFromDate(monthStart) })}>
+                            {t('schedule.add')}
+                        </Button>
+                    )}
+                </div>
             </header>
 
-            {/* Week navigator */}
-            <div className="flex items-center justify-between gap-2 bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl px-2 py-1.5 shadow-sm">
-                <button
-                    onClick={() => setWeekStart((w) => { const n = new Date(w); n.setDate(n.getDate() - 7); return n; })}
-                    aria-label={t('schedule.prevWeek')}
-                    className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 active:scale-90 transition-all"
-                >
-                    <CaretLeftIcon weight="bold" className="w-4 h-4" />
-                </button>
-                <button
-                    onClick={() => setWeekStart(startOfWeek(new Date()))}
-                    className="flex-1 text-center text-body-strong text-gray-900 dark:text-white"
-                >
-                    {weekLabel}
-                </button>
-                <button
-                    onClick={() => setWeekStart((w) => { const n = new Date(w); n.setDate(n.getDate() + 7); return n; })}
-                    aria-label={t('schedule.nextWeek')}
-                    className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 active:scale-90 transition-all"
-                >
-                    <CaretRightIcon weight="bold" className="w-4 h-4" />
-                </button>
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] items-center">
+                <MonthPicker value={selectedMonth} onChange={(value) => setSelectedMonth(value ?? monthKeyFromDate(new Date()))} />
+
+                {canManage && (
+                    <div className="inline-flex rounded-2xl bg-gray-100 dark:bg-gray-800/40 p-1 shadow-sm">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('team')}
+                            className={`rounded-2xl px-3 py-2 text-sm font-semibold transition ${activeTab === 'team' ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                        >
+                            {t('schedule.tabTeam')}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('mine')}
+                            className={`rounded-2xl px-3 py-2 text-sm font-semibold transition ${activeTab === 'mine' ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                        >
+                            {t('schedule.tabMine')}
+                        </button>
+                    </div>
+                )}
             </div>
 
-            {/* Days */}
-            {scheduleQ.isLoading ? (
-                <div className="space-y-2" aria-hidden>
-                    {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-2xl" />)}
+            <section className="grid gap-3">
+                <div className="rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 p-4 shadow-sm sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-caption text-gray-500 dark:text-gray-400">{t('schedule.periodLabel', { month: formatMonthLabel(monthStart) })}</p>
+                        <p className="mt-1 text-body-strong text-gray-900 dark:text-white">
+                            {canManage && activeTab === 'team' ? t('schedule.tabTeam') : t('schedule.tabMine')}
+                        </p>
+                    </div>
+                    <div className="rounded-3xl bg-gray-50 dark:bg-gray-800/70 px-3 py-2 text-caption text-gray-500 dark:text-gray-400">
+                        {visibleShifts.length} {t('schedule.shiftsCount')}
+                    </div>
                 </div>
-            ) : (
-                <div className="space-y-2">
-                    {days.map(({ date, items }) => {
-                        const isToday = date.toDateString() === new Date().toDateString();
-                        return (
-                            <section key={date.toISOString()} className="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
-                                <div className={`flex items-center justify-between px-4 py-2 border-b border-gray-50 dark:border-gray-800 ${isToday ? 'bg-emerald-50/60 dark:bg-emerald-900/10' : ''}`}>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className={`text-body-strong ${isToday ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
-                                            {weekdayShort(date)}
-                                        </span>
-                                        <span className="text-caption text-gray-400">{date.getDate()} {monthShort(date)}</span>
-                                    </div>
-                                    {canManage && (
-                                        <button
-                                            onClick={() => setEditing({ shift: null, date: isoDate(date) })}
-                                            aria-label={t('schedule.add')}
-                                            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
-                                        >
-                                            <PlusIcon weight="bold" className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                </div>
 
-                                {items.length === 0 ? (
-                                    <p className="px-4 py-3 text-caption text-gray-400">{t('schedule.empty')}</p>
-                                ) : (
-                                    <ul className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                                        {items.map((s) => (
-                                            <li key={s.id} className="flex items-center gap-3 px-4 py-2.5">
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-small-strong text-gray-900 dark:text-white truncate">
-                                                        {formatTime(s.starts_at)}–{formatTime(s.ends_at)}
-                                                        {canManage && <span className="text-gray-500 dark:text-gray-400 font-normal"> · {memberName(s)}</span>}
-                                                    </p>
-                                                    <p className="text-caption text-gray-400 flex items-center gap-1 truncate">
-                                                        <MapPinIcon weight="fill" className="w-3 h-3 text-emerald-500 shrink-0" />
-                                                        {locationName(s.location_id)}
-                                                        {s.note ? ` · ${s.note}` : ''}
-                                                    </p>
-                                                </div>
-                                                {canManage && (
-                                                    <ActionButtons
-                                                        onEdit={() => setEditing({ shift: s, date: isoDate(new Date(s.starts_at)) })}
-                                                        onDelete={() => setDeleting(s)}
-                                                    />
-                                                )}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </section>
-                        );
-                    })}
-                </div>
-            )}
+                {scheduleQ.isLoading ? (
+                    <div className="space-y-2" aria-hidden>
+                        {[0, 1, 2, 3].map((index) => (
+                            <Skeleton key={index} className="h-16 rounded-2xl" />
+                        ))}
+                    </div>
+                ) : (
+                    <DataTable
+                        columns={columns}
+                        rows={tableRows}
+                        rowKey={(row) => `${row.date}-${row.start}-${row.end}-${row.location}-${row.member ?? ''}`}
+                        emptyState={emptyState}
+                    />
+                )}
+            </section>
 
-            {/* Editor modal (managers) */}
             <AnimatePresence>
                 {editing && canManage && (
                     <ScheduledShiftEditor
@@ -206,7 +276,10 @@ export default function SchedulePage() {
                         shift={editing.shift}
                         defaultDate={editing.date}
                         onClose={() => setEditing(null)}
-                        onSubmit={submitEditor}
+                        onSubmit={async (values) => {
+                            if (editing.shift) await updateM.mutateAsync({ id: editing.shift.id, v: values });
+                            else await createM.mutateAsync(values);
+                        }}
                     />
                 )}
                 {deleting && (
@@ -214,7 +287,9 @@ export default function SchedulePage() {
                         title={t('schedule.deleteTitle')}
                         message={t('schedule.deleteConfirm')}
                         onClose={() => setDeleting(null)}
-                        onConfirm={async () => { await deleteM.mutateAsync(deleting.id); }}
+                        onConfirm={async () => {
+                            await deleteM.mutateAsync(deleting.id);
+                        }}
                     />
                 )}
             </AnimatePresence>

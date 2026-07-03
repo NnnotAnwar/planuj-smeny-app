@@ -9,13 +9,14 @@ import { Button } from '@shared/components/Button';
 
 /**
  * --- BIOMETRIC LOCK ---
- * Forces Face ID / fingerprint (or the device passcode as fallback) before an
- * admin account can use the app — protecting employee data at rest. Native-only;
- * on the web (where there is no device biometry) it's a no-op. Re-locks whenever
- * the app returns from the background.
+ * Opt-in Face ID / fingerprint (device passcode fallback) before using the app —
+ * protecting employee data at rest. Enabled per-device by admins in Settings
+ * (`enforce`). Native-only; on the web it's a no-op.
  *
- * If the device can't authenticate at all (no biometry enrolled and no passcode)
- * we can't enforce the lock, so we let the user through rather than brick them.
+ * Locks on cold start (if enabled) and re-locks after a real background of
+ * >=60s. Enabling it mid-session does NOT lock the current session — it applies
+ * from the next launch/resume. If the device can't authenticate at all, we let
+ * the user through rather than brick them.
  */
 export function BiometricLock({ enforce }: { enforce: boolean }) {
     const t = useTranslation();
@@ -27,6 +28,13 @@ export function BiometricLock({ enforce }: { enforce: boolean }) {
     // When the app genuinely went to the background (not the auth dialog's own
     // blip). Used to re-lock only after a real absence.
     const bgAt = useRef<number | null>(null);
+    // Latest `locked` (read inside effects without re-subscribing) + a one-time
+    // guard so the cold-start prompt fires once.
+    const lockedRef = useRef(locked);
+    useEffect(() => {
+        lockedRef.current = locked;
+    }, [locked]);
+    const coldStarted = useRef(false);
     const RELOCK_AFTER_MS = 60_000;
 
     const prompt = useCallback(async () => {
@@ -57,9 +65,15 @@ export function BiometricLock({ enforce }: { enforce: boolean }) {
 
     useEffect(() => {
         if (!active) return;
-        // Deferred so the first prompt's state updates don't run synchronously
-        // inside the effect body.
-        const timer = setTimeout(() => void prompt(), 0);
+        // Prompt on cold start only (mounted already locked). Enabling the toggle
+        // mid-session leaves `locked` false, so we don't prompt now — it kicks in
+        // on the next launch/resume. Deferred to keep state updates out of the
+        // effect body.
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        if (lockedRef.current && !coldStarted.current) {
+            coldStarted.current = true;
+            timer = setTimeout(() => void prompt(), 0);
+        }
 
         let handle: PluginListenerHandle | null = null;
         App.addListener('appStateChange', ({ isActive }) => {
@@ -82,7 +96,7 @@ export function BiometricLock({ enforce }: { enforce: boolean }) {
             handle = h;
         });
         return () => {
-            clearTimeout(timer);
+            if (timer) clearTimeout(timer);
             handle?.remove();
         };
     }, [active, prompt]);

@@ -382,11 +382,10 @@ export default function OverviewPage() {
                       <motion.div
                         initial={{ height: 0 }}
                         animate={{ height: `${pct}%` }}
-                        className={`w-full max-w-[16px] rounded-t-md transition-all ${
-                          isMax
+                        className={`w-full max-w-4 rounded-t-md transition-all ${isMax
                             ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
                             : h > 0 ? 'bg-gray-200 dark:bg-gray-700 group-hover:bg-emerald-500/40' : 'bg-gray-50 dark:bg-gray-800/40'
-                        }`}
+                          }`}
                         style={{ minHeight: h > 0 ? '4px' : '2px' }}
                       />
                     </div>
