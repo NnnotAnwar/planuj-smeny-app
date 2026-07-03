@@ -83,17 +83,16 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
  *   panel commits the "seen" watermark so the badge clears.
  * - Notifications can be dismissed individually or all at once (per device).
  */
-/** Approx. panel height (header + max-h-96 list) used to clamp inside the viewport. */
-const PANEL_EST_H = 460;
-
 export function NotificationsBell() {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     // Fixed-position coords for the portal panel. The bell can sit anywhere
-    // (header, or the bottom of the collapsed rail), so the panel anchors to
-    // the trigger and clamps to the viewport instead of dropping below it.
-    const [pos, setPos] = useState<{ top: number; left?: number; right?: number } | null>(null);
+    // (header, or the BOTTOM of the collapsed rail), so anchor the panel edge
+    // nearest the trigger: top-aligned for a trigger in the upper half of the
+    // screen, bottom-aligned for the lower half — the panel then grows toward
+    // the free space whatever its real height, never drifting away.
+    const [pos, setPos] = useState<{ top?: number; bottom?: number; left?: number; right?: number } | null>(null);
     const { notifications, unread, isUnread, markSeen, dismiss, clearAll, isLoading } = useNotifications();
     const t = useTranslation();
 
@@ -101,13 +100,16 @@ export function NotificationsBell() {
         const r = ref.current?.getBoundingClientRect();
         if (!r) return;
         const isDesktop = window.matchMedia('(min-width: 768px)').matches;
-        const maxTop = Math.max(8, window.innerHeight - PANEL_EST_H);
+        const lowerHalf = r.top > window.innerHeight / 2;
+        const vertical = lowerHalf
+            ? { bottom: Math.max(8, window.innerHeight - r.bottom) }
+            : { top: Math.max(8, r.top) };
         if (isDesktop) {
-            // Flyout to the right of the trigger (sidebar/rail), clamped vertically.
-            setPos({ left: r.right + 8, top: Math.min(r.top, maxTop) });
+            // Flyout to the right of the trigger (sidebar/rail).
+            setPos({ left: r.right + 8, ...vertical });
         } else {
-            // Mobile: below the trigger, right-aligned, clamped vertically.
-            setPos({ right: Math.max(8, window.innerWidth - r.right), top: Math.min(r.bottom + 8, maxTop) });
+            // Mobile: right-aligned under (or above) the trigger.
+            setPos({ right: Math.max(8, window.innerWidth - r.right), ...(lowerHalf ? vertical : { top: r.bottom + 8 }) });
         }
     }, []);
 
@@ -176,7 +178,7 @@ export function NotificationsBell() {
                         transition={{ duration: 0.15 }}
                         role="dialog"
                         aria-label={t('notif.title')}
-                        style={{ position: 'fixed', top: pos.top, left: pos.left, right: pos.right }}
+                        style={{ position: 'fixed', top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right }}
                         className="z-100 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-2xl overflow-hidden"
                     >
                         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 dark:border-white/5">
