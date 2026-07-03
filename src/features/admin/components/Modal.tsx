@@ -22,11 +22,14 @@ export function Modal({
     subtitle,
     onClose,
     children,
+    wide = false,
 }: {
     title: string;
     subtitle?: string;
     onClose: () => void;
     children: ReactNode;
+    /** Wider panel on sm+ for content-heavy dialogs (e.g. the rota day editor). */
+    wide?: boolean;
 }) {
     const t = useTranslation();
     const panelRef = useRef<HTMLDivElement>(null);
@@ -110,7 +113,7 @@ export function Modal({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97, y: 16 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                className="relative w-full max-w-md max-h-[90dvh] flex flex-col bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl overflow-hidden outline-none"
+                className={`relative w-full ${wide ? 'sm:max-w-2xl' : 'max-w-md'} max-h-[90dvh] flex flex-col bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl overflow-hidden outline-none`}
             >
                 <div className="flex items-start justify-between gap-4 p-5 border-b border-gray-50 dark:border-white/5 shrink-0">
                     <div className="min-w-0">

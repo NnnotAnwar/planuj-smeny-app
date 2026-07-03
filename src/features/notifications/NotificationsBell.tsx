@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     BellIcon,
@@ -82,11 +83,45 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
  *   panel commits the "seen" watermark so the badge clears.
  * - Notifications can be dismissed individually or all at once (per device).
  */
+/** Approx. panel height (header + max-h-96 list) used to clamp inside the viewport. */
+const PANEL_EST_H = 460;
+
 export function NotificationsBell() {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+    // Fixed-position coords for the portal panel. The bell can sit anywhere
+    // (header, or the bottom of the collapsed rail), so the panel anchors to
+    // the trigger and clamps to the viewport instead of dropping below it.
+    const [pos, setPos] = useState<{ top: number; left?: number; right?: number } | null>(null);
     const { notifications, unread, isUnread, markSeen, dismiss, clearAll, isLoading } = useNotifications();
     const t = useTranslation();
+
+    const place = useCallback(() => {
+        const r = ref.current?.getBoundingClientRect();
+        if (!r) return;
+        const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+        const maxTop = Math.max(8, window.innerHeight - PANEL_EST_H);
+        if (isDesktop) {
+            // Flyout to the right of the trigger (sidebar/rail), clamped vertically.
+            setPos({ left: r.right + 8, top: Math.min(r.top, maxTop) });
+        } else {
+            // Mobile: below the trigger, right-aligned, clamped vertically.
+            setPos({ right: Math.max(8, window.innerWidth - r.right), top: Math.min(r.bottom + 8, maxTop) });
+        }
+    }, []);
+
+    useLayoutEffect(() => {
+        if (!open) return;
+        place();
+        const onMove = () => place();
+        window.addEventListener('resize', onMove);
+        window.addEventListener('scroll', onMove, true);
+        return () => {
+            window.removeEventListener('resize', onMove);
+            window.removeEventListener('scroll', onMove, true);
+        };
+    }, [open, place]);
 
     // Open when a deep-linked push asks for the notifications panel.
     useEffect(() => subscribeOpenNotifications(() => setOpen(true)), []);
@@ -100,7 +135,9 @@ export function NotificationsBell() {
     useEffect(() => {
         if (!open) return;
         const onPointerDown = (e: PointerEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) close();
+            const target = e.target as Node;
+            if (ref.current?.contains(target) || panelRef.current?.contains(target)) return;
+            close();
         };
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') close();
@@ -131,15 +168,17 @@ export function NotificationsBell() {
             </button>
 
             <AnimatePresence>
-                {open && (
+                {open && pos && createPortal(
                     <motion.div
+                        ref={panelRef}
                         initial={{ opacity: 0, y: -8, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -8, scale: 0.98 }}
                         transition={{ duration: 0.15 }}
                         role="dialog"
                         aria-label={t('notif.title')}
-                        className="absolute right-0 md:left-full md:right-auto top-full mt-2 z-50 w-80 max-w-[calc(100vw-2rem)] origin-top-right rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-2xl overflow-hidden"
+                        style={{ position: 'fixed', top: pos.top, left: pos.left, right: pos.right }}
+                        className="z-100 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-2xl overflow-hidden"
                     >
                         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 dark:border-white/5">
                             <p className="text-body-strong text-gray-900 dark:text-white">{t('notif.title')}</p>
@@ -200,7 +239,8 @@ export function NotificationsBell() {
                                 })
                             )}
                         </div>
-                    </motion.div>
+                    </motion.div>,
+                    document.body,
                 )}
             </AnimatePresence>
         </div>

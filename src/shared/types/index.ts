@@ -23,6 +23,7 @@ export const ProfileSchema = z.object({
   }),
   organization_id: z.string(), // The company this user belongs to
   username_changed_at: z.string().nullable().optional(), // last username change (7-day self-service limit)
+  manager_id: z.string().nullable().optional(), // the manager this member reports to (rota scoping)
 });
 
 /**
@@ -97,6 +98,8 @@ export const ScheduledShiftSchema = z.object({
   location_id: z.string().nullable(),
   starts_at: z.string(),
   ends_at: z.string(),
+  // "Works that day" without exact times (starts/ends hold the day bounds).
+  all_day: z.boolean().default(false),
   note: z.string().nullable().optional(),
   created_by: z.string().nullable().optional(),
   created_at: z.string(),

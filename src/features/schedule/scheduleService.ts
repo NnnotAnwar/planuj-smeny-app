@@ -13,6 +13,8 @@ export interface ScheduledInput {
     location_id: string | null;
     starts_at: string; // ISO
     ends_at: string; // ISO
+    /** "Works that day" — times are just the day bounds, not shown. */
+    all_day: boolean;
     note?: string | null;
 }
 
@@ -32,17 +34,29 @@ export const scheduleService = {
         return z.array(ScheduledShiftSchema).parse(data ?? []);
     },
 
-    async create(orgId: string, createdBy: string, input: ScheduledInput): Promise<void> {
-        const { error } = await supabase.from('scheduled_shifts').insert({
-            user_id: input.user_id,
-            organization_id: orgId,
-            location_id: input.location_id,
-            starts_at: input.starts_at,
-            ends_at: input.ends_at,
-            note: input.note ?? null,
-            created_by: createdBy,
-        });
-        if (error) throw new Error(error.message);
+    /** One planned assignment to insert — each member can have their own times. */
+    async createMany(
+        orgId: string,
+        createdBy: string,
+        rows: Array<Pick<ScheduledInput, 'user_id' | 'starts_at' | 'ends_at' | 'all_day'>>,
+        common: { location_id: string | null; note?: string | null },
+    ): Promise<void> {
+        if (rows.length === 0) return;
+        const { error } = await supabase.from('scheduled_shifts').insert(
+            rows.map((r) => ({
+                user_id: r.user_id,
+                organization_id: orgId,
+                location_id: common.location_id,
+                starts_at: r.starts_at,
+                ends_at: r.ends_at,
+                all_day: r.all_day,
+                note: common.note ?? null,
+                created_by: createdBy,
+            })),
+        );
+        // 23P01 = the no-overlap exclusion constraint: someone is already
+        // scheduled then. Marker string is translated at the form.
+        if (error) throw new Error(error.code === '23P01' ? 'SCHEDULE_OVERLAP' : error.message);
     },
 
     async update(id: string, values: ScheduledInput): Promise<void> {
@@ -53,15 +67,23 @@ export const scheduleService = {
                 location_id: values.location_id,
                 starts_at: values.starts_at,
                 ends_at: values.ends_at,
+                all_day: values.all_day,
                 note: values.note ?? null,
                 updated_at: new Date().toISOString(),
             })
             .eq('id', id);
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.code === '23P01' ? 'SCHEDULE_OVERLAP' : error.message);
     },
 
     async remove(id: string): Promise<void> {
         const { error } = await supabase.from('scheduled_shifts').delete().eq('id', id);
+        if (error) throw new Error(error.message);
+    },
+
+    /** Unassign several rows at once (unticking members in the day editor). */
+    async removeMany(ids: string[]): Promise<void> {
+        if (ids.length === 0) return;
+        const { error } = await supabase.from('scheduled_shifts').delete().in('id', ids);
         if (error) throw new Error(error.message);
     },
 };

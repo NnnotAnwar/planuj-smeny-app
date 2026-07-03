@@ -31,6 +31,8 @@ export interface EmployeeUpdate {
     last_name: string | null;
     role: string;
     organization_id?: string;
+    /** Manager this member reports to (rota scoping); null clears it. */
+    manager_id?: string | null;
 }
 
 export interface EmployeeInvite {

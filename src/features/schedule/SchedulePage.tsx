@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { PlusIcon, FilePdfIcon, FileXlsIcon, CaretDownIcon, MapPinIcon } from '@phosphor-icons/react';
+import { PlusIcon, FilePdfIcon, FileXlsIcon, DownloadSimpleIcon, CaretDownIcon, MapPinIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -9,24 +9,27 @@ import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { Skeleton } from '@shared/components/Skeleton';
-import { ConfirmDialog } from '@features/admin/components/Modal';
 import { timesheetService } from '@features/timesheets/timesheetService';
+import { formatTime } from '@shared/utils/date';
 import type { ScheduledShift } from '@shared/types';
-import { scheduleService, type ScheduledInput } from './scheduleService';
-import { ScheduledShiftEditor } from './components/ScheduledShiftEditor';
+import { scheduleService } from './scheduleService';
+import { ScheduledShiftEditor, type DayEditorResult } from './components/ScheduledShiftEditor';
 import { MonthCalendar } from './components/MonthCalendar';
 import { exportSchedule, type ScheduleExportSection } from './exportSchedule';
 
 /**
  * --- SCHEDULE PAGE (rota) ---
- * A real month calendar per location: managers walk the location list and
- * assign people by clicking a day; members get a single read-only calendar of
- * their own shifts. Exports the same structure as a printable PDF (calendar
- * page per location) or an Excel workbook (sheet per location).
+ * A real month calendar per location: managers walk the location list and tap
+ * a day to manage it (tick/untick members in the day editor); members get a
+ * read-only calendar of their own shifts. Exports mirror the structure: a
+ * printable PDF calendar page per location, or an Excel sheet per location.
+ * Header controls (month picker + export dropdown) match the Overview page.
  */
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const monthKeyOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+const sameLocalDay = (iso: string, date: string) =>
+    new Date(iso).toDateString() === new Date(`${date}T00:00`).toDateString();
 
 export default function SchedulePage() {
     const { user } = useAuthContext();
@@ -39,8 +42,13 @@ export default function SchedulePage() {
     const [selectedMonth, setSelectedMonth] = useState(() => monthKeyOf(new Date()));
     const [activeTab, setActiveTab] = useState<'mine' | 'team'>(canManage ? 'team' : 'mine');
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-    const [editing, setEditing] = useState<{ shift: ScheduledShift | null; date: string; locationId?: string | null } | null>(null);
-    const [deleting, setDeleting] = useState<ScheduledShift | null>(null);
+    const [exportOpen, setExportOpen] = useState(false);
+    const [editing, setEditing] = useState<{
+        date: string;
+        locationId: string | null;
+        existing: ScheduledShift[];
+        busy: Map<string, string>;
+    } | null>(null);
 
     const monthStart = useMemo(() => {
         const [y, m] = selectedMonth.split('-').map(Number);
@@ -64,16 +72,37 @@ export default function SchedulePage() {
         enabled: canManage,
     });
 
+    // Managers (rank 20) plan only for members assigned to them (+ themselves);
+    // admins (rank >= 30) plan for everyone.
+    const plannableMembers = useMemo(() => {
+        const all = membersQ.data ?? [];
+        if ((user?.role.rank ?? 0) >= 30) return all;
+        return all.filter((m) => m.manager_id === user?.id || m.id === user?.id);
+    }, [membersQ.data, user]);
+
     const invalidate = () => qc.invalidateQueries({ queryKey: ['schedule'] });
-    const createM = useMutation({
-        mutationFn: (v: ScheduledInput) => scheduleService.create(user!.organization_id, user!.id, v),
+    const applyDayM = useMutation({
+        // The day editor's diff: unassign first (so re-ticking with new times
+        // can't collide with the old row), then update, then create.
+        mutationFn: async (values: DayEditorResult) => {
+            await scheduleService.removeMany(values.removed_shift_ids);
+            for (const u of values.updated) {
+                await scheduleService.update(u.shift.id, {
+                    user_id: u.shift.user_id,
+                    location_id: u.shift.location_id,
+                    starts_at: u.starts_at,
+                    ends_at: u.ends_at,
+                    all_day: u.all_day,
+                    note: u.shift.note ?? null,
+                });
+            }
+            await scheduleService.createMany(user!.organization_id, user!.id, values.added, {
+                location_id: values.location_id,
+                note: values.note,
+            });
+        },
         onSuccess: invalidate,
     });
-    const updateM = useMutation({
-        mutationFn: ({ id, v }: { id: string; v: ScheduledInput }) => scheduleService.update(id, v),
-        onSuccess: invalidate,
-    });
-    const deleteM = useMutation({ mutationFn: (id: string) => scheduleService.remove(id), onSuccess: invalidate });
 
     const shifts = useMemo(() => scheduleQ.data ?? [], [scheduleQ.data]);
     const teamView = canManage && activeTab === 'team';
@@ -119,7 +148,21 @@ export default function SchedulePage() {
             return next;
         });
 
+    /** Open the day editor for a location section: current assignments +
+     *  "busy elsewhere" hints for everyone scheduled at other locations. */
+    const openDay = (date: string, locId: string | null, items: ScheduledShift[]) => {
+        const existing = items.filter((s) => sameLocalDay(s.starts_at, date));
+        const busy = new Map<string, string>();
+        for (const s of shifts) {
+            if (s.location_id === locId || !sameLocalDay(s.starts_at, date)) continue;
+            const when = s.all_day ? t('schedule.allDay') : `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`;
+            busy.set(s.user_id, `${locationName(s.location_id)} · ${when}`);
+        }
+        setEditing({ date, locationId: locId, existing, busy });
+    };
+
     const doExport = async (format: 'pdf' | 'excel') => {
+        setExportOpen(false);
         const exportSections: ScheduleExportSection[] = teamView
             ? sections.map((sec) => ({ name: sec.name, shifts: sec.items, label: memberFull }))
             : [{ name: t('schedule.exportTitleMine'), shifts: myShifts, label: (s) => locationName(s.location_id) }];
@@ -146,31 +189,58 @@ export default function SchedulePage() {
 
     return (
         <div className="space-y-4 px-1 pb-10">
-            <header className="pt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div className="space-y-0.5">
+            {/* HEADER — controls mirror the Overview page (export dropdown + month picker). */}
+            <header className="pt-2 flex items-end justify-between gap-3">
+                <div className="space-y-0.5 min-w-0">
                     <p className="text-label text-emerald-500 text-left">{canManage ? t('schedule.roster') : t('schedule.mine')}</p>
                     <h1 className="text-display text-gray-900 dark:text-white">{t('nav.schedule')}</h1>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <Button size="sm" variant="secondary" icon={FileXlsIcon} disabled={!hasAnything} onClick={() => doExport('excel')}>
-                        Excel
-                    </Button>
-                    <Button size="sm" variant="secondary" icon={FilePdfIcon} disabled={!hasAnything} onClick={() => doExport('pdf')}>
-                        PDF
-                    </Button>
-                    {canManage && (
-                        <Button size="sm" icon={PlusIcon} onClick={() => setEditing({ shift: null, date: `${selectedMonth}-01` })}>
-                            {t('schedule.add')}
-                        </Button>
-                    )}
+                <div className="flex items-center gap-2 shrink-0">
+                    <div className="relative">
+                        <button
+                            onClick={() => setExportOpen((v) => !v)}
+                            disabled={!hasAnything}
+                            className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
+                            title={t('overview.export')}
+                        >
+                            <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
+                        </button>
+                        <AnimatePresence>
+                            {exportOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 4, scale: 1 }}
+                                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                                        className="absolute right-0 top-full z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-1.5 overflow-hidden"
+                                    >
+                                        {([
+                                            { fmt: 'pdf' as const, label: 'PDF', Icon: FilePdfIcon },
+                                            { fmt: 'excel' as const, label: 'Excel', Icon: FileXlsIcon },
+                                        ]).map(({ fmt, label, Icon }) => (
+                                            <button
+                                                key={fmt}
+                                                onClick={() => doExport(fmt)}
+                                                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
+                                            >
+                                                <Icon weight="bold" className="w-4 h-4 text-emerald-500" />
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                    <MonthPicker value={selectedMonth} onChange={(v) => setSelectedMonth(v ?? monthKeyOf(new Date()))} />
                 </div>
             </header>
 
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <MonthPicker value={selectedMonth} onChange={(v) => setSelectedMonth(v ?? monthKeyOf(new Date()))} />
-
-                {canManage && (
+            {/* Tabs (managers) + quick add */}
+            {canManage && (
+                <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="inline-flex rounded-2xl bg-gray-100 dark:bg-gray-800/40 p-1 shadow-sm">
                         {(['team', 'mine'] as const).map((tab) => (
                             <button
@@ -187,8 +257,17 @@ export default function SchedulePage() {
                             </button>
                         ))}
                     </div>
-                )}
-            </div>
+                    {teamView && (
+                        <Button
+                            size="sm"
+                            icon={PlusIcon}
+                            onClick={() => openDay(`${selectedMonth}-01`, sections[0]?.id ?? null, sections[0]?.items ?? [])}
+                        >
+                            {t('schedule.add')}
+                        </Button>
+                    )}
+                </div>
+            )}
 
             {scheduleQ.isLoading ? (
                 <div className="space-y-3" aria-hidden>
@@ -229,8 +308,7 @@ export default function SchedulePage() {
                                         shifts={sec.items}
                                         chipLabel={memberShort}
                                         canManage
-                                        onDayClick={(date) => setEditing({ shift: null, date, locationId: sec.id })}
-                                        onShiftClick={(s) => setEditing({ shift: s, date: s.starts_at.slice(0, 10), locationId: s.location_id })}
+                                        onDayClick={(date) => openDay(date, sec.id, sec.items)}
                                     />
                                 )}
                             </section>
@@ -254,34 +332,14 @@ export default function SchedulePage() {
             <AnimatePresence>
                 {editing && canManage && (
                     <ScheduledShiftEditor
-                        members={membersQ.data ?? []}
+                        members={plannableMembers}
                         locations={locations}
-                        shift={editing.shift}
+                        existing={editing.existing}
+                        busy={editing.busy}
                         defaultDate={editing.date}
                         defaultLocationId={editing.locationId}
                         onClose={() => setEditing(null)}
-                        onSubmit={async (values) => {
-                            if (editing.shift) await updateM.mutateAsync({ id: editing.shift.id, v: values });
-                            else await createM.mutateAsync(values);
-                        }}
-                        onDelete={
-                            editing.shift
-                                ? () => {
-                                      setDeleting(editing.shift);
-                                      setEditing(null);
-                                  }
-                                : undefined
-                        }
-                    />
-                )}
-                {deleting && (
-                    <ConfirmDialog
-                        title={t('schedule.deleteTitle')}
-                        message={t('schedule.deleteConfirm')}
-                        onClose={() => setDeleting(null)}
-                        onConfirm={async () => {
-                            await deleteM.mutateAsync(deleting.id);
-                        }}
+                        onSubmit={(values) => applyDayM.mutateAsync(values)}
                     />
                 )}
             </AnimatePresence>

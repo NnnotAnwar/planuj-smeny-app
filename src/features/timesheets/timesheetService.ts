@@ -20,7 +20,7 @@ import { z } from 'zod';
  */
 
 const MEMBER_SELECT =
-    'id, username, first_name, last_name, email, role(name, is_admin, rank), organization_id, username_changed_at';
+    'id, username, first_name, last_name, email, role(name, is_admin, rank), organization_id, username_changed_at, manager_id';
 
 export interface ShiftInput {
     user_id: string;

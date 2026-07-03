@@ -120,7 +120,9 @@ function buildPdf(ctx: ScheduleExportContext): jsPDF {
                 week.map((day) => {
                     if (day.getMonth() !== month - 1) return '';
                     const items = byDay.get(dayKey(day)) ?? [];
-                    const lines = items.map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)} ${section.label(s)}`);
+                    const lines = items.map((s) =>
+                        s.all_day ? section.label(s) : `${formatTime(s.starts_at)}–${formatTime(s.ends_at)} ${section.label(s)}`,
+                    );
                     return [String(day.getDate()), ...lines].join('\n');
                 }),
             ),
@@ -169,8 +171,8 @@ async function buildExcel(ctx: ScheduleExportContext) {
                     `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`,
                     weekdayShortLabels()[(d.getDay() + 6) % 7],
                     section.label(s),
-                    formatTime(s.starts_at),
-                    formatTime(s.ends_at),
+                    s.all_day ? '—' : formatTime(s.starts_at),
+                    s.all_day ? '—' : formatTime(s.ends_at),
                     s.note ?? '',
                 ];
             }),
