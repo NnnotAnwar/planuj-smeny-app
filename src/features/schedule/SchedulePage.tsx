@@ -7,7 +7,7 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
-import { Select } from '@shared/components/Select';
+import { SearchInput } from '@shared/components/SearchInput';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { Skeleton } from '@shared/components/Skeleton';
 import { timesheetService } from '@features/timesheets/timesheetService';
@@ -17,6 +17,7 @@ import { scheduleService } from './scheduleService';
 import { ScheduledShiftEditor, type DayEditorResult } from './components/ScheduledShiftEditor';
 import { MonthCalendar } from './components/MonthCalendar';
 import { RosterGrid, type RosterRow } from './components/RosterGrid';
+import { MemberSearchAdd } from './components/MemberSearchAdd';
 import { MyTeam } from './components/MyTeam';
 import { toast } from '@shared/toast/toastStore';
 import { exportSchedule, type ScheduleExportSection } from './exportSchedule';
@@ -47,6 +48,8 @@ export default function SchedulePage() {
     const [activeTab, setActiveTab] = useState<'mine' | 'team'>(canManage ? 'team' : 'mine');
     // Filter the location calendars down to just the caller's team.
     const [teamOnly, setTeamOnly] = useState(false);
+    // Free-text person filter (narrows grid rows and calendar chips).
+    const [personQuery, setPersonQuery] = useState('');
     // Calendar (day-first) vs roster grid (people × days), persisted per device.
     const [viewMode, setViewMode] = useState<'calendar' | 'grid'>(
         () => (localStorage.getItem('schedule-view') === 'grid' ? 'grid' : 'calendar'),
@@ -147,14 +150,23 @@ export default function SchedulePage() {
     const shifts = useMemo(() => scheduleQ.data ?? [], [scheduleQ.data]);
     const teamView = canManage && activeTab === 'team';
 
-    // "My team only": narrow the calendars to the caller's own people (+ self),
-    // so a manager sees at a glance where their members were sent.
+    // "My team only" + free-text person filter narrow what the calendars show.
     const visibleShifts = useMemo(() => {
-        if (!teamOnly) return shifts;
-        const mine = new Set((membersQ.data ?? []).filter((m) => m.manager_id === user?.id).map((m) => m.id));
-        if (user) mine.add(user.id);
-        return shifts.filter((s) => mine.has(s.user_id));
-    }, [shifts, teamOnly, membersQ.data, user]);
+        let list = shifts;
+        if (teamOnly) {
+            const mine = new Set((membersQ.data ?? []).filter((m) => m.manager_id === user?.id).map((m) => m.id));
+            if (user) mine.add(user.id);
+            list = list.filter((s) => mine.has(s.user_id));
+        }
+        const q = personQuery.trim().toLowerCase();
+        if (q) {
+            list = list.filter((s) => {
+                const full = `${s.profiles?.first_name ?? ''} ${s.profiles?.last_name ?? ''} ${s.profiles?.username ?? ''}`.toLowerCase();
+                return full.includes(q);
+            });
+        }
+        return list;
+    }, [shifts, teamOnly, personQuery, membersQ.data, user]);
 
     // Team view: one calendar section per active location (keep archived ones
     // that still hold shifts this month), plus a "no location" bucket.
@@ -236,7 +248,9 @@ export default function SchedulePage() {
                 rows.push({ id: s.user_id, name: memberFull(s), editable: plannableIds.has(s.user_id), removable: false });
             }
         }
-        return rows.sort((a, b) => a.name.localeCompare(b.name));
+        const q = personQuery.trim().toLowerCase();
+        const filtered = q ? rows.filter((r) => r.name.toLowerCase().includes(q)) : rows;
+        return filtered.sort((a, b) => a.name.localeCompare(b.name));
     };
 
     /** Tap a roster cell: toggle an all-day assignment for that member+day at
@@ -264,6 +278,39 @@ export default function SchedulePage() {
                 [{ user_id: memberId, starts_at: start.toISOString(), ends_at: end.toISOString(), all_day: true }],
                 { location_id: locId, note: null },
             ),
+        );
+    };
+
+    /** Restaurant-style month fill: weeks alternate SHORT (Wed+Thu) and LONG
+     *  (Mon, Tue, Fri–Sun). Fills every matching, still-free day of the month
+     *  as an all-day assignment; occupied/busy days are skipped silently. */
+    const quickFill = (locId: string | null) => (memberId: string, firstWeek: 'short' | 'long') => {
+        const [y, m] = selectedMonth.split('-').map(Number);
+        const daysInMonth = new Date(y, m, 0).getDate();
+        const offset = (new Date(y, m - 1, 1).getDay() + 6) % 7; // Mon-first offset of day 1
+        const rows: Array<{ user_id: string; starts_at: string; ends_at: string; all_day: boolean }> = [];
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dow = (new Date(y, m - 1, day).getDay() + 6) % 7; // 0 = Monday
+            const weekIndex = Math.floor((day - 1 + offset) / 7);
+            const isShortWeek = firstWeek === 'short' ? weekIndex % 2 === 0 : weekIndex % 2 === 1;
+            const included = isShortWeek ? dow === 2 || dow === 3 : dow !== 2 && dow !== 3;
+            if (!included) continue;
+            const dateKey = `${selectedMonth}-${pad(day)}`;
+            const taken = shifts.some((s) => s.user_id === memberId && sameLocalDay(s.starts_at, dateKey));
+            if (taken) continue;
+            rows.push({
+                user_id: memberId,
+                starts_at: new Date(y, m - 1, day).toISOString(),
+                ends_at: new Date(y, m - 1, day + 1).toISOString(),
+                all_day: true,
+            });
+        }
+        if (rows.length === 0) {
+            toast(t('schedule.nothingToFill'), 'info');
+            return;
+        }
+        quickM.mutate(() =>
+            scheduleService.createMany(user.organization_id, user.id, rows, { location_id: locId, note: null }),
         );
     };
 
@@ -379,6 +426,14 @@ export default function SchedulePage() {
                             </button>
                         )}
                         {teamView && (
+                            <SearchInput
+                                value={personQuery}
+                                onChange={setPersonQuery}
+                                placeholder={t('schedule.findPerson')}
+                                className="w-44"
+                            />
+                        )}
+                        {teamView && (
                             <div className="inline-flex rounded-2xl bg-gray-100 dark:bg-gray-800/40 p-1 shadow-sm">
                                 {([
                                     { mode: 'calendar' as const, Icon: CalendarBlankIcon, label: t('schedule.viewCalendar') },
@@ -470,6 +525,7 @@ export default function SchedulePage() {
                                                             shifts={sec.items}
                                                             canManage
                                                             onCellTap={(memberId, date) => cellTap(sec.id)(memberId, date)}
+                                                            onQuickFill={quickFill(sec.id)}
                                                             onRemoveRow={
                                                                 sec.id
                                                                     ? (memberId) => rosterRemoveM.mutate({ locationId: sec.id!, userId: memberId })
@@ -479,22 +535,11 @@ export default function SchedulePage() {
                                                     )}
                                                     {sec.id && addable.length > 0 && (
                                                         <div className="flex items-center gap-2 px-4 py-2.5 border-t border-gray-50 dark:border-gray-800/60">
-                                                            <div className="flex-1 min-w-0 max-w-64">
-                                                                <Select
-                                                                    size="sm"
-                                                                    value=""
-                                                                    onChange={(e) => {
-                                                                        if (e.target.value) rosterAddM.mutate({ locationId: sec.id!, userId: e.target.value });
-                                                                    }}
-                                                                >
-                                                                    <option value="">{t('schedule.addToLocation')}</option>
-                                                                    {addable.map((m) => (
-                                                                        <option key={m.id} value={m.id}>
-                                                                            {[m.first_name, m.last_name].filter(Boolean).join(' ') || m.username}
-                                                                        </option>
-                                                                    ))}
-                                                                </Select>
-                                                            </div>
+                                                            <MemberSearchAdd
+                                                                candidates={addable}
+                                                                placeholder={t('schedule.addToLocation')}
+                                                                onAdd={(userId) => rosterAddM.mutate({ locationId: sec.id!, userId })}
+                                                            />
                                                         </div>
                                                     )}
                                                 </>

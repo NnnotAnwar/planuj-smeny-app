@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
-import { XIcon } from '@phosphor-icons/react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { XIcon, LightningIcon } from '@phosphor-icons/react';
 import type { ScheduledShift } from '@shared/types';
 import { weekdayShortLabels, formatTime } from '@shared/utils/date';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * --- ROSTER GRID (the "spreadsheet" view) ---
@@ -40,10 +42,26 @@ interface RosterGridProps {
     shifts: ScheduledShift[];
     canManage: boolean;
     onCellTap?: (memberId: string, date: string) => void;
+    /** Restaurant quick-fill: alternate short (Wed+Thu) / long weeks. */
+    onQuickFill?: (memberId: string, firstWeek: 'short' | 'long') => void;
     onRemoveRow?: (memberId: string) => void;
 }
 
-export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onRemoveRow }: RosterGridProps) {
+export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQuickFill, onRemoveRow }: RosterGridProps) {
+    const t = useTranslation();
+    // Which member's quick-fill menu is open, and where (fixed coords so the
+    // sticky/overflow table can't clip it).
+    const [fillMenu, setFillMenu] = useState<{ id: string; left: number; top: number } | null>(null);
+    useEffect(() => {
+        if (!fillMenu) return;
+        const close = () => setFillMenu(null);
+        window.addEventListener('scroll', close, true);
+        window.addEventListener('resize', close);
+        return () => {
+            window.removeEventListener('scroll', close, true);
+            window.removeEventListener('resize', close);
+        };
+    }, [fillMenu]);
     const [year, month] = monthKey.split('-').map(Number);
     const daysInMonth = new Date(year, month, 0).getDate();
     const todayKey = isoDate(new Date());
@@ -110,7 +128,22 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onRem
                                                 <span className={`truncate text-small-strong ${row.editable ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
                                                     {row.name}
                                                 </span>
-                                                {/* Removing from the roster only makes sense once per member — first band only. */}
+                                                {/* Row actions live on the first band only. */}
+                                                {bi === 0 && canManage && row.editable && onQuickFill && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                                            setFillMenu((prev) =>
+                                                                prev?.id === row.id ? null : { id: row.id, left: r.left, top: r.bottom + 4 },
+                                                            );
+                                                        }}
+                                                        title={t('schedule.quickFill')}
+                                                        aria-label={t('schedule.quickFill')}
+                                                        className="p-0.5 rounded text-gray-300 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                                                    >
+                                                        <LightningIcon weight="fill" className="w-3 h-3" />
+                                                    </button>
+                                                )}
                                                 {bi === 0 && canManage && row.removable && onRemoveRow && (
                                                     <button
                                                         onClick={() => onRemoveRow(row.id)}
@@ -163,6 +196,38 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onRem
                     </table>
                 </div>
             ))}
+
+            {/* Quick-fill menu (fixed portal — the scrolling table can't clip it). */}
+            {fillMenu &&
+                onQuickFill &&
+                createPortal(
+                    <>
+                        <div className="fixed inset-0 z-90" onClick={() => setFillMenu(null)} />
+                        <div
+                            style={{ position: 'fixed', left: fillMenu.left, top: fillMenu.top }}
+                            className="z-100 w-64 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl py-1"
+                        >
+                            {([
+                                { key: 'short' as const, label: t('schedule.shortWeekFirst') },
+                                { key: 'long' as const, label: t('schedule.longWeekFirst') },
+                            ]).map(({ key, label }) => (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    onClick={() => {
+                                        onQuickFill(fillMenu.id, key);
+                                        setFillMenu(null);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
+                                >
+                                    <LightningIcon weight="fill" className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    </>,
+                    document.body,
+                )}
         </div>
     );
 }
