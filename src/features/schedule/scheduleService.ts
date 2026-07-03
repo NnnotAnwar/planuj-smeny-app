@@ -86,4 +86,11 @@ export const scheduleService = {
         const { error } = await supabase.from('scheduled_shifts').delete().in('id', ids);
         if (error) throw new Error(error.message);
     },
+
+    /** Take a free member into (or release one from) the caller's team.
+     *  Authorization lives in the claim_member RPC (rank/org/ownership checks). */
+    async claimMember(memberId: string, claim: boolean): Promise<void> {
+        const { error } = await supabase.rpc('claim_member', { p_member: memberId, p_claim: claim });
+        if (error) throw new Error(error.message);
+    },
 };

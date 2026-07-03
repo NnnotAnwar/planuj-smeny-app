@@ -15,6 +15,7 @@ import type { ScheduledShift } from '@shared/types';
 import { scheduleService } from './scheduleService';
 import { ScheduledShiftEditor, type DayEditorResult } from './components/ScheduledShiftEditor';
 import { MonthCalendar } from './components/MonthCalendar';
+import { MyTeam } from './components/MyTeam';
 import { exportSchedule, type ScheduleExportSection } from './exportSchedule';
 
 /**
@@ -41,6 +42,8 @@ export default function SchedulePage() {
 
     const [selectedMonth, setSelectedMonth] = useState(() => monthKeyOf(new Date()));
     const [activeTab, setActiveTab] = useState<'mine' | 'team'>(canManage ? 'team' : 'mine');
+    // Filter the location calendars down to just the caller's team.
+    const [teamOnly, setTeamOnly] = useState(false);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
     const [exportOpen, setExportOpen] = useState(false);
     const [editing, setEditing] = useState<{
@@ -107,23 +110,32 @@ export default function SchedulePage() {
     const shifts = useMemo(() => scheduleQ.data ?? [], [scheduleQ.data]);
     const teamView = canManage && activeTab === 'team';
 
+    // "My team only": narrow the calendars to the caller's own people (+ self),
+    // so a manager sees at a glance where their members were sent.
+    const visibleShifts = useMemo(() => {
+        if (!teamOnly) return shifts;
+        const mine = new Set((membersQ.data ?? []).filter((m) => m.manager_id === user?.id).map((m) => m.id));
+        if (user) mine.add(user.id);
+        return shifts.filter((s) => mine.has(s.user_id));
+    }, [shifts, teamOnly, membersQ.data, user]);
+
     // Team view: one calendar section per active location (keep archived ones
     // that still hold shifts this month), plus a "no location" bucket.
     const sections = useMemo(() => {
         if (!teamView) return [];
-        const withShifts = new Set(shifts.map((s) => s.location_id));
+        const withShifts = new Set(visibleShifts.map((s) => s.location_id));
         const visible = locations
             .filter((l) => !l.archived_at || withShifts.has(l.id))
             .sort((a, b) => a.name.localeCompare(b.name));
         const list = visible.map((l) => ({
             id: l.id as string | null,
             name: l.name,
-            items: shifts.filter((s) => s.location_id === l.id),
+            items: visibleShifts.filter((s) => s.location_id === l.id),
         }));
-        const unassigned = shifts.filter((s) => !s.location_id);
+        const unassigned = visibleShifts.filter((s) => !s.location_id);
         if (unassigned.length > 0) list.push({ id: null, name: t('schedule.noLocation'), items: unassigned });
         return list;
-    }, [teamView, locations, shifts, t]);
+    }, [teamView, locations, visibleShifts, t]);
 
     if (!user) return null;
 
@@ -241,21 +253,37 @@ export default function SchedulePage() {
             {/* Tabs (managers) + quick add */}
             {canManage && (
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="inline-flex rounded-2xl bg-gray-100 dark:bg-gray-800/40 p-1 shadow-sm">
-                        {(['team', 'mine'] as const).map((tab) => (
+                    <div className="flex items-center gap-2">
+                        <div className="inline-flex rounded-2xl bg-gray-100 dark:bg-gray-800/40 p-1 shadow-sm">
+                            {(['team', 'mine'] as const).map((tab) => (
+                                <button
+                                    key={tab}
+                                    type="button"
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`rounded-xl px-3 py-1.5 text-small-strong transition-colors ${
+                                        activeTab === tab
+                                            ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
+                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                    }`}
+                                >
+                                    {tab === 'team' ? t('schedule.tabTeam') : t('schedule.tabMine')}
+                                </button>
+                            ))}
+                        </div>
+                        {teamView && (
                             <button
-                                key={tab}
                                 type="button"
-                                onClick={() => setActiveTab(tab)}
-                                className={`rounded-xl px-3 py-1.5 text-small-strong transition-colors ${
-                                    activeTab === tab
-                                        ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
-                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                onClick={() => setTeamOnly((v) => !v)}
+                                aria-pressed={teamOnly}
+                                className={`rounded-2xl px-3 py-2 text-small-strong border transition-colors ${
+                                    teamOnly
+                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                                        : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                                 }`}
                             >
-                                {tab === 'team' ? t('schedule.tabTeam') : t('schedule.tabMine')}
+                                {t('schedule.teamOnly')}
                             </button>
-                        ))}
+                        )}
                     </div>
                     {teamView && (
                         <Button
@@ -267,6 +295,11 @@ export default function SchedulePage() {
                         </Button>
                     )}
                 </div>
+            )}
+
+            {/* MY TEAM — self-service: take free members / release your own. */}
+            {teamView && user && (
+                <MyTeam members={membersQ.data ?? []} userId={user.id} userRank={user.role.rank ?? 0} />
             )}
 
             {scheduleQ.isLoading ? (
