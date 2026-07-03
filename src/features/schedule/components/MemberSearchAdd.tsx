@@ -33,7 +33,9 @@ export function MemberSearchAdd({
     // With a small team the list can show on focus alone; big teams type first.
     const open = focused && matches.length > 0 && (needle.length > 0 || candidates.length <= 8);
 
-    // Anchor the portal list to the input; close on scroll/resize (cheap + safe).
+    // Anchor the portal list to the input. Re-measure whenever the candidate
+    // set changes too — picking someone grows the grid above and moves the
+    // input down, and the list must follow it. Scroll/resize just closes.
     useLayoutEffect(() => {
         if (!open) return;
         const place = () => {
@@ -41,14 +43,17 @@ export function MemberSearchAdd({
             if (r) setPos({ left: r.left, top: r.bottom + 4, width: r.width });
         };
         place();
+        // The layout may settle a frame later (query refetch re-render).
+        const raf = requestAnimationFrame(place);
         const close = () => setFocused(false);
         window.addEventListener('scroll', close, true);
         window.addEventListener('resize', close);
         return () => {
+            cancelAnimationFrame(raf);
             window.removeEventListener('scroll', close, true);
             window.removeEventListener('resize', close);
         };
-    }, [open]);
+    }, [open, candidates]);
 
     return (
         // React's onFocus/onBlur bubble (focusin/focusout), so the wrapper

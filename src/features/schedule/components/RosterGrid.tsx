@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { XIcon, LightningIcon } from '@phosphor-icons/react';
+import { XIcon, LightningIcon, EraserIcon } from '@phosphor-icons/react';
 import type { ScheduledShift } from '@shared/types';
 import { weekdayShortLabels, formatTime } from '@shared/utils/date';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * --- ROSTER GRID (the "spreadsheet" view) ---
- * One location's month as managers know it from Excel: a row per person, a
- * column per day, split into two 15-day bands (1–15 / 16–end) like the paper
- * rota. All-day assignments render as a ✓, timed ones as a compact start/end;
- * weekends and today are tinted. Managers tap a cell to toggle an all-day
- * assignment and can remove a member from the location's roster via the × next
- * to their name (rows with shifts this month stay visible regardless).
+ * One location's month: a row per person, a column per day, split into two
+ * bands (1–15 / 16–end) like the paper rota. Columns are FIXED-width so both
+ * bands line up perfectly (auto layout used to stretch 15 vs 16 columns
+ * differently). Both bands share one horizontal scroll container; the name
+ * column is sticky. Weekends and today are tinted, rows are zebra-striped.
+ *
+ * Row actions (hover / always visible on touch): the lightning menu fills the
+ * month with the restaurant short/long-week pattern (replacing the previous
+ * pattern) or clears the member's month here; the × removes the member from
+ * this location entirely.
  */
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -26,6 +30,8 @@ export interface RosterRow {
     /** Whether the person can be removed from this location's roster. */
     removable: boolean;
 }
+
+export type QuickFillAction = 'short' | 'long' | 'clear';
 
 interface DayCol {
     num: number;
@@ -42,16 +48,28 @@ interface RosterGridProps {
     shifts: ScheduledShift[];
     canManage: boolean;
     onCellTap?: (memberId: string, date: string) => void;
-    /** Restaurant quick-fill: alternate short (Wed+Thu) / long weeks. */
-    onQuickFill?: (memberId: string, firstWeek: 'short' | 'long') => void;
+    /** Restaurant quick-fill / clear for one member's month at this location. */
+    onQuickFill?: (memberId: string, action: QuickFillAction) => void;
     onRemoveRow?: (memberId: string) => void;
+}
+
+/** Mini week visual for the fill menu: 7 boxes, pattern days filled. */
+function WeekPreview({ days, tone }: { days: number[]; tone: 'sky' | 'emerald' }) {
+    const on = new Set(days);
+    const fill = tone === 'sky' ? 'bg-sky-500' : 'bg-emerald-500';
+    return (
+        <span className="flex gap-0.5 shrink-0">
+            {Array.from({ length: 7 }, (_, i) => (
+                <span key={i} className={`w-2 h-3 rounded-xs ${on.has(i) ? fill : 'bg-gray-200 dark:bg-gray-600'}`} />
+            ))}
+        </span>
+    );
 }
 
 export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQuickFill, onRemoveRow }: RosterGridProps) {
     const t = useTranslation();
-    // Which member's quick-fill menu is open, and where (fixed coords so the
-    // sticky/overflow table can't clip it).
-    const [fillMenu, setFillMenu] = useState<{ id: string; left: number; top: number } | null>(null);
+    const [fillMenu, setFillMenu] = useState<{ id: string; name: string; left: number; top: number } | null>(null);
+
     useEffect(() => {
         if (!fillMenu) return;
         const close = () => setFillMenu(null);
@@ -62,6 +80,7 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQui
             window.removeEventListener('resize', close);
         };
     }, [fillMenu]);
+
     const [year, month] = monthKey.split('-').map(Number);
     const daysInMonth = new Date(year, month, 0).getDate();
     const todayKey = isoDate(new Date());
@@ -89,113 +108,121 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQui
         return map;
     }, [shifts]);
 
+    const NAME_W = 'w-32 min-w-32 max-w-32 sm:w-40 sm:min-w-40 sm:max-w-40';
+    const DAY_W = 'w-9 min-w-9 max-w-9';
+
     return (
-        <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {bands.map((days, bi) => (
-                <div key={bi} className="overflow-x-auto emerald-scrollbar">
-                    <table className="border-collapse text-center w-full">
-                        <thead>
-                            <tr>
-                                <th className="sticky left-0 z-10 bg-white dark:bg-gray-900 border-b border-r border-gray-100 dark:border-gray-800 px-3 py-1.5 text-left text-micro text-gray-400 min-w-32 w-32" />
-                                {days.map((d) => (
-                                    <th
-                                        key={d.key}
-                                        className={`border-b border-gray-100 dark:border-gray-800 px-0.5 pt-1.5 pb-1 min-w-8 ${
-                                            d.weekend ? 'bg-amber-50/70 dark:bg-amber-900/10' : ''
-                                        }`}
-                                    >
-                                        <span className="block text-[9px] uppercase tracking-wide text-gray-400 leading-none">{d.label}</span>
-                                        <span
-                                            className={`mt-0.5 inline-flex items-center justify-center text-[11px] tabular-nums font-semibold leading-none ${
-                                                d.key === todayKey
-                                                    ? 'w-4.5 h-4.5 rounded-full bg-emerald-600 text-white'
-                                                    : 'text-gray-600 dark:text-gray-300'
+        <div>
+            {/* One scroll container for both bands, so their columns stay aligned. */}
+            <div className="overflow-x-auto emerald-scrollbar">
+                <div className="min-w-max">
+                    {bands.map((days, bi) => (
+                        <table key={bi} className={`border-collapse text-center table-fixed ${bi > 0 ? 'border-t-4 border-gray-100 dark:border-gray-800' : ''}`}>
+                            <thead>
+                                <tr className="bg-gray-50/80 dark:bg-gray-800/40">
+                                    <th className={`sticky left-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-r border-gray-100 dark:border-gray-700 px-3 py-1 text-left ${NAME_W}`} />
+                                    {days.map((d) => (
+                                        <th
+                                            key={d.key}
+                                            className={`border-b border-l border-gray-100 dark:border-gray-800 px-0 pt-1.5 pb-1 ${DAY_W} ${
+                                                d.weekend ? 'bg-amber-100/60 dark:bg-amber-900/15' : ''
                                             }`}
                                         >
-                                            {d.num}
-                                        </span>
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {rows.map((row) => {
-                                const memberDays = cellMap.get(row.id);
-                                return (
-                                    <tr key={row.id} className="group">
-                                        <td className="sticky left-0 z-10 bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/60 border-b border-r border-gray-50 dark:border-gray-800/60 px-3 py-1.5 text-left whitespace-nowrap">
-                                            <span className="flex items-center gap-1.5">
-                                                <span className={`truncate text-small-strong ${row.editable ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
-                                                    {row.name}
-                                                </span>
-                                                {/* Row actions live on the first band only. */}
-                                                {bi === 0 && canManage && row.editable && onQuickFill && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                                            setFillMenu((prev) =>
-                                                                prev?.id === row.id ? null : { id: row.id, left: r.left, top: r.bottom + 4 },
-                                                            );
-                                                        }}
-                                                        title={t('schedule.quickFill')}
-                                                        aria-label={t('schedule.quickFill')}
-                                                        className="p-0.5 rounded text-gray-300 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors opacity-0 group-hover:opacity-100"
-                                                    >
-                                                        <LightningIcon weight="fill" className="w-3 h-3" />
-                                                    </button>
-                                                )}
-                                                {bi === 0 && canManage && row.removable && onRemoveRow && (
-                                                    <button
-                                                        onClick={() => onRemoveRow(row.id)}
-                                                        title="×"
-                                                        aria-label={`× ${row.name}`}
-                                                        className="p-0.5 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
-                                                    >
-                                                        <XIcon weight="bold" className="w-3 h-3" />
-                                                    </button>
-                                                )}
+                                            <span className="block text-[9px] uppercase tracking-wide text-gray-400 leading-none">{d.label}</span>
+                                            <span
+                                                className={`mt-0.5 inline-flex items-center justify-center text-[11px] tabular-nums font-bold leading-none ${
+                                                    d.key === todayKey
+                                                        ? 'w-4.5 h-4.5 rounded-full bg-emerald-600 text-white'
+                                                        : 'text-gray-600 dark:text-gray-300'
+                                                }`}
+                                            >
+                                                {d.num}
                                             </span>
-                                        </td>
-                                        {days.map((d) => {
-                                            const items = memberDays?.get(d.key) ?? [];
-                                            const has = items.length > 0;
-                                            const allDay = has && items.every((s) => s.all_day);
-                                            const tappable = canManage && row.editable && !!onCellTap;
-                                            return (
-                                                <td
-                                                    key={d.key}
-                                                    onClick={tappable ? () => onCellTap!(row.id, d.key) : undefined}
-                                                    title={
-                                                        has && !allDay
-                                                            ? items.map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`).join(', ')
-                                                            : undefined
-                                                    }
-                                                    className={`border-b border-gray-50 dark:border-gray-800/60 h-8 px-0.5 align-middle select-none ${
-                                                        d.weekend ? 'bg-amber-50/70 dark:bg-amber-900/10' : ''
-                                                    } ${tappable ? 'cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/15 transition-colors' : ''}`}
-                                                >
-                                                    {has &&
-                                                        (allDay ? (
-                                                            <span className="inline-block w-5 h-5 rounded-md bg-emerald-500 text-white text-[11px] font-black leading-5">
-                                                                ✓
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-1 py-0.5 leading-tight tabular-nums">
-                                                                {formatTime(items[0].starts_at)}
-                                                                <br />
-                                                                {formatTime(items[0].ends_at)}
-                                                            </span>
-                                                        ))}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.map((row, ri) => {
+                                    const memberDays = cellMap.get(row.id);
+                                    const zebra = ri % 2 === 1 ? 'bg-gray-50/60 dark:bg-gray-800/20' : '';
+                                    return (
+                                        <tr key={row.id} className="group">
+                                            <td className={`sticky left-0 z-10 bg-white dark:bg-gray-900 border-b border-r border-gray-100 dark:border-gray-700 px-3 h-9 text-left ${NAME_W}`}>
+                                                <span className="flex items-center gap-1">
+                                                    <span className={`truncate text-[12px] font-semibold ${row.editable ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+                                                        {row.name}
+                                                    </span>
+                                                    {/* Row actions once, on the first band. Always visible on
+                                                        touch (no hover there); revealed on hover for mouse. */}
+                                                    {bi === 0 && canManage && row.editable && onQuickFill && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                                                setFillMenu((prev) =>
+                                                                    prev?.id === row.id ? null : { id: row.id, name: row.name, left: r.left, top: r.bottom + 4 },
+                                                                );
+                                                            }}
+                                                            title={t('schedule.quickFill')}
+                                                            aria-label={t('schedule.quickFill')}
+                                                            className="ml-auto p-1 rounded text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors sm:opacity-0 sm:group-hover:opacity-100"
+                                                        >
+                                                            <LightningIcon weight="fill" className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                    {bi === 0 && canManage && row.removable && onRemoveRow && (
+                                                        <button
+                                                            onClick={() => onRemoveRow(row.id)}
+                                                            title={t('schedule.removeTitle')}
+                                                            aria-label={`${t('schedule.removeTitle')}: ${row.name}`}
+                                                            className={`${onQuickFill && row.editable ? '' : 'ml-auto '}p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors sm:opacity-0 sm:group-hover:opacity-100`}
+                                                        >
+                                                            <XIcon weight="bold" className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                </span>
+                                            </td>
+                                            {days.map((d) => {
+                                                const items = memberDays?.get(d.key) ?? [];
+                                                const has = items.length > 0;
+                                                const allDay = has && items.every((s) => s.all_day);
+                                                const tappable = canManage && row.editable && !!onCellTap;
+                                                return (
+                                                    <td
+                                                        key={d.key}
+                                                        onClick={tappable ? () => onCellTap!(row.id, d.key) : undefined}
+                                                        title={
+                                                            has && !allDay
+                                                                ? items.map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`).join(', ')
+                                                                : undefined
+                                                        }
+                                                        className={`border-b border-l border-gray-100 dark:border-gray-800 h-9 px-0 align-middle select-none ${DAY_W} ${zebra} ${
+                                                            d.weekend ? 'bg-amber-100/60 dark:bg-amber-900/15' : ''
+                                                        } ${tappable ? 'cursor-pointer hover:bg-emerald-100/70 dark:hover:bg-emerald-900/25 transition-colors' : ''}`}
+                                                    >
+                                                        {has &&
+                                                            (allDay ? (
+                                                                <span className="inline-block w-5.5 h-5.5 rounded-lg bg-emerald-500 text-white text-[11px] font-black leading-5.5 shadow-sm shadow-emerald-500/30">
+                                                                    ✓
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-0.5 py-0.5 leading-[1.15] tabular-nums">
+                                                                    {formatTime(items[0].starts_at)}
+                                                                    <br />
+                                                                    {formatTime(items[0].ends_at)}
+                                                                </span>
+                                                            ))}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    ))}
                 </div>
-            ))}
+            </div>
 
             {/* Quick-fill menu (fixed portal — the scrolling table can't clip it). */}
             {fillMenu &&
@@ -205,25 +232,44 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQui
                         <div className="fixed inset-0 z-90" onClick={() => setFillMenu(null)} />
                         <div
                             style={{ position: 'fixed', left: fillMenu.left, top: fillMenu.top }}
-                            className="z-100 w-64 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl py-1"
+                            className="z-100 w-72 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl py-1"
                         >
-                            {([
-                                { key: 'short' as const, label: t('schedule.shortWeekFirst') },
-                                { key: 'long' as const, label: t('schedule.longWeekFirst') },
-                            ]).map(({ key, label }) => (
-                                <button
-                                    key={key}
-                                    type="button"
-                                    onClick={() => {
-                                        onQuickFill(fillMenu.id, key);
-                                        setFillMenu(null);
-                                    }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
-                                >
-                                    <LightningIcon weight="fill" className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                    {label}
-                                </button>
-                            ))}
+                            <p className="px-3 pt-1.5 pb-1 text-micro text-gray-400 truncate">{fillMenu.name}</p>
+                            {/* Choosing a pattern REPLACES the member's all-day fills here. */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onQuickFill(fillMenu.id, 'short');
+                                    setFillMenu(null);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-small text-gray-700 dark:text-gray-200 hover:bg-sky-50 dark:hover:bg-white/5 transition-colors"
+                            >
+                                <WeekPreview days={[2, 3]} tone="sky" />
+                                <span className="flex-1">{t('schedule.shortWeekFirst')}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onQuickFill(fillMenu.id, 'long');
+                                    setFillMenu(null);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
+                            >
+                                <WeekPreview days={[0, 1, 4, 5, 6]} tone="emerald" />
+                                <span className="flex-1">{t('schedule.longWeekFirst')}</span>
+                            </button>
+                            <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onQuickFill(fillMenu.id, 'clear');
+                                    setFillMenu(null);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-small text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/15 transition-colors"
+                            >
+                                <EraserIcon weight="bold" className="w-4 h-4 shrink-0" />
+                                {t('schedule.clearPerson')}
+                            </button>
                         </div>
                     </>,
                     document.body,

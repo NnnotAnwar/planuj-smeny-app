@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { PlusIcon, FilePdfIcon, FileXlsIcon, DownloadSimpleIcon, CaretDownIcon, MapPinIcon, CalendarBlankIcon, TableIcon } from '@phosphor-icons/react';
+import { PlusIcon, FilePdfIcon, FileXlsIcon, DownloadSimpleIcon, CaretDownIcon, MapPinIcon, CalendarBlankIcon, TableIcon, EraserIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -10,6 +10,7 @@ import { Button } from '@shared/components/Button';
 import { SearchInput } from '@shared/components/SearchInput';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { Skeleton } from '@shared/components/Skeleton';
+import { ConfirmDialog } from '@features/admin/components/Modal';
 import { timesheetService } from '@features/timesheets/timesheetService';
 import { formatTime } from '@shared/utils/date';
 import type { ScheduledShift } from '@shared/types';
@@ -66,6 +67,8 @@ export default function SchedulePage() {
         existing: ScheduledShift[];
         busy: Map<string, string>;
     } | null>(null);
+    // Destructive actions (remove member / clear location / clear month) confirm here.
+    const [confirming, setConfirming] = useState<{ title: string; message: string; run: () => Promise<void> } | null>(null);
 
     const monthStart = useMemo(() => {
         const [y, m] = selectedMonth.split('-').map(Number);
@@ -98,12 +101,6 @@ export default function SchedulePage() {
     const rosterAddM = useMutation({
         mutationFn: ({ locationId, userId }: { locationId: string; userId: string }) =>
             scheduleService.addToRoster(user!.organization_id, user!.id, locationId, userId),
-        onSuccess: () => qc.invalidateQueries({ queryKey: ['location-roster'] }),
-        onError: (err) => toast(err instanceof Error ? err.message : t('common.actionFailed'), 'error'),
-    });
-    const rosterRemoveM = useMutation({
-        mutationFn: ({ locationId, userId }: { locationId: string; userId: string }) =>
-            scheduleService.removeFromRoster(locationId, userId),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['location-roster'] }),
         onError: (err) => toast(err instanceof Error ? err.message : t('common.actionFailed'), 'error'),
     });
@@ -241,11 +238,12 @@ export default function SchedulePage() {
             id,
             name: nameOf(id),
             editable: plannableIds.has(id),
-            removable: true,
+            removable: plannableIds.has(id),
         }));
         for (const s of items) {
             if (!rows.some((r) => r.id === s.user_id)) {
-                rows.push({ id: s.user_id, name: memberFull(s), editable: plannableIds.has(s.user_id), removable: false });
+                // Present via shifts only — removing them deletes those shifts too.
+                rows.push({ id: s.user_id, name: memberFull(s), editable: plannableIds.has(s.user_id), removable: plannableIds.has(s.user_id) });
             }
         }
         const q = personQuery.trim().toLowerCase();
@@ -282,9 +280,34 @@ export default function SchedulePage() {
     };
 
     /** Restaurant-style month fill: weeks alternate SHORT (Wed+Thu) and LONG
-     *  (Mon, Tue, Fri–Sun). Fills every matching, still-free day of the month
-     *  as an all-day assignment; occupied/busy days are skipped silently. */
-    const quickFill = (locId: string | null) => (memberId: string, firstWeek: 'short' | 'long') => {
+     *  (Mon, Tue, Fri–Sun). Picking a pattern REPLACES the member's previous
+     *  all-day fills at this location (so short → long swaps cleanly instead
+     *  of stacking into a 30-day streak); 'clear' wipes their month here.
+     *  Timed shifts and days busy elsewhere are left alone / skipped. */
+    const quickFill = (locId: string | null) => (memberId: string, action: 'short' | 'long' | 'clear') => {
+        const mineHere = shifts.filter((s) => s.user_id === memberId && s.location_id === locId);
+
+        if (action === 'clear') {
+            if (mineHere.length === 0) {
+                toast(t('schedule.nothingToFill'), 'info');
+                return;
+            }
+            quickM.mutate(() => scheduleService.removeMany(mineHere.map((s) => s.id)));
+            return;
+        }
+
+        // Replace previous all-day fills; keep hand-set timed shifts.
+        const removeIds = mineHere.filter((s) => s.all_day).map((s) => s.id);
+        // Days that stay blocked: their timed shifts here + anything elsewhere.
+        const blocked = new Set(
+            shifts
+                .filter((s) => s.user_id === memberId && (s.location_id !== locId || !s.all_day))
+                .map((s) => {
+                    const d = new Date(s.starts_at);
+                    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+                }),
+        );
+
         const [y, m] = selectedMonth.split('-').map(Number);
         const daysInMonth = new Date(y, m, 0).getDate();
         const offset = (new Date(y, m - 1, 1).getDay() + 6) % 7; // Mon-first offset of day 1
@@ -292,12 +315,9 @@ export default function SchedulePage() {
         for (let day = 1; day <= daysInMonth; day++) {
             const dow = (new Date(y, m - 1, day).getDay() + 6) % 7; // 0 = Monday
             const weekIndex = Math.floor((day - 1 + offset) / 7);
-            const isShortWeek = firstWeek === 'short' ? weekIndex % 2 === 0 : weekIndex % 2 === 1;
+            const isShortWeek = action === 'short' ? weekIndex % 2 === 0 : weekIndex % 2 === 1;
             const included = isShortWeek ? dow === 2 || dow === 3 : dow !== 2 && dow !== 3;
-            if (!included) continue;
-            const dateKey = `${selectedMonth}-${pad(day)}`;
-            const taken = shifts.some((s) => s.user_id === memberId && sameLocalDay(s.starts_at, dateKey));
-            if (taken) continue;
+            if (!included || blocked.has(`${selectedMonth}-${pad(day)}`)) continue;
             rows.push({
                 user_id: memberId,
                 starts_at: new Date(y, m - 1, day).toISOString(),
@@ -305,13 +325,60 @@ export default function SchedulePage() {
                 all_day: true,
             });
         }
-        if (rows.length === 0) {
+        if (rows.length === 0 && removeIds.length === 0) {
             toast(t('schedule.nothingToFill'), 'info');
             return;
         }
-        quickM.mutate(() =>
-            scheduleService.createMany(user.organization_id, user.id, rows, { location_id: locId, note: null }),
-        );
+        quickM.mutate(async () => {
+            await scheduleService.removeMany(removeIds);
+            await scheduleService.createMany(user.organization_id, user.id, rows, { location_id: locId, note: null });
+        });
+    };
+
+    /** × on a roster row: confirm, then remove the member from this location —
+     *  their roster entry AND their planned shifts here this month. */
+    const removeMember = (locId: string | null, items: ScheduledShift[]) => (memberId: string) => {
+        const name = (membersQ.data ?? []).find((m) => m.id === memberId);
+        const display = name ? [name.first_name, name.last_name].filter(Boolean).join(' ') || name.username : '—';
+        const ids = items.filter((s) => s.user_id === memberId).map((s) => s.id);
+        setConfirming({
+            title: t('schedule.removeTitle'),
+            message: t('schedule.removeFromLocation', { name: display, month: periodLabel }),
+            run: async () => {
+                if (locId) await scheduleService.removeFromRoster(locId, memberId);
+                await scheduleService.removeMany(ids);
+                invalidate();
+                qc.invalidateQueries({ queryKey: ['location-roster'] });
+            },
+        });
+    };
+
+    /** Eraser on a section header: clear every (plannable) shift there this month. */
+    const clearLocation = (name: string, items: ScheduledShift[]) => {
+        const plannableIds = new Set(plannableMembers.map((m) => m.id));
+        const ids = items.filter((s) => plannableIds.has(s.user_id)).map((s) => s.id);
+        setConfirming({
+            title: t('schedule.clearLocation'),
+            message: t('schedule.confirmClearLocation', { name, month: periodLabel }),
+            run: async () => {
+                await scheduleService.removeMany(ids);
+                invalidate();
+            },
+        });
+    };
+
+    /** Clear the whole month across all locations (plannable members only). */
+    const clearAll = () => {
+        const plannableIds = new Set(plannableMembers.map((m) => m.id));
+        const ids = shifts.filter((s) => plannableIds.has(s.user_id)).map((s) => s.id);
+        setConfirming({
+            title: t('schedule.clearAll'),
+            message: t('schedule.confirmClearAll', { month: periodLabel }),
+            run: async () => {
+                await scheduleService.removeMany(ids);
+                invalidate();
+            },
+        });
     };
 
     const doExport = async (format: 'pdf' | 'excel') => {
@@ -394,7 +461,7 @@ export default function SchedulePage() {
             {/* Tabs (managers) + quick add */}
             {canManage && (
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
                         <div className="inline-flex rounded-2xl bg-gray-100 dark:bg-gray-800/40 p-1 shadow-sm">
                             {(['team', 'mine'] as const).map((tab) => (
                                 <button
@@ -430,7 +497,7 @@ export default function SchedulePage() {
                                 value={personQuery}
                                 onChange={setPersonQuery}
                                 placeholder={t('schedule.findPerson')}
-                                className="w-44"
+                                className="w-full sm:w-44 order-last sm:order-0"
                             />
                         )}
                         {teamView && (
@@ -459,13 +526,20 @@ export default function SchedulePage() {
                         )}
                     </div>
                     {teamView && (
-                        <Button
-                            size="sm"
-                            icon={PlusIcon}
-                            onClick={() => openDay(`${selectedMonth}-01`, sections[0]?.id ?? null, sections[0]?.items ?? [])}
-                        >
-                            {t('schedule.add')}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            {shifts.length > 0 && (
+                                <Button size="sm" variant="secondary" icon={EraserIcon} onClick={clearAll} className="text-red-600 dark:text-red-400">
+                                    {t('schedule.clearAll')}
+                                </Button>
+                            )}
+                            <Button
+                                size="sm"
+                                icon={PlusIcon}
+                                onClick={() => openDay(`${selectedMonth}-01`, sections[0]?.id ?? null, sections[0]?.items ?? [])}
+                            >
+                                {t('schedule.add')}
+                            </Button>
+                        </div>
                     )}
                 </div>
             )}
@@ -488,26 +562,39 @@ export default function SchedulePage() {
                         const isOpen = !collapsed.has(key);
                         return (
                             <section key={key} className={cardClass}>
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSection(key)}
-                                    aria-expanded={isOpen}
-                                    className="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                                >
-                                    <span className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                        <MapPinIcon weight="fill" className="w-4 h-4" />
-                                    </span>
-                                    <span className="flex-1 min-w-0">
-                                        <span className="block text-body-strong text-gray-900 dark:text-white truncate">{sec.name}</span>
-                                        <span className="block text-caption text-gray-400">
-                                            {sec.items.length} {t('schedule.shiftsCount')}
+                                <div className="flex items-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleSection(key)}
+                                        aria-expanded={isOpen}
+                                        className="flex-1 min-w-0 flex items-center gap-2.5 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                                    >
+                                        <span className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                            <MapPinIcon weight="fill" className="w-4 h-4" />
                                         </span>
-                                    </span>
-                                    <CaretDownIcon
-                                        weight="bold"
-                                        className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                                    />
-                                </button>
+                                        <span className="flex-1 min-w-0">
+                                            <span className="block text-body-strong text-gray-900 dark:text-white truncate">{sec.name}</span>
+                                            <span className="block text-caption text-gray-400">
+                                                {sec.items.length} {t('schedule.shiftsCount')}
+                                            </span>
+                                        </span>
+                                        <CaretDownIcon
+                                            weight="bold"
+                                            className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                                        />
+                                    </button>
+                                    {sec.items.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => clearLocation(sec.name, sec.items)}
+                                            title={t('schedule.clearLocation')}
+                                            aria-label={`${t('schedule.clearLocation')}: ${sec.name}`}
+                                            className="shrink-0 p-2 mr-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                        >
+                                            <EraserIcon weight="bold" className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
                                 {isOpen &&
                                     (viewMode === 'grid' ? (
                                         (() => {
@@ -526,11 +613,7 @@ export default function SchedulePage() {
                                                             canManage
                                                             onCellTap={(memberId, date) => cellTap(sec.id)(memberId, date)}
                                                             onQuickFill={quickFill(sec.id)}
-                                                            onRemoveRow={
-                                                                sec.id
-                                                                    ? (memberId) => rosterRemoveM.mutate({ locationId: sec.id!, userId: memberId })
-                                                                    : undefined
-                                                            }
+                                                            onRemoveRow={removeMember(sec.id, sec.items)}
                                                         />
                                                     )}
                                                     {sec.id && addable.length > 0 && (
@@ -583,6 +666,14 @@ export default function SchedulePage() {
                         defaultLocationId={editing.locationId}
                         onClose={() => setEditing(null)}
                         onSubmit={(values) => applyDayM.mutateAsync(values)}
+                    />
+                )}
+                {confirming && (
+                    <ConfirmDialog
+                        title={confirming.title}
+                        message={confirming.message}
+                        onClose={() => setConfirming(null)}
+                        onConfirm={confirming.run}
                     />
                 )}
             </AnimatePresence>
