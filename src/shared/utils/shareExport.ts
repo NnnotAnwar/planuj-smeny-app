@@ -19,8 +19,9 @@ function sanitize(stem: string): string {
     return stem.replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '') || 'export';
 }
 
-/** Write the generated file to the cache dir and open the share sheet. */
-async function shareNative(
+/** Write the generated file to the cache dir and open the share sheet.
+ *  Exported for other exporters (e.g. the schedule) to reuse. */
+export async function shareNative(
     format: ExportFormat,
     stem: string,
     title: string,

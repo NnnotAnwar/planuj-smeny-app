@@ -39,22 +39,28 @@ export function ScheduledShiftEditor({
     locations,
     shift,
     defaultDate,
+    defaultLocationId,
     onClose,
     onSubmit,
+    onDelete,
 }: {
     members: Profile[];
     locations: Location[];
     shift?: ScheduledShift | null;
     defaultDate: string; // YYYY-MM-DD
+    /** Preselected location (e.g. the calendar section the day was clicked in). */
+    defaultLocationId?: string | null;
     onClose: () => void;
     onSubmit: (values: ScheduledFormValues) => Promise<void>;
+    /** When editing: asks the parent to delete this shift (parent confirms). */
+    onDelete?: () => void;
 }) {
     const t = useTranslation();
     const isEdit = !!shift;
     const pickable = locations.filter((l) => !l.archived_at || l.id === shift?.location_id);
 
     const [userId, setUserId] = useState(shift?.user_id ?? members[0]?.id ?? '');
-    const [locationId, setLocationId] = useState(shift?.location_id ?? pickable[0]?.id ?? '');
+    const [locationId, setLocationId] = useState(shift?.location_id ?? defaultLocationId ?? pickable[0]?.id ?? '');
     const [date, setDate] = useState(shift ? isoToDate(shift.starts_at) : defaultDate);
     const [start, setStart] = useState(shift ? isoToTime(shift.starts_at) : '08:00');
     const [end, setEnd] = useState(shift ? isoToTime(shift.ends_at) : '16:00');
@@ -145,6 +151,11 @@ export function ScheduledShiftEditor({
                         {busy ? t('common.saving') : isEdit ? t('shiftEditor.saveChanges') : t('schedule.addTitle')}
                     </Button>
                 </div>
+                {isEdit && onDelete && (
+                    <Button variant="ghost" fullWidth disabled={busy} onClick={onDelete} className="text-red-600 dark:text-red-400">
+                        {t('schedule.deleteTitle')}
+                    </Button>
+                )}
             </div>
         </Modal>
     );
