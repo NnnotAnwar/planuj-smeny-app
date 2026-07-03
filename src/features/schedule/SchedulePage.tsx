@@ -7,6 +7,7 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
+import { Select } from '@shared/components/Select';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { Skeleton } from '@shared/components/Skeleton';
 import { timesheetService } from '@features/timesheets/timesheetService';
@@ -83,6 +84,25 @@ export default function SchedulePage() {
         queryKey: ['schedule-members'],
         queryFn: () => timesheetService.getMembers(),
         enabled: canManage,
+    });
+
+    // Who belongs to each location's rota (curated by managers).
+    const rosterQ = useQuery({
+        queryKey: ['location-roster'],
+        queryFn: () => scheduleService.getRoster(),
+        enabled: canManage,
+    });
+    const rosterAddM = useMutation({
+        mutationFn: ({ locationId, userId }: { locationId: string; userId: string }) =>
+            scheduleService.addToRoster(user!.organization_id, user!.id, locationId, userId),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['location-roster'] }),
+        onError: (err) => toast(err instanceof Error ? err.message : t('common.actionFailed'), 'error'),
+    });
+    const rosterRemoveM = useMutation({
+        mutationFn: ({ locationId, userId }: { locationId: string; userId: string }) =>
+            scheduleService.removeFromRoster(locationId, userId),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['location-roster'] }),
+        onError: (err) => toast(err instanceof Error ? err.message : t('common.actionFailed'), 'error'),
     });
 
     // Managers (rank 20) plan only for members assigned to them (+ themselves);
@@ -194,18 +214,26 @@ export default function SchedulePage() {
         setEditing({ date, locationId: locId, existing, busy });
     };
 
-    /** Roster-grid rows for a location: everyone the caller can plan (editable)
-     *  plus anyone else already scheduled there this month (read-only). */
-    const rowsFor = (items: ScheduledShift[]): RosterRow[] => {
+    /** Roster-grid rows for a location: its curated roster plus anyone already
+     *  scheduled there this month. Roster members are removable; people who
+     *  only appear via shifts are not (their assignments keep them visible). */
+    const rowsFor = (locId: string | null, items: ScheduledShift[]): RosterRow[] => {
         const plannableIds = new Set(plannableMembers.map((m) => m.id));
-        const rows: RosterRow[] = plannableMembers.map((m) => ({
-            id: m.id,
-            name: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.username,
-            editable: true,
+        const rosterIds = locId ? (rosterQ.data?.get(locId) ?? new Set<string>()) : new Set<string>();
+        const all = membersQ.data ?? [];
+        const nameOf = (id: string) => {
+            const m = all.find((x) => x.id === id);
+            return m ? [m.first_name, m.last_name].filter(Boolean).join(' ') || m.username : '—';
+        };
+        const rows: RosterRow[] = [...rosterIds].map((id) => ({
+            id,
+            name: nameOf(id),
+            editable: plannableIds.has(id),
+            removable: true,
         }));
         for (const s of items) {
-            if (!plannableIds.has(s.user_id) && !rows.some((r) => r.id === s.user_id)) {
-                rows.push({ id: s.user_id, name: memberFull(s), editable: false });
+            if (!rows.some((r) => r.id === s.user_id)) {
+                rows.push({ id: s.user_id, name: memberFull(s), editable: plannableIds.has(s.user_id), removable: false });
             }
         }
         return rows.sort((a, b) => a.name.localeCompare(b.name));
@@ -427,13 +455,51 @@ export default function SchedulePage() {
                                 </button>
                                 {isOpen &&
                                     (viewMode === 'grid' ? (
-                                        <RosterGrid
-                                            monthKey={selectedMonth}
-                                            rows={rowsFor(sec.items)}
-                                            shifts={sec.items}
-                                            canManage
-                                            onCellTap={cellTap(sec.id)}
-                                        />
+                                        (() => {
+                                            const rows = rowsFor(sec.id, sec.items);
+                                            const rowIds = new Set(rows.map((r) => r.id));
+                                            const addable = plannableMembers.filter((m) => !rowIds.has(m.id));
+                                            return (
+                                                <>
+                                                    {rows.length === 0 ? (
+                                                        <p className="px-4 py-3 text-caption text-gray-400">{t('schedule.rosterEmpty')}</p>
+                                                    ) : (
+                                                        <RosterGrid
+                                                            monthKey={selectedMonth}
+                                                            rows={rows}
+                                                            shifts={sec.items}
+                                                            canManage
+                                                            onCellTap={(memberId, date) => cellTap(sec.id)(memberId, date)}
+                                                            onRemoveRow={
+                                                                sec.id
+                                                                    ? (memberId) => rosterRemoveM.mutate({ locationId: sec.id!, userId: memberId })
+                                                                    : undefined
+                                                            }
+                                                        />
+                                                    )}
+                                                    {sec.id && addable.length > 0 && (
+                                                        <div className="flex items-center gap-2 px-4 py-2.5 border-t border-gray-50 dark:border-gray-800/60">
+                                                            <div className="flex-1 min-w-0 max-w-64">
+                                                                <Select
+                                                                    size="sm"
+                                                                    value=""
+                                                                    onChange={(e) => {
+                                                                        if (e.target.value) rosterAddM.mutate({ locationId: sec.id!, userId: e.target.value });
+                                                                    }}
+                                                                >
+                                                                    <option value="">{t('schedule.addToLocation')}</option>
+                                                                    {addable.map((m) => (
+                                                                        <option key={m.id} value={m.id}>
+                                                                            {[m.first_name, m.last_name].filter(Boolean).join(' ') || m.username}
+                                                                        </option>
+                                                                    ))}
+                                                                </Select>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()
                                     ) : (
                                         <MonthCalendar
                                             monthKey={selectedMonth}

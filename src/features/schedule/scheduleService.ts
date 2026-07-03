@@ -93,4 +93,33 @@ export const scheduleService = {
         const { error } = await supabase.rpc('claim_member', { p_member: memberId, p_claim: claim });
         if (error) throw new Error(error.message);
     },
+
+    /** Location rosters for the caller's org: location_id -> member ids. */
+    async getRoster(): Promise<Map<string, Set<string>>> {
+        const { data, error } = await supabase.from('location_roster').select('location_id, user_id');
+        if (error) throw error;
+        const map = new Map<string, Set<string>>();
+        for (const row of (data ?? []) as { location_id: string; user_id: string }[]) {
+            const set = map.get(row.location_id) ?? new Set<string>();
+            set.add(row.user_id);
+            map.set(row.location_id, set);
+        }
+        return map;
+    },
+
+    async addToRoster(orgId: string, addedBy: string, locationId: string, userId: string): Promise<void> {
+        const { error } = await supabase
+            .from('location_roster')
+            .insert({ location_id: locationId, user_id: userId, organization_id: orgId, added_by: addedBy });
+        if (error && error.code !== '23505') throw new Error(error.message); // already on the roster = fine
+    },
+
+    async removeFromRoster(locationId: string, userId: string): Promise<void> {
+        const { error } = await supabase
+            .from('location_roster')
+            .delete()
+            .eq('location_id', locationId)
+            .eq('user_id', userId);
+        if (error) throw new Error(error.message);
+    },
 };
