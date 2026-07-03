@@ -43,6 +43,7 @@ const AcceptInvitePage = lazy(() =>
     import('./features/auth/AcceptInvitePage').then((m) => ({ default: m.AcceptInvitePage })),
 );
 const OverviewPage = lazy(() => import('./features/shifts/OverviewPage'));
+const SchedulePage = lazy(() => import('./features/schedule/SchedulePage'));
 const AdminPage = lazy(() => import('./features/admin/AdminPage').then((m) => ({ default: m.AdminPage })));
 const RequestsPage = lazy(() => import('./features/requests/RequestsPage').then((m) => ({ default: m.RequestsPage })));
 const TimesheetsPage = lazy(() => import('./features/timesheets/TimesheetsPage').then((m) => ({ default: m.TimesheetsPage })));
@@ -105,6 +106,7 @@ export default function App() {
                   <Route path="/" element={<AppShell />}>
                     <Route index element={<HomePage />} />
                     <Route path="overview" element={<OverviewPage />} />
+                    <Route path="schedule" element={<SchedulePage />} />
                     <Route element={<RoleGuard />}>
                       <Route path="admin" element={<AdminPage />} />
                       {/* Requests is admin-only (rank >= 30); the page self-guards too. */}

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import {
     SquaresFourIcon,
     ChartBarIcon,
+    CalendarBlankIcon,
     ShieldCheckIcon,
     ClockUserIcon,
     UserCircleGearIcon,
@@ -62,6 +63,7 @@ export interface NavItemDef {
 export const NAV_ITEMS: readonly NavItemDef[] = [
     { id: 'dashboard', labelKey: 'nav.dashboard', shortLabelKey: 'nav.home', icon: SquaresFourIcon, route: '/', section: 'work', primaryOnMobile: true },
     { id: 'overview', labelKey: 'nav.overview', icon: ChartBarIcon, route: '/overview', section: 'work', primaryOnMobile: true },
+    { id: 'schedule', labelKey: 'nav.schedule', icon: CalendarBlankIcon, route: '/schedule', section: 'work' },
     { id: 'admin', labelKey: 'nav.adminPanel', shortLabelKey: 'nav.admin', icon: ShieldCheckIcon, route: '/admin', section: 'manage', visible: (c) => c.canViewAdminPanel, primaryOnMobile: true },
     { id: 'timesheets', labelKey: 'nav.timesheets', icon: ClockUserIcon, route: '/timesheets', section: 'manage', visible: (c) => c.canViewAdminPanel },
     { id: 'requests', labelKey: 'nav.requests', icon: UserCircleGearIcon, route: '/requests', section: 'manage', visible: (c) => c.canManageEmployees, badge: 'pendingRequests' },

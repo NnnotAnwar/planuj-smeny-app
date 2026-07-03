@@ -86,6 +86,26 @@ export const ShiftWithProfileSchema = ShiftSchema.extend({
   profiles: ShiftProfileSchema.nullable()
 });
 
+/**
+ * ScheduledShiftSchema: a planned/future shift a manager assigns to a member
+ * (the rota), separate from the actual worked `shifts`.
+ */
+export const ScheduledShiftSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  organization_id: z.string(),
+  location_id: z.string().nullable(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  note: z.string().nullable().optional(),
+  created_by: z.string().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  // Joined member profile for the manager's roster view.
+  profiles: ShiftProfileSchema.optional().nullable(),
+});
+export type ScheduledShift = z.infer<typeof ScheduledShiftSchema>;
+
 /** 
  * LocationSchema: Defines what a physical work location looks like.
  */
