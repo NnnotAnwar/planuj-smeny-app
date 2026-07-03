@@ -387,12 +387,13 @@ export function Sidebar({ onLocationSelect, onOpenSearch }: SidebarProps) {
     <header className={`sticky top-0 z-50 md:h-dvh w-full ${collapsed ? 'md:w-20' : 'md:w-80'} bg-white/90 dark:bg-(--grad-to) backdrop-blur-xl text-gray-900 dark:text-slate-100 border-b md:border-b-0 md:border-r border-gray-200 dark:border-slate-800 flex flex-col transition-all duration-300`}>
       <div className="flex flex-col h-full px-3 pt-[calc(0.25rem+env(safe-area-inset-top,0px))] pb-1 md:pt-2.5 md:pb-2.5">
         {/* Top brand row - restore original mobile header with centered time */}
-        <div className="shrink-0 flex justify-between items-center h-10 md:h-12 relative md:mb-4">
+        <div className={`shrink-0 flex justify-between items-center h-10 md:h-12 relative md:mb-4 ${collapsed ? 'md:justify-center' : ''}`}>
           <div className="flex items-center gap-3 z-10">
             <div className="w-8 h-8 md:w-9 md:h-9 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center shadow-sm">
               <span className="text-white font-black text-sm md:text-base tracking-[-0.5px]">PS</span>
             </div>
-            <span className="hidden lg:block font-semibold tracking-[-0.2px] text-base text-gray-900 dark:text-white">Planuj Směny</span>
+            {/* Hidden in the collapsed rail — a 2-line wrap would overflow the 80px width. */}
+            <span className={`${collapsed ? 'hidden' : 'hidden lg:block'} font-semibold tracking-[-0.2px] text-base whitespace-nowrap text-gray-900 dark:text-white`}>Planuj Směny</span>
           </div>
 
           {/* Desktop: collapse toggle + notifications bell (hidden when collapsed —
