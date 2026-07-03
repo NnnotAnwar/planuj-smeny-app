@@ -4,6 +4,7 @@ import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
 import { LockKeyIcon, FingerprintIcon } from '@phosphor-icons/react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { useAuthContext } from '@features/auth/AuthContext';
 import { Button } from '@shared/components/Button';
 
 /**
@@ -18,10 +19,15 @@ import { Button } from '@shared/components/Button';
  */
 export function BiometricLock({ enforce }: { enforce: boolean }) {
     const t = useTranslation();
+    const { logout } = useAuthContext();
     const active = enforce && Capacitor.isNativePlatform();
     const [locked, setLocked] = useState(active);
     const [checking, setChecking] = useState(false);
     const prompting = useRef(false);
+    // When the app genuinely went to the background (not the auth dialog's own
+    // blip). Used to re-lock only after a real absence.
+    const bgAt = useRef<number | null>(null);
+    const RELOCK_AFTER_MS = 60_000;
 
     const prompt = useCallback(async () => {
         if (prompting.current) return;
@@ -57,8 +63,18 @@ export function BiometricLock({ enforce }: { enforce: boolean }) {
 
         let handle: PluginListenerHandle | null = null;
         App.addListener('appStateChange', ({ isActive }) => {
-            // Coming back to the foreground re-locks and re-prompts.
-            if (isActive) {
+            if (!isActive) {
+                // Record only a REAL background — while the auth dialog is up the
+                // OS also fires this, and counting it would create a lock loop.
+                if (!prompting.current) bgAt.current = Date.now();
+                return;
+            }
+            // Foreground. Ignore the auth dialog's own return, and only re-lock
+            // after a genuine, long-enough absence.
+            if (prompting.current) return;
+            const away = bgAt.current ? Date.now() - bgAt.current : 0;
+            bgAt.current = null;
+            if (away >= RELOCK_AFTER_MS) {
                 setLocked(true);
                 void prompt();
             }
@@ -84,6 +100,10 @@ export function BiometricLock({ enforce }: { enforce: boolean }) {
             </div>
             <Button size="lg" icon={FingerprintIcon} loading={checking} onClick={() => void prompt()}>
                 {t('lock.unlock')}
+            </Button>
+            {/* Escape hatch: never let a failing biometric permanently trap the user. */}
+            <Button variant="ghost" onClick={logout}>
+                {t('nav.logout')}
             </Button>
         </div>
     );
