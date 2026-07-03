@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { PlusIcon, FilePdfIcon, FileXlsIcon, DownloadSimpleIcon, CaretDownIcon, MapPinIcon } from '@phosphor-icons/react';
+import { PlusIcon, FilePdfIcon, FileXlsIcon, DownloadSimpleIcon, CaretDownIcon, MapPinIcon, CalendarBlankIcon, TableIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -15,7 +15,9 @@ import type { ScheduledShift } from '@shared/types';
 import { scheduleService } from './scheduleService';
 import { ScheduledShiftEditor, type DayEditorResult } from './components/ScheduledShiftEditor';
 import { MonthCalendar } from './components/MonthCalendar';
+import { RosterGrid, type RosterRow } from './components/RosterGrid';
 import { MyTeam } from './components/MyTeam';
+import { toast } from '@shared/toast/toastStore';
 import { exportSchedule, type ScheduleExportSection } from './exportSchedule';
 
 /**
@@ -44,6 +46,14 @@ export default function SchedulePage() {
     const [activeTab, setActiveTab] = useState<'mine' | 'team'>(canManage ? 'team' : 'mine');
     // Filter the location calendars down to just the caller's team.
     const [teamOnly, setTeamOnly] = useState(false);
+    // Calendar (day-first) vs roster grid (people × days), persisted per device.
+    const [viewMode, setViewMode] = useState<'calendar' | 'grid'>(
+        () => (localStorage.getItem('schedule-view') === 'grid' ? 'grid' : 'calendar'),
+    );
+    const switchView = (mode: 'calendar' | 'grid') => {
+        setViewMode(mode);
+        localStorage.setItem('schedule-view', mode);
+    };
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
     const [exportOpen, setExportOpen] = useState(false);
     const [editing, setEditing] = useState<{
@@ -105,6 +115,13 @@ export default function SchedulePage() {
             });
         },
         onSuccess: invalidate,
+    });
+
+    // Quick roster-grid toggles (tap a cell): run the service call + refresh.
+    const quickM = useMutation({
+        mutationFn: (fn: () => Promise<void>) => fn(),
+        onSuccess: invalidate,
+        onError: (err) => toast(err instanceof Error && err.message !== 'SCHEDULE_OVERLAP' ? err.message : t('schedule.overlap'), 'error'),
     });
 
     const shifts = useMemo(() => scheduleQ.data ?? [], [scheduleQ.data]);
@@ -175,6 +192,51 @@ export default function SchedulePage() {
             busy.set(s.user_id, `${locationName(s.location_id)} · ${when}`);
         }
         setEditing({ date, locationId: locId, existing, busy });
+    };
+
+    /** Roster-grid rows for a location: everyone the caller can plan (editable)
+     *  plus anyone else already scheduled there this month (read-only). */
+    const rowsFor = (items: ScheduledShift[]): RosterRow[] => {
+        const plannableIds = new Set(plannableMembers.map((m) => m.id));
+        const rows: RosterRow[] = plannableMembers.map((m) => ({
+            id: m.id,
+            name: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.username,
+            editable: true,
+        }));
+        for (const s of items) {
+            if (!plannableIds.has(s.user_id) && !rows.some((r) => r.id === s.user_id)) {
+                rows.push({ id: s.user_id, name: memberFull(s), editable: false });
+            }
+        }
+        return rows.sort((a, b) => a.name.localeCompare(b.name));
+    };
+
+    /** Tap a roster cell: toggle an all-day assignment for that member+day at
+     *  this location; if they're busy elsewhere that day, explain via a toast. */
+    const cellTap = (locId: string | null) => (memberId: string, date: string) => {
+        const sameDay = shifts.filter((s) => s.user_id === memberId && sameLocalDay(s.starts_at, date));
+        const here = sameDay.filter((s) => s.location_id === locId);
+        if (here.length > 0) {
+            quickM.mutate(() => scheduleService.removeMany(here.map((s) => s.id)));
+            return;
+        }
+        if (sameDay.length > 0) {
+            const s = sameDay[0];
+            const when = s.all_day ? t('schedule.allDay') : `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`;
+            toast(t('schedule.busyAt', { where: `${locationName(s.location_id)} · ${when}` }), 'info');
+            return;
+        }
+        const [y, m, d] = date.split('-').map(Number);
+        const start = new Date(y, m - 1, d);
+        const end = new Date(y, m - 1, d + 1);
+        quickM.mutate(() =>
+            scheduleService.createMany(
+                user.organization_id,
+                user.id,
+                [{ user_id: memberId, starts_at: start.toISOString(), ends_at: end.toISOString(), all_day: true }],
+                { location_id: locId, note: null },
+            ),
+        );
     };
 
     const doExport = async (format: 'pdf' | 'excel') => {
@@ -288,6 +350,30 @@ export default function SchedulePage() {
                                 {t('schedule.teamOnly')}
                             </button>
                         )}
+                        {teamView && (
+                            <div className="inline-flex rounded-2xl bg-gray-100 dark:bg-gray-800/40 p-1 shadow-sm">
+                                {([
+                                    { mode: 'calendar' as const, Icon: CalendarBlankIcon, label: t('schedule.viewCalendar') },
+                                    { mode: 'grid' as const, Icon: TableIcon, label: t('schedule.viewGrid') },
+                                ]).map(({ mode, Icon, label }) => (
+                                    <button
+                                        key={mode}
+                                        type="button"
+                                        onClick={() => switchView(mode)}
+                                        aria-pressed={viewMode === mode}
+                                        aria-label={label}
+                                        title={label}
+                                        className={`rounded-xl px-2.5 py-1.5 transition-colors ${
+                                            viewMode === mode
+                                                ? 'bg-white dark:bg-gray-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                        }`}
+                                    >
+                                        <Icon weight="bold" className="w-4 h-4" />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     {teamView && (
                         <Button
@@ -339,15 +425,24 @@ export default function SchedulePage() {
                                         className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
                                     />
                                 </button>
-                                {isOpen && (
-                                    <MonthCalendar
-                                        monthKey={selectedMonth}
-                                        shifts={sec.items}
-                                        chipLabel={memberShort}
-                                        canManage
-                                        onDayClick={(date) => openDay(date, sec.id, sec.items)}
-                                    />
-                                )}
+                                {isOpen &&
+                                    (viewMode === 'grid' ? (
+                                        <RosterGrid
+                                            monthKey={selectedMonth}
+                                            rows={rowsFor(sec.items)}
+                                            shifts={sec.items}
+                                            canManage
+                                            onCellTap={cellTap(sec.id)}
+                                        />
+                                    ) : (
+                                        <MonthCalendar
+                                            monthKey={selectedMonth}
+                                            shifts={sec.items}
+                                            chipLabel={memberShort}
+                                            canManage
+                                            onDayClick={(date) => openDay(date, sec.id, sec.items)}
+                                        />
+                                    ))}
                             </section>
                         );
                     })}
