@@ -183,19 +183,27 @@ export function ScheduledShiftEditor({
                         {members.length === 0 && <p className="px-3 py-2.5 text-caption text-gray-400">—</p>}
                         {members.map((m) => {
                             const r = rowOf(m.id);
+                            // Busy elsewhere that day (and not assigned here): the row is
+                            // locked — you simply can't double-book someone with a tick.
                             const busyText = !r.selected ? busy?.get(m.id) : undefined;
+                            const locked = !!busyText;
                             return (
-                                <div key={m.id} className="px-3 py-2">
+                                <div key={m.id} className={`px-3 py-2 ${locked ? 'opacity-60' : ''}`}>
                                     <div className="flex items-center gap-2.5">
                                         <button
                                             type="button"
+                                            disabled={locked}
                                             onClick={() => patchRow(m.id, { selected: !r.selected })}
                                             aria-pressed={r.selected}
-                                            className="flex items-center gap-2.5 flex-1 min-w-0 text-left"
+                                            className={`flex items-center gap-2.5 flex-1 min-w-0 text-left ${locked ? 'cursor-not-allowed' : ''}`}
                                         >
                                             <span
                                                 className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
-                                                    r.selected ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300 dark:border-gray-600'
+                                                    r.selected
+                                                        ? 'bg-emerald-600 border-emerald-600 text-white'
+                                                        : locked
+                                                          ? 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800'
+                                                          : 'border-gray-300 dark:border-gray-600'
                                                 }`}
                                             >
                                                 {r.selected && <CheckIcon weight="bold" className="w-3 h-3" />}

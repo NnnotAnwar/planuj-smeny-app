@@ -164,9 +164,13 @@ export default function SchedulePage() {
      *  "busy elsewhere" hints for everyone scheduled at other locations. */
     const openDay = (date: string, locId: string | null, items: ScheduledShift[]) => {
         const existing = items.filter((s) => sameLocalDay(s.starts_at, date));
+        // Anyone with a same-day assignment that this dialog does NOT manage
+        // (other locations, or rows hidden by the team filter) is locked as
+        // busy — a tick can then never double-book.
+        const managedIds = new Set(existing.map((e) => e.id));
         const busy = new Map<string, string>();
         for (const s of shifts) {
-            if (s.location_id === locId || !sameLocalDay(s.starts_at, date)) continue;
+            if (managedIds.has(s.id) || !sameLocalDay(s.starts_at, date)) continue;
             const when = s.all_day ? t('schedule.allDay') : `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`;
             busy.set(s.user_id, `${locationName(s.location_id)} · ${when}`);
         }
