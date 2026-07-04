@@ -53,6 +53,8 @@ interface RosterGridProps {
     /** Restaurant quick-fill / clear for one member's month at this location. */
     onQuickFill?: (memberId: string, action: QuickFillAction) => void;
     onRemoveRow?: (memberId: string) => void;
+    /** Approved-leave marker for a member+day (localized short code, e.g. "V"). */
+    leaveFor?: (memberId: string, date: string) => string | undefined;
 }
 
 /** Mini week visual for the fill menu: 7 boxes, pattern days filled. */
@@ -68,7 +70,7 @@ function WeekPreview({ days, tone }: { days: number[]; tone: 'sky' | 'emerald' }
     );
 }
 
-export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow }: RosterGridProps) {
+export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow, leaveFor }: RosterGridProps) {
     const t = useTranslation();
     const [fillMenu, setFillMenu] = useState<{ id: string; name: string; left: number; top: number } | null>(null);
 
@@ -202,7 +204,8 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                 const items = memberDays?.get(d.key) ?? [];
                                                 const has = items.length > 0;
                                                 const allDay = has && items.every((s) => s.all_day);
-                                                const tappable = canManage && row.editable && !!onCellTap;
+                                                const leave = !has ? leaveFor?.(row.id, d.key) : undefined;
+                                                const tappable = canManage && row.editable && !!onCellTap && !leave;
                                                 return (
                                                     <td
                                                         key={d.key}
@@ -216,6 +219,14 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                             d.weekend ? 'bg-amber-100/60 dark:bg-amber-900/15' : ''
                                                         } ${tappable ? 'cursor-pointer hover:bg-emerald-100/70 dark:hover:bg-emerald-900/25 transition-colors' : ''}`}
                                                     >
+                                                        {leave && (
+                                                            <span
+                                                                className="inline-block w-5.5 h-5.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-[10px] font-black leading-5.5"
+                                                                title={leave}
+                                                            >
+                                                                {leave}
+                                                            </span>
+                                                        )}
                                                         {has &&
                                                             (allDay ? (
                                                                 <span className={`inline-block w-5.5 h-5.5 rounded-lg bg-emerald-500 text-white text-[11px] font-black leading-5.5 shadow-sm shadow-emerald-500/30 ${items.some((s) => !s.published) ? 'opacity-50 ring-1 ring-emerald-600 ring-dashed' : ''}`}>

@@ -1,6 +1,6 @@
 import { supabase } from '@shared/api/supabaseClient';
 import { z } from 'zod';
-import { ScheduledShiftSchema, type ScheduledShift } from '@shared/types';
+import { ScheduledShiftSchema, type ScheduledShift, TimeOffSchema, type TimeOff } from '@shared/types';
 
 /**
  * --- SCHEDULE SERVICE ---
@@ -131,6 +131,60 @@ export const scheduleService = {
             .delete()
             .eq('location_id', locationId)
             .eq('user_id', userId);
+        if (error) throw new Error(error.message);
+    },
+
+    // ------------------------------------------------------------------
+    // TIME OFF (vacation / sick / other)
+    // ------------------------------------------------------------------
+
+    /** Leave entries overlapping [fromDate, toDate] (YYYY-MM-DD, inclusive). */
+    async getTimeOff(fromDate: string, toDate: string): Promise<TimeOff[]> {
+        const { data, error } = await supabase
+            .from('time_off')
+            .select('*, profiles:user_id(username, first_name, last_name)')
+            .lte('starts_on', toDate)
+            .gte('ends_on', fromDate)
+            .order('starts_on', { ascending: true });
+        if (error) throw error;
+        return z.array(TimeOffSchema).parse(data ?? []);
+    },
+
+    /** File a leave request. Managers entering leave for others pre-approve it. */
+    async requestTimeOff(input: {
+        user_id: string;
+        organization_id: string;
+        kind: TimeOff['kind'];
+        starts_on: string;
+        ends_on: string;
+        note?: string | null;
+        approved?: boolean;
+        reviewed_by?: string | null;
+    }): Promise<void> {
+        const { error } = await supabase.from('time_off').insert({
+            user_id: input.user_id,
+            organization_id: input.organization_id,
+            kind: input.kind,
+            starts_on: input.starts_on,
+            ends_on: input.ends_on,
+            note: input.note ?? null,
+            status: input.approved ? 'approved' : 'pending',
+            reviewed_by: input.approved ? (input.reviewed_by ?? null) : null,
+        });
+        if (error) throw new Error(error.message);
+    },
+
+    async reviewTimeOff(id: string, approve: boolean, reviewerId: string): Promise<void> {
+        const { error } = await supabase
+            .from('time_off')
+            .update({ status: approve ? 'approved' : 'declined', reviewed_by: reviewerId })
+            .eq('id', id);
+        if (error) throw new Error(error.message);
+    },
+
+    /** Withdraw (member, pending only per RLS) or remove (manager) leave. */
+    async deleteTimeOff(id: string): Promise<void> {
+        const { error } = await supabase.from('time_off').delete().eq('id', id);
         if (error) throw new Error(error.message);
     },
 };

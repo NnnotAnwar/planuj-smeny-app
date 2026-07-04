@@ -13,13 +13,14 @@ import { Skeleton } from '@shared/components/Skeleton';
 import { ConfirmDialog } from '@features/admin/components/Modal';
 import { timesheetService } from '@features/timesheets/timesheetService';
 import { formatTime } from '@shared/utils/date';
-import type { ScheduledShift } from '@shared/types';
+import type { ScheduledShift, TimeOff } from '@shared/types';
 import { scheduleService } from './scheduleService';
 import { ScheduledShiftEditor, type DayEditorResult } from './components/ScheduledShiftEditor';
 import { MonthCalendar } from './components/MonthCalendar';
 import { RosterGrid, type RosterRow } from './components/RosterGrid';
 import { MemberSearchAdd } from './components/MemberSearchAdd';
 import { MyTeam } from './components/MyTeam';
+import { TimeOffCard } from './components/TimeOffCard';
 import { toast } from '@shared/toast/toastStore';
 import { exportSchedule, type ScheduleExportSection } from './exportSchedule';
 
@@ -99,6 +100,23 @@ export default function SchedulePage() {
         onSuccess: () => qc.invalidateQueries({ queryKey: ['location-roster'] }),
         onError: (err) => toast(err instanceof Error ? err.message : t('common.actionFailed'), 'error'),
     });
+
+    // Leave (vacation / sick / other) overlapping this month.
+    const monthFrom = `${selectedMonth}-01`;
+    const monthTo = useMemo(() => {
+        const [y, m] = selectedMonth.split('-').map(Number);
+        return `${selectedMonth}-${pad(new Date(y, m, 0).getDate())}`;
+    }, [selectedMonth]);
+    const timeOffQ = useQuery({
+        queryKey: ['time-off', selectedMonth],
+        queryFn: () => scheduleService.getTimeOff(monthFrom, monthTo),
+        enabled: !!user,
+    });
+    const timeOff = useMemo(() => timeOffQ.data ?? [], [timeOffQ.data]);
+
+    /** Approved leave covering a local day, if any. */
+    const leaveOn = (userId: string, date: string): TimeOff | undefined =>
+        timeOff.find((e) => e.status === 'approved' && e.user_id === userId && e.starts_on <= date && date <= e.ends_on);
 
     // Managers (rank 20) plan only for members assigned to them (+ themselves);
     // admins (rank >= 30) plan for everyone.
@@ -228,6 +246,13 @@ export default function SchedulePage() {
             const when = s.all_day ? t('schedule.allDay') : `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`;
             busy.set(s.user_id, `${locationName(s.location_id)} · ${when}`);
         }
+        // Approved leave locks the member for the day too.
+        for (const e of timeOff) {
+            if (e.status !== 'approved' || busy.has(e.user_id)) continue;
+            if (e.starts_on <= date && date <= e.ends_on) {
+                busy.set(e.user_id, t(`timeoff.${e.kind}` as 'timeoff.vacation'));
+            }
+        }
         return { existing, busy };
     };
 
@@ -264,6 +289,11 @@ export default function SchedulePage() {
     /** Tap a roster cell: toggle an all-day assignment for that member+day at
      *  this location; if they're busy elsewhere that day, explain via a toast. */
     const cellTap = (locId: string | null) => (memberId: string, date: string) => {
+        const leave = leaveOn(memberId, date);
+        if (leave) {
+            toast(t('schedule.busyAt', { where: t(`timeoff.${leave.kind}` as 'timeoff.vacation') }), 'info');
+            return;
+        }
         const sameDay = shifts.filter((s) => s.user_id === memberId && sameLocalDay(s.starts_at, date));
         const here = sameDay.filter((s) => s.location_id === locId);
         if (here.length > 0) {
@@ -327,7 +357,8 @@ export default function SchedulePage() {
             const weekIndex = Math.floor((day - 1 + offset) / 7);
             const isShortWeek = action === 'short' ? weekIndex % 2 === 0 : weekIndex % 2 === 1;
             const included = isShortWeek ? dow === 2 || dow === 3 : dow !== 2 && dow !== 3;
-            if (!included || blocked.has(`${selectedMonth}-${pad(day)}`)) continue;
+            const dateKey = `${selectedMonth}-${pad(day)}`;
+            if (!included || blocked.has(dateKey) || leaveOn(memberId, dateKey)) continue;
             rows.push({
                 user_id: memberId,
                 starts_at: new Date(y, m - 1, day).toISOString(),
@@ -625,6 +656,17 @@ export default function SchedulePage() {
                 <MyTeam members={membersQ.data ?? []} userId={user.id} userRank={user.role.rank ?? 0} />
             )}
 
+            {/* TIME OFF — approvals (managers) / own requests (members). */}
+            {user && (
+                <TimeOffCard
+                    entries={timeOff}
+                    members={plannableMembers}
+                    selfId={user.id}
+                    orgId={user.organization_id}
+                    managerMode={teamView}
+                />
+            )}
+
             {scheduleQ.isLoading ? (
                 <div className="space-y-3" aria-hidden>
                     {[0, 1].map((i) => (
@@ -687,6 +729,10 @@ export default function SchedulePage() {
                                                             rows={rows}
                                                             shifts={sec.items}
                                                             code={sec.code}
+                                                            leaveFor={(memberId, date) => {
+                                                                const e = leaveOn(memberId, date);
+                                                                return e ? t(`timeoff.short_${e.kind}` as 'timeoff.short_vacation') : undefined;
+                                                            }}
                                                             canManage
                                                             onCellTap={(memberId, date) => cellTap(sec.id)(memberId, date)}
                                                             onQuickFill={quickFill(sec.id)}

@@ -111,6 +111,25 @@ export const ScheduledShiftSchema = z.object({
 });
 export type ScheduledShift = z.infer<typeof ScheduledShiftSchema>;
 
+/**
+ * TimeOffSchema: a member's leave (vacation / sick / other) over a date range.
+ * Pending until a manager approves; approved leave blocks rota planning.
+ */
+export const TimeOffSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  organization_id: z.string(),
+  kind: z.enum(['vacation', 'sick', 'other']),
+  starts_on: z.string(), // YYYY-MM-DD
+  ends_on: z.string(), // YYYY-MM-DD
+  note: z.string().nullable().optional(),
+  status: z.enum(['pending', 'approved', 'declined']),
+  reviewed_by: z.string().nullable().optional(),
+  created_at: z.string(),
+  profiles: ShiftProfileSchema.optional().nullable(),
+});
+export type TimeOff = z.infer<typeof TimeOffSchema>;
+
 /** 
  * LocationSchema: Defines what a physical work location looks like.
  */
