@@ -86,14 +86,18 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQui
     const todayKey = isoDate(new Date());
     const dayLabels = weekdayShortLabels(); // Mon-first
 
-    // Two bands like the paper rota: 1–15 and 16–end.
-    const bands = useMemo(() => {
+    // Two bands like the paper rota: 1–15 and 16–end. Both bands render the
+    // same number of columns (the shorter one padded with blanks), so with
+    // table-fixed + w-full the day columns of both bands line up exactly while
+    // the table still fills the card.
+    const { bands, maxCols } = useMemo(() => {
         const all: DayCol[] = Array.from({ length: daysInMonth }, (_, i) => {
             const d = new Date(year, month - 1, i + 1);
             const dow = (d.getDay() + 6) % 7; // 0 = Monday
             return { num: i + 1, key: isoDate(d), label: dayLabels[dow], weekend: dow >= 5 };
         });
-        return [all.slice(0, 15), all.slice(15)];
+        const split = [all.slice(0, 15), all.slice(15)];
+        return { bands: split, maxCols: Math.max(split[0].length, split[1].length) };
     }, [year, month, daysInMonth, dayLabels]);
 
     // member -> dayKey -> shifts
@@ -109,22 +113,25 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQui
     }, [shifts]);
 
     const NAME_W = 'w-32 min-w-32 max-w-32 sm:w-40 sm:min-w-40 sm:max-w-40';
-    const DAY_W = 'w-9 min-w-9 max-w-9';
+    // Blank columns pad the shorter band so day columns line up across bands.
+    const blanksFor = (count: number) => Array.from({ length: Math.max(0, maxCols - count) });
 
     return (
         <div>
-            {/* One scroll container for both bands, so their columns stay aligned. */}
+            {/* One scroll container for both bands; each table is full-width with
+                table-fixed + equal (padded) column counts, so it fills the card
+                on desktop while both bands stay perfectly aligned. */}
             <div className="overflow-x-auto emerald-scrollbar">
-                <div className="min-w-max">
+                <div className="min-w-2xl">
                     {bands.map((days, bi) => (
-                        <table key={bi} className={`border-collapse text-center table-fixed ${bi > 0 ? 'border-t-4 border-gray-100 dark:border-gray-800' : ''}`}>
+                        <table key={bi} className={`w-full border-collapse text-center table-fixed ${bi > 0 ? 'border-t-4 border-gray-100 dark:border-gray-800' : ''}`}>
                             <thead>
                                 <tr className="bg-gray-50/80 dark:bg-gray-800/40">
                                     <th className={`sticky left-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-r border-gray-100 dark:border-gray-700 px-3 py-1 text-left ${NAME_W}`} />
                                     {days.map((d) => (
                                         <th
                                             key={d.key}
-                                            className={`border-b border-l border-gray-100 dark:border-gray-800 px-0 pt-1.5 pb-1 ${DAY_W} ${
+                                            className={`border-b border-l border-gray-100 dark:border-gray-800 px-0 pt-1.5 pb-1 ${
                                                 d.weekend ? 'bg-amber-100/60 dark:bg-amber-900/15' : ''
                                             }`}
                                         >
@@ -139,6 +146,9 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQui
                                                 {d.num}
                                             </span>
                                         </th>
+                                    ))}
+                                    {blanksFor(days.length).map((_, i) => (
+                                        <th key={`b${i}`} className="border-b border-gray-100 dark:border-gray-800" />
                                     ))}
                                 </tr>
                             </thead>
@@ -196,7 +206,7 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQui
                                                                 ? items.map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`).join(', ')
                                                                 : undefined
                                                         }
-                                                        className={`border-b border-l border-gray-100 dark:border-gray-800 h-9 px-0 align-middle select-none ${DAY_W} ${zebra} ${
+                                                        className={`border-b border-l border-gray-100 dark:border-gray-800 h-9 px-0 align-middle select-none ${zebra} ${
                                                             d.weekend ? 'bg-amber-100/60 dark:bg-amber-900/15' : ''
                                                         } ${tappable ? 'cursor-pointer hover:bg-emerald-100/70 dark:hover:bg-emerald-900/25 transition-colors' : ''}`}
                                                     >
@@ -215,6 +225,9 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQui
                                                     </td>
                                                 );
                                             })}
+                                            {blanksFor(days.length).map((_, i) => (
+                                                <td key={`b${i}`} className={`border-b border-gray-100 dark:border-gray-800 h-9 ${zebra}`} />
+                                            ))}
                                         </tr>
                                     );
                                 })}
