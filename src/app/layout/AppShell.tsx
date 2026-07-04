@@ -158,8 +158,10 @@ export function AppShell() {
       <Sidebar onLocationSelect={handleLocationSelect} onOpenSearch={() => setPaletteOpen(true)} />
 
       {/* MAIN CONTENT AREA — bottom padding clears the mobile tab bar (+ the
-          floating check-in button on Home); md+ uses the sidebar instead. */}
-      <main className="flex-1 p-3 pb-32 md:p-6 md:pb-6 max-w-7xl transition-all">
+          floating check-in button on Home); md+ uses the sidebar instead.
+          No max-width: collapsing the sidebar should hand its space to the
+          content (a capped main just sat left-aligned with a dead right gap). */}
+      <main className="flex-1 min-w-0 p-3 pb-32 md:p-6 md:pb-6 transition-all">
         <Outlet context={contextValue} />
       </main>
 
