@@ -61,12 +61,7 @@ export default function SchedulePage() {
     };
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
     const [exportOpen, setExportOpen] = useState(false);
-    const [editing, setEditing] = useState<{
-        date: string;
-        locationId: string | null;
-        existing: ScheduledShift[];
-        busy: Map<string, string>;
-    } | null>(null);
+    const [editing, setEditing] = useState<{ date: string; locationId: string | null } | null>(null);
     // Destructive actions (remove member / clear location / clear month) confirm here.
     const [confirming, setConfirming] = useState<{ title: string; message: string; run: () => Promise<void> } | null>(null);
 
@@ -208,8 +203,10 @@ export default function SchedulePage() {
 
     /** Open the day editor for a location section: current assignments +
      *  "busy elsewhere" hints for everyone scheduled at other locations. */
-    const openDay = (date: string, locId: string | null, items: ScheduledShift[]) => {
-        const existing = items.filter((s) => sameLocalDay(s.starts_at, date));
+    /** What a day+location already holds. The editor calls this LIVE whenever
+     *  its date or location changes, so ticks/busy always match the edited day. */
+    const dayContext = (date: string, locId: string | null) => {
+        const existing = shifts.filter((s) => s.location_id === locId && sameLocalDay(s.starts_at, date));
         // Anyone with a same-day assignment that this dialog does NOT manage
         // (other locations, or rows hidden by the team filter) is locked as
         // busy — a tick can then never double-book.
@@ -220,8 +217,10 @@ export default function SchedulePage() {
             const when = s.all_day ? t('schedule.allDay') : `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`;
             busy.set(s.user_id, `${locationName(s.location_id)} · ${when}`);
         }
-        setEditing({ date, locationId: locId, existing, busy });
+        return { existing, busy };
     };
+
+    const openDay = (date: string, locId: string | null) => setEditing({ date, locationId: locId });
 
     /** Roster-grid rows for a location: its curated roster plus anyone already
      *  scheduled there this month. Roster members are removable; people who
@@ -535,7 +534,7 @@ export default function SchedulePage() {
                             <Button
                                 size="sm"
                                 icon={PlusIcon}
-                                onClick={() => openDay(`${selectedMonth}-01`, sections[0]?.id ?? null, sections[0]?.items ?? [])}
+                                onClick={() => openDay(`${selectedMonth}-01`, sections[0]?.id ?? null)}
                             >
                                 {t('schedule.add')}
                             </Button>
@@ -634,7 +633,7 @@ export default function SchedulePage() {
                                             shifts={sec.items}
                                             chipLabel={memberShort}
                                             canManage
-                                            onDayClick={(date) => openDay(date, sec.id, sec.items)}
+                                            onDayClick={(date) => openDay(date, sec.id)}
                                         />
                                     ))}
                             </section>
@@ -660,8 +659,7 @@ export default function SchedulePage() {
                     <ScheduledShiftEditor
                         members={plannableMembers}
                         locations={locations}
-                        existing={editing.existing}
-                        busy={editing.busy}
+                        getDayContext={dayContext}
                         defaultDate={editing.date}
                         defaultLocationId={editing.locationId}
                         onClose={() => setEditing(null)}

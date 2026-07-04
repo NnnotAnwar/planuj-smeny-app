@@ -57,11 +57,29 @@ interface RowState {
     end: string;
 }
 
+/** What a given day+location already holds: assignments here + who's busy elsewhere. */
+export interface DayContext {
+    existing: ScheduledShift[];
+    busy: Map<string, string>;
+}
+
+const seedRows = (existing: ScheduledShift[]): Map<string, RowState> => {
+    const map = new Map<string, RowState>();
+    for (const e of existing) {
+        map.set(e.user_id, {
+            selected: true,
+            withTime: !e.all_day,
+            start: e.all_day ? '08:00' : isoToTime(e.starts_at),
+            end: e.all_day ? '16:00' : isoToTime(e.ends_at),
+        });
+    }
+    return map;
+};
+
 export function ScheduledShiftEditor({
     members,
     locations,
-    existing = [],
-    busy,
+    getDayContext,
     defaultDate,
     defaultLocationId,
     onClose,
@@ -69,10 +87,10 @@ export function ScheduledShiftEditor({
 }: {
     members: Profile[];
     locations: Location[];
-    /** Assignments already on this day+location — pre-ticked; unticking removes them. */
-    existing?: ScheduledShift[];
-    /** userId → "where they're already scheduled that day" (other locations). */
-    busy?: Map<string, string>;
+    /** Resolves what a day+location already holds — re-queried whenever the
+     *  user changes the date or the location inside the dialog, so the ticks
+     *  always reflect the day being edited (not the day it was opened on). */
+    getDayContext: (date: string, locationId: string | null) => DayContext;
     defaultDate: string; // YYYY-MM-DD
     /** Preselected location (the calendar section the day was tapped in). */
     defaultLocationId?: string | null;
@@ -81,26 +99,26 @@ export function ScheduledShiftEditor({
 }) {
     const t = useTranslation();
     const pickable = locations.filter((l) => !l.archived_at);
-    const existingByUser = new Map(existing.map((e) => [e.user_id, e]));
 
-    // Per-member row state, seeded from the existing assignments.
-    const [rows, setRows] = useState<Map<string, RowState>>(() => {
-        const map = new Map<string, RowState>();
-        for (const e of existing) {
-            map.set(e.user_id, {
-                selected: true,
-                withTime: !e.all_day,
-                start: e.all_day ? '08:00' : isoToTime(e.starts_at),
-                end: e.all_day ? '16:00' : isoToTime(e.ends_at),
-            });
-        }
-        return map;
-    });
     const [locationId, setLocationId] = useState(defaultLocationId ?? pickable[0]?.id ?? '');
     const [date, setDate] = useState(defaultDate);
     const [note, setNote] = useState('');
     const [busyState, setBusyState] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const { existing, busy } = getDayContext(date, locationId || null);
+    const existingByUser = new Map(existing.map((e) => [e.user_id, e]));
+
+    // Per-member row state, seeded from the day's assignments. Changing the
+    // date or location re-seeds from that day's context (adjust-during-render
+    // pattern), so stale ticks from the previously shown day can't linger.
+    const [rows, setRows] = useState<Map<string, RowState>>(() => seedRows(existing));
+    const [prevKey, setPrevKey] = useState(`${date}|${locationId}`);
+    const key = `${date}|${locationId}`;
+    if (key !== prevKey) {
+        setPrevKey(key);
+        setRows(seedRows(existing));
+    }
 
     const rowOf = (id: string): RowState => rows.get(id) ?? { selected: false, withTime: false, start: '08:00', end: '16:00' };
     const patchRow = (id: string, patch: Partial<RowState>) =>
