@@ -10,6 +10,7 @@ export interface LocationEditTarget {
     id: string;
     name: string;
     organization_id: string;
+    code?: string | null;
 }
 
 /**
@@ -24,6 +25,7 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
     const isEdit = Boolean(location);
 
     const [name, setName] = useState(location?.name ?? '');
+    const [code, setCode] = useState(location?.code ?? '');
     const [organizationId, setOrganizationId] = useState(
         location?.organization_id ?? adminData?.[0]?.id ?? user?.organization_id ?? '',
     );
@@ -55,10 +57,11 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
                 }
                 await updateLocation(location.id, {
                     name: trimmedName,
+                    code: code.trim() || null,
                     ...(isSuperAdmin ? { organization_id: organizationId } : {}),
                 });
             } else {
-                await createLocation({ organization_id: organizationId, name: trimmedName });
+                await createLocation({ organization_id: organizationId, name: trimmedName, code: code.trim() || null });
             }
             onClose();
         } catch (err) {
@@ -76,6 +79,16 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Prague — Main Office"
                         autoFocus
+                    />
+                </Field>
+
+                {/* Short rota letter, e.g. "D" — shown in grid cells instead of a checkmark. */}
+                <Field label={t('admin.fieldCode')}>
+                    <TextInput
+                        value={code}
+                        onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 2))}
+                        placeholder="D"
+                        maxLength={2}
                     />
                 </Field>
 

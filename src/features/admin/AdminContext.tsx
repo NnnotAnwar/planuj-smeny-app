@@ -30,8 +30,8 @@ interface AdminContextType {
     deleteOrganization: (id: string) => Promise<void>;
 
     // Locations
-    createLocation: (values: { organization_id: string; name: string }) => Promise<void>;
-    updateLocation: (id: string, values: { name: string; organization_id?: string }) => Promise<void>;
+    createLocation: (values: { organization_id: string; name: string; code?: string | null }) => Promise<void>;
+    updateLocation: (id: string, values: { name: string; organization_id?: string; code?: string | null }) => Promise<void>;
     deleteLocation: (id: string) => Promise<void>;
 
     // Employees
@@ -120,12 +120,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     // Locations -----------------------------------------------------
     const createLocation = useCallback(
-        (values: { organization_id: string; name: string }) =>
+        (values: { organization_id: string; name: string; code?: string | null }) =>
             run(() => adminService.createLocation(values)),
         [run],
     );
     const updateLocation = useCallback(
-        (id: string, values: { name: string; organization_id?: string }) =>
+        (id: string, values: { name: string; organization_id?: string; code?: string | null }) =>
             run(() => adminService.updateLocation(id, values)),
         [run],
     );
@@ -140,8 +140,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         [run],
     );
     const updateEmployee = useCallback(
-        (id: string, values: EmployeeUpdate) => run(() => adminService.updateEmployee(id, values)),
-        [run],
+        async (id: string, values: EmployeeUpdate) => {
+            await run(() => adminService.updateEmployee(id, values));
+            // Manager assignment scopes the rota — refresh its member list too.
+            await queryClient.invalidateQueries({ queryKey: ['schedule-members'] });
+        },
+        [run, queryClient],
     );
     const deleteEmployee = useCallback(
         (id: string) =>

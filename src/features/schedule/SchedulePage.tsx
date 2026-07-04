@@ -171,10 +171,11 @@ export default function SchedulePage() {
         const list = visible.map((l) => ({
             id: l.id as string | null,
             name: l.name,
+            code: l.code ?? null,
             items: visibleShifts.filter((s) => s.location_id === l.id),
         }));
         const unassigned = visibleShifts.filter((s) => !s.location_id);
-        if (unassigned.length > 0) list.push({ id: null, name: t('schedule.noLocation'), items: unassigned });
+        if (unassigned.length > 0) list.push({ id: null, name: t('schedule.noLocation'), code: null, items: unassigned });
         return list;
     }, [teamView, locations, visibleShifts, t]);
 
@@ -609,6 +610,7 @@ export default function SchedulePage() {
                                                             monthKey={selectedMonth}
                                                             rows={rows}
                                                             shifts={sec.items}
+                                                            code={sec.code}
                                                             canManage
                                                             onCellTap={(memberId, date) => cellTap(sec.id)(memberId, date)}
                                                             onQuickFill={quickFill(sec.id)}

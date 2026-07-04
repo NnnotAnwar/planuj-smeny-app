@@ -115,6 +115,7 @@ export type ScheduledShift = z.infer<typeof ScheduledShiftSchema>;
 export const LocationSchema = z.object({
   id: z.string(), // Unique location ID
   name: z.string(), // Name of the restaurant/office
+  code: z.string().nullable().optional(), // short rota-grid letter (e.g. "D"), set by admins
   organization_id: z.string().optional(),
   organizationName: z.string().optional(),
   archived_at: z.string().nullable().optional(), // soft-delete: hidden from pickers, history kept
@@ -131,6 +132,7 @@ export const OrganizationSchema = z.object({
     {
       id: z.string(),
       name: z.string(),
+      code: z.string().nullable().optional(),
       organization_id: z.string(),
       archived_at: z.string().nullable().optional()
     }
@@ -146,7 +148,8 @@ export const OrganizationSchema = z.object({
     username: z.string(),
     first_name: z.string().nullable(),
     last_name: z.string().nullable(),
-    organization_id: z.string()
+    organization_id: z.string(),
+    manager_id: z.string().nullable().optional()
   }))
 })
 

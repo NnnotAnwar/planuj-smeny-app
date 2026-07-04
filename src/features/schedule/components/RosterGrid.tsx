@@ -46,6 +46,8 @@ interface RosterGridProps {
     rows: RosterRow[];
     /** This location's shifts for the month. */
     shifts: ScheduledShift[];
+    /** The location's short letter (paper-rota style) — replaces the ✓ when set. */
+    code?: string | null;
     canManage: boolean;
     onCellTap?: (memberId: string, date: string) => void;
     /** Restaurant quick-fill / clear for one member's month at this location. */
@@ -66,7 +68,7 @@ function WeekPreview({ days, tone }: { days: number[]; tone: 'sky' | 'emerald' }
     );
 }
 
-export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQuickFill, onRemoveRow }: RosterGridProps) {
+export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow }: RosterGridProps) {
     const t = useTranslation();
     const [fillMenu, setFillMenu] = useState<{ id: string; name: string; left: number; top: number } | null>(null);
 
@@ -150,6 +152,10 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQui
                                     {blanksFor(days.length).map((_, i) => (
                                         <th key={`b${i}`} className="border-b border-gray-100 dark:border-gray-800" />
                                     ))}
+                                    {/* Month total per person — rendered on the second band only. */}
+                                    <th className={`border-b border-l border-gray-100 dark:border-gray-800 px-0 pt-1.5 pb-1 w-10 min-w-10 ${bi === 0 ? 'opacity-0' : ''}`}>
+                                        <span className="text-[10px] font-bold text-gray-400">Σ</span>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -213,7 +219,7 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQui
                                                         {has &&
                                                             (allDay ? (
                                                                 <span className="inline-block w-5.5 h-5.5 rounded-lg bg-emerald-500 text-white text-[11px] font-black leading-5.5 shadow-sm shadow-emerald-500/30">
-                                                                    ✓
+                                                                    {code || '✓'}
                                                                 </span>
                                                             ) : (
                                                                 <span className="inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-0.5 py-0.5 leading-[1.15] tabular-nums">
@@ -228,6 +234,11 @@ export function RosterGrid({ monthKey, rows, shifts, canManage, onCellTap, onQui
                                             {blanksFor(days.length).map((_, i) => (
                                                 <td key={`b${i}`} className={`border-b border-gray-100 dark:border-gray-800 h-9 ${zebra}`} />
                                             ))}
+                                            <td className={`border-b border-l border-gray-100 dark:border-gray-800 h-9 ${zebra} ${bi === 0 ? 'opacity-0' : ''}`}>
+                                                <span className="text-[11px] font-bold tabular-nums text-gray-500 dark:text-gray-400">
+                                                    {(memberDays ? [...memberDays.values()].flat().length : 0) || ''}
+                                                </span>
+                                            </td>
                                         </tr>
                                     );
                                 })}
