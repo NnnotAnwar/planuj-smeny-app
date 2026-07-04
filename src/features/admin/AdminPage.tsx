@@ -92,6 +92,7 @@ function AdminPanel() {
                     .map((loc) => ({
                         id: loc.id,
                         name: loc.name,
+                        code: loc.code ?? null,
                         organization_id: loc.organization_id,
                         organizationName: org.name,
                     })),

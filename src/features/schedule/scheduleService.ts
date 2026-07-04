@@ -94,6 +94,17 @@ export const scheduleService = {
         if (error) throw new Error(error.message);
     },
 
+    /** Publish every draft in [startISO, endISO) — members can then see them. */
+    async publishMonth(startISO: string, endISO: string): Promise<void> {
+        const { error } = await supabase
+            .from('scheduled_shifts')
+            .update({ published: true })
+            .gte('starts_at', startISO)
+            .lt('starts_at', endISO)
+            .eq('published', false);
+        if (error) throw new Error(error.message);
+    },
+
     /** Location rosters for the caller's org: location_id -> member ids. */
     async getRoster(): Promise<Map<string, Set<string>>> {
         const { data, error } = await supabase.from('location_roster').select('location_id, user_id');

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { PlusIcon, FilePdfIcon, FileXlsIcon, DownloadSimpleIcon, CaretDownIcon, MapPinIcon, CalendarBlankIcon, TableIcon, EraserIcon } from '@phosphor-icons/react';
+import { PlusIcon, FilePdfIcon, FileXlsIcon, DownloadSimpleIcon, CaretDownIcon, MapPinIcon, CalendarBlankIcon, TableIcon, EraserIcon, CopySimpleIcon, PaperPlaneTiltIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -132,6 +132,15 @@ export default function SchedulePage() {
         onSuccess: invalidate,
     });
 
+    const publishM = useMutation({
+        mutationFn: () => scheduleService.publishMonth(monthStart.toISOString(), monthEnd.toISOString()),
+        onSuccess: () => {
+            invalidate();
+            toast(t('schedule.publishedToast'), 'success');
+        },
+        onError: (err) => toast(err instanceof Error ? err.message : t('common.actionFailed'), 'error'),
+    });
+
     // Quick roster-grid toggles (tap a cell): run the service call + refresh.
     const quickM = useMutation({
         mutationFn: (fn: () => Promise<void>) => fn(),
@@ -141,6 +150,7 @@ export default function SchedulePage() {
 
     const shifts = useMemo(() => scheduleQ.data ?? [], [scheduleQ.data]);
     const teamView = canManage && activeTab === 'team';
+    const draftCount = useMemo(() => shifts.filter((s) => !s.published).length, [shifts]);
 
     // "My team only" + free-text person filter narrow what the calendars show.
     const visibleShifts = useMemo(() => {
@@ -367,6 +377,64 @@ export default function SchedulePage() {
         });
     };
 
+    /** Copy last month's rota into this one, matching by (week index, weekday)
+     *  so Mon-shifts land on Mondays. Days already holding anything for that
+     *  member are skipped; timed shifts keep their time of day and duration. */
+    const copyLastMonth = () => {
+        const [y, m] = selectedMonth.split('-').map(Number);
+        const prevStart = new Date(y, m - 2, 1);
+        const prevEnd = new Date(y, m - 1, 1);
+        const prevLabel = prevStart.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        setConfirming({
+            title: t('schedule.copyLast'),
+            message: t('schedule.confirmCopyLast', { from: prevLabel, to: periodLabel }),
+            run: async () => {
+                const prev = await scheduleService.getRange(prevStart.toISOString(), prevEnd.toISOString());
+                const plannableIds = new Set(plannableMembers.map((mm) => mm.id));
+                const daysInTarget = new Date(y, m, 0).getDate();
+                const prevOffset = (prevStart.getDay() + 6) % 7;
+                const targetOffset = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+                const taken = new Set(
+                    shifts.map((s) => {
+                        const d = new Date(s.starts_at);
+                        return `${s.user_id}|${d.getDate()}`;
+                    }),
+                );
+                const byLocation = new Map<string | null, Array<{ user_id: string; starts_at: string; ends_at: string; all_day: boolean }>>();
+                for (const s of prev) {
+                    if (!plannableIds.has(s.user_id)) continue;
+                    const d = new Date(s.starts_at);
+                    const dow = (d.getDay() + 6) % 7;
+                    const weekIdx = Math.floor((d.getDate() - 1 + prevOffset) / 7);
+                    const targetDay = weekIdx * 7 + dow - targetOffset + 1;
+                    if (targetDay < 1 || targetDay > daysInTarget) continue;
+                    const key = `${s.user_id}|${targetDay}`;
+                    if (taken.has(key)) continue;
+                    taken.add(key);
+                    let starts: Date;
+                    let ends: Date;
+                    if (s.all_day) {
+                        starts = new Date(y, m - 1, targetDay);
+                        ends = new Date(y, m - 1, targetDay + 1);
+                    } else {
+                        const src = new Date(s.starts_at);
+                        starts = new Date(y, m - 1, targetDay, src.getHours(), src.getMinutes());
+                        ends = new Date(starts.getTime() + (new Date(s.ends_at).getTime() - src.getTime()));
+                    }
+                    const loc = s.location_id ?? null;
+                    byLocation.set(loc, [
+                        ...(byLocation.get(loc) ?? []),
+                        { user_id: s.user_id, starts_at: starts.toISOString(), ends_at: ends.toISOString(), all_day: s.all_day },
+                    ]);
+                }
+                for (const [loc, rows] of byLocation) {
+                    await scheduleService.createMany(user.organization_id, user.id, rows, { location_id: loc, note: null });
+                }
+                invalidate();
+            },
+        });
+    };
+
     /** Clear the whole month across all locations (plannable members only). */
     const clearAll = () => {
         const plannableIds = new Set(plannableMembers.map((m) => m.id));
@@ -527,6 +595,14 @@ export default function SchedulePage() {
                     </div>
                     {teamView && (
                         <div className="flex items-center gap-2">
+                            {draftCount > 0 && (
+                                <Button size="sm" icon={PaperPlaneTiltIcon} loading={publishM.isPending} onClick={() => publishM.mutate()}>
+                                    {t('schedule.publish', { count: draftCount })}
+                                </Button>
+                            )}
+                            <Button size="sm" variant="secondary" icon={CopySimpleIcon} onClick={copyLastMonth}>
+                                {t('schedule.copyLast')}
+                            </Button>
                             {shifts.length > 0 && (
                                 <Button size="sm" variant="secondary" icon={EraserIcon} onClick={clearAll} className="text-red-600 dark:text-red-400">
                                     {t('schedule.clearAll')}

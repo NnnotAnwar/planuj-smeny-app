@@ -218,11 +218,11 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                     >
                                                         {has &&
                                                             (allDay ? (
-                                                                <span className="inline-block w-5.5 h-5.5 rounded-lg bg-emerald-500 text-white text-[11px] font-black leading-5.5 shadow-sm shadow-emerald-500/30">
+                                                                <span className={`inline-block w-5.5 h-5.5 rounded-lg bg-emerald-500 text-white text-[11px] font-black leading-5.5 shadow-sm shadow-emerald-500/30 ${items.some((s) => !s.published) ? 'opacity-50 ring-1 ring-emerald-600 ring-dashed' : ''}`}>
                                                                     {code || '✓'}
                                                                 </span>
                                                             ) : (
-                                                                <span className="inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-0.5 py-0.5 leading-[1.15] tabular-nums">
+                                                                <span className={`inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-0.5 py-0.5 leading-[1.15] tabular-nums ${items.some((s) => !s.published) ? 'opacity-50' : ''}`}>
                                                                     {formatTime(items[0].starts_at)}
                                                                     <br />
                                                                     {formatTime(items[0].ends_at)}

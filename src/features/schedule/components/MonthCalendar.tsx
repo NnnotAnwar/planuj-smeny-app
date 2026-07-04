@@ -138,7 +138,7 @@ export function MonthCalendar({ monthKey, shifts, chipLabel, canManage, onDayCli
                                     {items.map((s) => (
                                         <span
                                             key={s.id}
-                                            className="w-full rounded-lg bg-emerald-100/80 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 px-1 py-0.5 leading-tight"
+                                            className={`w-full rounded-lg bg-emerald-100/80 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 px-1 py-0.5 leading-tight ${s.published ? '' : 'opacity-50'}`}
                                         >
                                             <span className="block truncate text-[11px] font-semibold tabular-nums">{chipText(s)}</span>
                                         </span>

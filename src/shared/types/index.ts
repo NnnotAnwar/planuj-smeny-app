@@ -100,6 +100,8 @@ export const ScheduledShiftSchema = z.object({
   ends_at: z.string(),
   // "Works that day" without exact times (starts/ends hold the day bounds).
   all_day: z.boolean().default(false),
+  // Draft rows (false) are only visible to planners until the month is published.
+  published: z.boolean().default(false),
   note: z.string().nullable().optional(),
   created_by: z.string().nullable().optional(),
   created_at: z.string(),
