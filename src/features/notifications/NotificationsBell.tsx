@@ -8,6 +8,8 @@ import {
     TrashIcon,
     AtIcon,
     ClockCountdownIcon,
+    PaperPlaneTiltIcon,
+    SunHorizonIcon,
     CheckCircleIcon,
     XCircleIcon,
     UserGearIcon,
@@ -35,6 +37,35 @@ function fmtWhen(iso: string): string {
 }
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
+
+/** "3 · 21 Jul · San Carlo" for grouped rota events. */
+function fmtRota(d: { count?: number | null; scheduled_start?: string | null; location_name?: string | null }, t: Translate): string | undefined {
+    const parts: string[] = [];
+    if (d.count) parts.push(`${d.count} ${t('schedule.shiftsCount')}`);
+    if (d.scheduled_start) {
+        const dt = new Date(d.scheduled_start);
+        parts.push(`${dt.getDate()} ${monthShort(dt)}`);
+    }
+    if (d.location_name) parts.push(d.location_name);
+    return parts.join(' · ') || undefined;
+}
+
+/** "Vacation · 21 Jul – 25 Jul" for time-off events. */
+function fmtLeave(d: { kind?: string | null; starts_on?: string | null; ends_on?: string | null }, t: Translate): string | undefined {
+    const parts: string[] = [];
+    if (d.kind) parts.push(t(`timeoff.${d.kind}` as TranslationKey));
+    if (d.starts_on) {
+        const from = new Date(`${d.starts_on}T00:00`);
+        const fromTxt = `${from.getDate()} ${monthShort(from)}`;
+        if (d.ends_on && d.ends_on !== d.starts_on) {
+            const to = new Date(`${d.ends_on}T00:00`);
+            parts.push(`${fromTxt} – ${to.getDate()} ${monthShort(to)}`);
+        } else {
+            parts.push(fromTxt);
+        }
+    }
+    return parts.join(' · ') || undefined;
+}
 
 const FIELD_LABEL: Record<string, TranslationKey> = {
     name: 'notif.field.name',
@@ -68,6 +99,18 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
             return { Icon: XCircleIcon, tint: 'text-red-500', title: t('notif.nameDeclined'), detail: d.note || undefined };
         case 'profile_updated':
             return { Icon: UserGearIcon, tint: 'text-blue-500', title: t('notif.profileUpdated'), detail: fmtProfileChanges(d.changes, t) };
+        case 'schedule_published':
+            return { Icon: PaperPlaneTiltIcon, tint: 'text-emerald-500', title: t('notif.schedulePublished'), detail: fmtRota(d, t) };
+        case 'schedule_updated':
+            return { Icon: PencilSimpleIcon, tint: 'text-blue-500', title: t('notif.scheduleUpdated'), detail: fmtRota(d, t) };
+        case 'schedule_removed':
+            return { Icon: TrashIcon, tint: 'text-red-500', title: t('notif.scheduleRemoved'), detail: fmtRota(d, t) };
+        case 'timeoff_requested':
+            return { Icon: SunHorizonIcon, tint: 'text-amber-500', title: t('notif.timeoffRequested', { name: d.target_name || '—' }), detail: fmtLeave(d, t) };
+        case 'timeoff_approved':
+            return { Icon: CheckCircleIcon, tint: 'text-emerald-500', title: t('notif.timeoffApproved'), detail: fmtLeave(d, t) };
+        case 'timeoff_declined':
+            return { Icon: XCircleIcon, tint: 'text-red-500', title: t('notif.timeoffDeclined'), detail: fmtLeave(d, t) };
         case 'late_15':
         case 'late_60':
             // Same entry goes to the late member and their manager; the name in

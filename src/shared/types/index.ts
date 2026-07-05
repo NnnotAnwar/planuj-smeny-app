@@ -245,6 +245,12 @@ export const ShiftAuditLogSchema = z.object({
       location_name: z.string().nullable().optional(),
       scheduled_start: z.string().nullable().optional(),
       minutes: z.number().nullable().optional(),
+      // Rota events (schedule_created/updated/removed/published) + time off.
+      count: z.number().nullable().optional(),
+      month_start: z.string().nullable().optional(),
+      kind: z.string().nullable().optional(),
+      starts_on: z.string().nullable().optional(),
+      ends_on: z.string().nullable().optional(),
       // Admin profile edits (name / role / organization changed from the panel).
       changes: z
         .array(

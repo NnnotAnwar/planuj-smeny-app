@@ -55,6 +55,8 @@ interface RosterGridProps {
     onRemoveRow?: (memberId: string) => void;
     /** Approved-leave marker for a member+day (localized short code, e.g. "V"). */
     leaveFor?: (memberId: string, date: string) => string | undefined;
+    /** Tapping a member's name opens their profile. */
+    onOpenProfile?: (memberId: string) => void;
 }
 
 /** Mini week visual for the fill menu: 7 boxes, pattern days filled. */
@@ -70,7 +72,7 @@ function WeekPreview({ days, tone }: { days: number[]; tone: 'sky' | 'emerald' }
     );
 }
 
-export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow, leaveFor }: RosterGridProps) {
+export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow, leaveFor, onOpenProfile }: RosterGridProps) {
     const t = useTranslation();
     const [fillMenu, setFillMenu] = useState<{ id: string; name: string; left: number; top: number } | null>(null);
 
@@ -168,9 +170,19 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                         <tr key={row.id} className="group">
                                             <td className={`sticky left-0 z-10 bg-white dark:bg-gray-900 border-b border-r border-gray-100 dark:border-gray-700 px-3 h-9 text-left ${NAME_W}`}>
                                                 <span className="flex items-center gap-1">
-                                                    <span className={`truncate text-[12px] font-semibold ${row.editable ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
-                                                        {row.name}
-                                                    </span>
+                                                    {onOpenProfile ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => onOpenProfile(row.id)}
+                                                            className={`truncate text-[12px] font-semibold text-left hover:underline underline-offset-2 ${row.editable ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}
+                                                        >
+                                                            {row.name}
+                                                        </button>
+                                                    ) : (
+                                                        <span className={`truncate text-[12px] font-semibold ${row.editable ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+                                                            {row.name}
+                                                        </span>
+                                                    )}
                                                     {/* Row actions once, on the first band. Always visible on
                                                         touch (no hover there); revealed on hover for mouse. */}
                                                     {bi === 0 && canManage && row.editable && onQuickFill && (

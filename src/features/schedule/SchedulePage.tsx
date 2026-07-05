@@ -15,6 +15,7 @@ import { timesheetService } from '@features/timesheets/timesheetService';
 import { formatTime } from '@shared/utils/date';
 import type { ScheduledShift, TimeOff } from '@shared/types';
 import { scheduleService } from './scheduleService';
+import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { ScheduledShiftEditor, type DayEditorResult } from './components/ScheduledShiftEditor';
 import { MonthCalendar } from './components/MonthCalendar';
 import { RosterGrid, type RosterRow } from './components/RosterGrid';
@@ -63,6 +64,8 @@ export default function SchedulePage() {
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
     const [exportOpen, setExportOpen] = useState(false);
     const [editing, setEditing] = useState<{ date: string; locationId: string | null } | null>(null);
+    // Member profile modal (opened by tapping a name in the roster grid).
+    const [profileUserId, setProfileUserId] = useState<string | null>(null);
     // Destructive actions (remove member / clear location / clear month) confirm here.
     const [confirming, setConfirming] = useState<{ title: string; message: string; run: () => Promise<void> } | null>(null);
 
@@ -751,6 +754,7 @@ export default function SchedulePage() {
                                                             onCellTap={(memberId, date) => cellTap(sec.id)(memberId, date)}
                                                             onQuickFill={quickFill(sec.id)}
                                                             onRemoveRow={removeMember(sec.id, sec.items)}
+                                                            onOpenProfile={setProfileUserId}
                                                         />
                                                     )}
                                                     {sec.id && addable.length > 0 && (
@@ -812,6 +816,7 @@ export default function SchedulePage() {
                         onConfirm={confirming.run}
                     />
                 )}
+                {profileUserId && <UserProfileModal userId={profileUserId} onClose={() => setProfileUserId(null)} />}
             </AnimatePresence>
         </div>
     );

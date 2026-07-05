@@ -205,6 +205,57 @@ async function messagesFromWebhook(table: string, record: Record<string, unknown
                     category: 'shifts',
                 }];
             }
+            case 'schedule_published': {
+                const n = (details.count as number) || 0;
+                return [{
+                    userId: target,
+                    title: 'Schedule published',
+                    body: `${actor} published your schedule — ${n} shift${n === 1 ? '' : 's'}.`,
+                    route: '/schedule',
+                    category: 'shifts',
+                }];
+            }
+            case 'schedule_updated':
+            case 'schedule_removed': {
+                const n = (details.count as number) || 1;
+                const loc = (details.location_name as string) || '';
+                const what = n === 1 ? 'a shift of yours' : `${n} of your shifts`;
+                const verb = action === 'schedule_removed' ? 'removed' : 'changed';
+                return [{
+                    userId: target,
+                    title: action === 'schedule_removed' ? 'Shifts removed' : 'Schedule changed',
+                    body: `${actor} ${verb} ${what}${loc ? ` at ${loc}` : ''}.`,
+                    route: '/schedule',
+                    category: 'shifts',
+                }];
+            }
+            case 'timeoff_requested': {
+                const who = (details.target_name as string) || 'A team member';
+                const range = details.starts_on === details.ends_on
+                    ? String(details.starts_on ?? '')
+                    : `${details.starts_on}–${details.ends_on}`;
+                return [{
+                    userId: target,
+                    title: 'Time-off request',
+                    body: `${who} requested ${details.kind ?? 'time off'}: ${range}.`,
+                    route: '/schedule',
+                    category: 'requests',
+                }];
+            }
+            case 'timeoff_approved':
+            case 'timeoff_declined': {
+                const range = details.starts_on === details.ends_on
+                    ? String(details.starts_on ?? '')
+                    : `${details.starts_on}–${details.ends_on}`;
+                const ok = action === 'timeoff_approved';
+                return [{
+                    userId: target,
+                    title: ok ? 'Time off approved' : 'Time off declined',
+                    body: `Your ${details.kind ?? 'time off'} (${range}) was ${ok ? 'approved' : 'declined'}.`,
+                    route: '/schedule',
+                    category: 'requests',
+                }];
+            }
             case 'profile_updated': {
                 const changes = (details.changes as { field: string }[] | undefined) ?? [];
                 const fields = changes.map((c) => c.field).join(', ') || 'profile';

@@ -6,11 +6,14 @@ import {
     PencilSimpleIcon,
     TrashIcon,
     ClockCounterClockwiseIcon,
+    ClockCountdownIcon,
     ArrowRightIcon,
     AtIcon,
     CheckCircleIcon,
     XCircleIcon,
     UserGearIcon,
+    PaperPlaneTiltIcon,
+    SunHorizonIcon,
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
@@ -37,6 +40,15 @@ const ACTION: Record<string, ActionMeta> = {
     name_request_approved: { labelKey: 'audit.actionNameApproved', Icon: CheckCircleIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
     name_request_rejected: { labelKey: 'audit.actionNameDeclined', Icon: XCircleIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
     profile_updated: { labelKey: 'audit.actionProfileUpdated', Icon: UserGearIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    schedule_created: { labelKey: 'audit.actionSchedCreated', Icon: PlusIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    schedule_updated: { labelKey: 'audit.actionSchedUpdated', Icon: PencilSimpleIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    schedule_removed: { labelKey: 'audit.actionSchedRemoved', Icon: TrashIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    schedule_published: { labelKey: 'audit.actionSchedPublished', Icon: PaperPlaneTiltIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    timeoff_requested: { labelKey: 'audit.actionTimeoffRequested', Icon: SunHorizonIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
+    timeoff_approved: { labelKey: 'audit.actionTimeoffApproved', Icon: CheckCircleIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    timeoff_declined: { labelKey: 'audit.actionTimeoffDeclined', Icon: XCircleIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    late_15: { labelKey: 'audit.actionLate', Icon: ClockCountdownIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
+    late_60: { labelKey: 'audit.actionLate', Icon: ClockCountdownIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
 };
 
 const FALLBACK_META: ActionMeta = { labelKey: 'audit.actionGeneric', Icon: ClockCounterClockwiseIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' };
@@ -254,6 +266,40 @@ function AuditBody({ entry }: { entry: ShiftAuditLog }) {
                     {d.note && <p className="text-gray-400">{t('audit.reason', { note: d.note })}</p>}
                 </div>
             );
+        case 'schedule_created':
+        case 'schedule_updated':
+        case 'schedule_removed':
+        case 'schedule_published':
+        case 'late_15':
+        case 'late_60': {
+            const parts: string[] = [];
+            if (d.count) parts.push(`${d.count} ${t('schedule.shiftsCount')}`);
+            if (d.scheduled_start) {
+                const dt = new Date(d.scheduled_start);
+                parts.push(`${dt.getDate()} ${monthShort(dt)}${entry.action.startsWith('late') ? ` · ${fmtClock(d.scheduled_start)}` : ''}`);
+            }
+            if (d.location_name) parts.push(d.location_name);
+            return parts.length > 0 ? (
+                <p className="text-caption tabular-nums text-gray-700 dark:text-gray-200">{parts.join(' · ')}</p>
+            ) : null;
+        }
+        case 'timeoff_requested':
+        case 'timeoff_approved':
+        case 'timeoff_declined': {
+            const parts: string[] = [];
+            if (d.kind) parts.push(t(`timeoff.${d.kind}` as TranslationKey));
+            if (d.starts_on) {
+                const from = new Date(`${d.starts_on}T00:00`);
+                const range =
+                    d.ends_on && d.ends_on !== d.starts_on
+                        ? `${from.getDate()} ${monthShort(from)} – ${new Date(`${d.ends_on}T00:00`).getDate()} ${monthShort(new Date(`${d.ends_on}T00:00`))}`
+                        : `${from.getDate()} ${monthShort(from)}`;
+                parts.push(range);
+            }
+            return parts.length > 0 ? (
+                <p className="text-caption tabular-nums text-gray-700 dark:text-gray-200">{parts.join(' · ')}</p>
+            ) : null;
+        }
         default:
             return null;
     }

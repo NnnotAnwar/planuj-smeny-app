@@ -94,14 +94,10 @@ export const scheduleService = {
         if (error) throw new Error(error.message);
     },
 
-    /** Publish every draft in [startISO, endISO) — members can then see them. */
+    /** Publish every draft in [startISO, endISO) — members can then see them.
+     *  The RPC also notifies every member whose shifts went live. */
     async publishMonth(startISO: string, endISO: string): Promise<void> {
-        const { error } = await supabase
-            .from('scheduled_shifts')
-            .update({ published: true })
-            .gte('starts_at', startISO)
-            .lt('starts_at', endISO)
-            .eq('published', false);
+        const { error } = await supabase.rpc('publish_schedule', { p_from: startISO, p_to: endISO });
         if (error) throw new Error(error.message);
     },
 
@@ -171,7 +167,9 @@ export const scheduleService = {
             status: input.approved ? 'approved' : 'pending',
             reviewed_by: input.approved ? (input.reviewed_by ?? null) : null,
         });
-        if (error) throw new Error(error.message);
+        // 23P01 = the no-overlap exclusion constraint: this person already has
+        // pending/approved leave covering (part of) the requested period.
+        if (error) throw new Error(error.code === '23P01' ? 'TIMEOFF_OVERLAP' : error.message);
     },
 
     async reviewTimeOff(id: string, approve: boolean, reviewerId: string): Promise<void> {
@@ -179,7 +177,7 @@ export const scheduleService = {
             .from('time_off')
             .update({ status: approve ? 'approved' : 'declined', reviewed_by: reviewerId })
             .eq('id', id);
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(error.code === '23P01' ? 'TIMEOFF_OVERLAP' : error.message);
     },
 
     /** Withdraw (member, pending only per RLS) or remove (manager) leave. */

@@ -31,6 +31,15 @@ const todayStr = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+type Translate = (key: Parameters<ReturnType<typeof useTranslation>>[0]) => string;
+
+/** Localize service errors (TIMEOFF_OVERLAP = leave already covers those days). */
+const leaveErr = (err: unknown, t: Translate): string => {
+    const msg = err instanceof Error ? err.message : '';
+    if (msg === 'TIMEOFF_OVERLAP') return t('timeoff.overlap');
+    return msg || t('common.actionFailed');
+};
+
 function RequestModal({
     members,
     selfId,
@@ -75,7 +84,7 @@ function RequestModal({
             qc.invalidateQueries({ queryKey: ['schedule'] });
             onClose();
         } catch (err) {
-            setError(err instanceof Error ? err.message : t('common.actionFailed'));
+            setError(leaveErr(err, t));
             setBusy(false);
         }
     };
@@ -167,7 +176,7 @@ export function TimeOffCard({
     const reviewM = useMutation({
         mutationFn: ({ id, approve }: { id: string; approve: boolean }) => scheduleService.reviewTimeOff(id, approve, selfId),
         onSuccess: invalidate,
-        onError: (err) => toast(err instanceof Error ? err.message : t('common.actionFailed'), 'error'),
+        onError: (err) => toast(leaveErr(err, t), 'error'),
     });
     const deleteM = useMutation({
         mutationFn: (id: string) => scheduleService.deleteTimeOff(id),
