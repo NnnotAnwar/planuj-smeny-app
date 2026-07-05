@@ -54,7 +54,7 @@ export default function SchedulePage() {
     const [personQuery, setPersonQuery] = useState('');
     // Calendar (day-first) vs roster grid (people × days), persisted per device.
     const [viewMode, setViewMode] = useState<'calendar' | 'grid'>(
-        () => (localStorage.getItem('schedule-view') === 'grid' ? 'grid' : 'calendar'),
+        () => (localStorage.getItem('schedule-view') === 'calendar' ? 'calendar' : 'grid'),
     );
     const switchView = (mode: 'calendar' | 'grid') => {
         setViewMode(mode);
@@ -592,32 +592,10 @@ export default function SchedulePage() {
                             ))}
                         </div>
                         {teamView && (
-                            <button
-                                type="button"
-                                onClick={() => setTeamOnly((v) => !v)}
-                                aria-pressed={teamOnly}
-                                className={`rounded-2xl px-3 py-2 text-small-strong border transition-colors ${
-                                    teamOnly
-                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
-                                        : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                                }`}
-                            >
-                                {t('schedule.teamOnly')}
-                            </button>
-                        )}
-                        {teamView && (
-                            <SearchInput
-                                value={personQuery}
-                                onChange={setPersonQuery}
-                                placeholder={t('schedule.findPerson')}
-                                className="w-full sm:w-44 order-last sm:order-0"
-                            />
-                        )}
-                        {teamView && (
                             <div className="inline-flex rounded-2xl bg-gray-100 dark:bg-gray-800/40 p-1 shadow-sm">
                                 {([
-                                    { mode: 'calendar' as const, Icon: CalendarBlankIcon, label: t('schedule.viewCalendar') },
                                     { mode: 'grid' as const, Icon: TableIcon, label: t('schedule.viewGrid') },
+                                    { mode: 'calendar' as const, Icon: CalendarBlankIcon, label: t('schedule.viewCalendar') },
                                 ]).map(({ mode, Icon, label }) => (
                                     <button
                                         key={mode}
@@ -637,9 +615,31 @@ export default function SchedulePage() {
                                 ))}
                             </div>
                         )}
+                        {teamView && (
+                            <button
+                                type="button"
+                                onClick={() => setTeamOnly((v) => !v)}
+                                aria-pressed={teamOnly}
+                                className={`rounded-2xl px-3 py-2 text-small-strong border transition-colors ${
+                                    teamOnly
+                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                                        : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                }`}
+                            >
+                                {t('schedule.teamOnly')}
+                            </button>
+                        )}
+                        {teamView && (
+                            <SearchInput
+                                value={personQuery}
+                                onChange={setPersonQuery}
+                                placeholder={t('schedule.findPerson')}
+                                className="flex-1 min-w-36 sm:flex-none sm:w-44 order-last sm:order-0"
+                            />
+                        )}
                     </div>
                     {teamView && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             {draftCount > 0 && (
                                 <Button size="sm" icon={PaperPlaneTiltIcon} loading={publishM.isPending} onClick={() => publishM.mutate()}>
                                     {t('schedule.publish', { count: draftCount })}
