@@ -190,6 +190,21 @@ async function messagesFromWebhook(table: string, record: Record<string, unknown
                 return [{ userId: target, title: 'Name change approved', body: 'Your name change request was approved.', route: '/profile', category: 'account' }];
             case 'name_request_rejected':
                 return [{ userId: target, title: 'Name change declined', body: 'Your name change request was declined.', route: '/profile', category: 'account' }];
+            case 'late_15':
+            case 'late_60': {
+                // Sent to BOTH the late member and their manager. Neutral copy
+                // works for either recipient.
+                const who = (details.target_name as string) || 'A team member';
+                const loc = (details.location_name as string) || '';
+                const mins = action === 'late_60' ? '1+ hour' : '15+ min';
+                return [{
+                    userId: target,
+                    title: 'Shift not started',
+                    body: `${who} hasn't clocked in${loc ? ` at ${loc}` : ''} — ${mins} late.`,
+                    route: '/?openNotifications=1',
+                    category: 'shifts',
+                }];
+            }
             case 'profile_updated': {
                 const changes = (details.changes as { field: string }[] | undefined) ?? [];
                 const fields = changes.map((c) => c.field).join(', ') || 'profile';

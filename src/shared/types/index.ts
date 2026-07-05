@@ -241,6 +241,10 @@ export const ShiftAuditLogSchema = z.object({
       old_name: z.string().nullable().optional(),
       new_name: z.string().nullable().optional(),
       note: z.string().nullable().optional(),
+      // Late-for-shift alerts (late_15 / late_60 from the pg_cron check).
+      location_name: z.string().nullable().optional(),
+      scheduled_start: z.string().nullable().optional(),
+      minutes: z.number().nullable().optional(),
       // Admin profile edits (name / role / organization changed from the panel).
       changes: z
         .array(

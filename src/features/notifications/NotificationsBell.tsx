@@ -7,6 +7,7 @@ import {
     PencilSimpleIcon,
     TrashIcon,
     AtIcon,
+    ClockCountdownIcon,
     CheckCircleIcon,
     XCircleIcon,
     UserGearIcon,
@@ -67,6 +68,16 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
             return { Icon: XCircleIcon, tint: 'text-red-500', title: t('notif.nameDeclined'), detail: d.note || undefined };
         case 'profile_updated':
             return { Icon: UserGearIcon, tint: 'text-blue-500', title: t('notif.profileUpdated'), detail: fmtProfileChanges(d.changes, t) };
+        case 'late_15':
+        case 'late_60':
+            // Same entry goes to the late member and their manager; the name in
+            // the title reads fine for both.
+            return {
+                Icon: ClockCountdownIcon,
+                tint: 'text-amber-500',
+                title: t(entry.action === 'late_60' ? 'notif.late60' : 'notif.late15', { name: d.target_name || '—' }),
+                detail: [d.location_name, d.scheduled_start ? fmtClock(d.scheduled_start) : null].filter(Boolean).join(' · ') || undefined,
+            };
         default:
             return { Icon: BellIcon, tint: 'text-gray-400', title: t('notif.account') };
     }
