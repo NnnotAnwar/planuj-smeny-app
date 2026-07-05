@@ -5,7 +5,7 @@ and out by location in real time; managers and admins oversee organizations,
 locations, people and requests — on the web or as a native Android/iOS app.
 
 > **Status: active development (beta).** Features and UI change frequently.
-> _Version 1.8.0 · last updated: July 1, 2026._ · See the [Roadmap](ROADMAP.md).
+> _Version 1.9.0 — “Adamov” · last updated: July 5, 2026._ · See the [Roadmap](ROADMAP.md).
 
 ---
 
@@ -32,6 +32,29 @@ locations, people and requests — on the web or as a native Android/iOS app.
 - **Auto-end at midnight** — shifts left open overnight are closed automatically
   at Europe/Prague midnight by a scheduled job.
 
+### Scheduling (rota)
+- **Two views of one rota:** a **roster grid** (people × days, paper-rota style —
+  the default) split into 1–15 / 16–end print bands, and a **month calendar per
+  location**. Managers tap a cell (grid) or a day (calendar) to assign staff.
+- **Day editor** — assign several people at once, per-member times or an all-day
+  mark; anyone already busy elsewhere that day is locked, and the database
+  rejects overlapping assignments so nobody is double-booked.
+- **Planning tools:** per-location **staff rosters**, restaurant **short/long-week
+  quick-fill** (replaces, doesn't stack), clear a person / location / whole month,
+  **copy last month**, **My Team** self-service (take & release members), person
+  search, admin-set **location letters** shown in cells, and a Σ hours column.
+- **Draft → publish** — new assignments are drafts only the planner sees; one
+  **Publish** flips the month live for members and notifies everyone involved.
+- **Time off** (vacation / sick / other): members request, managers approve or
+  decline (or enter pre-approved leave); approved leave **clears the rota** for
+  those days and blocks planning, and overlapping leave per person is rejected.
+- **Reminders:** if someone hasn't clocked in, **late-for-shift alerts** fire at
+  +15 min and +1 h to the member and their manager (pg_cron, every 5 min).
+- **Exports mirror the on-screen view** — the grid exports as a people × days
+  matrix (PDF in two print bands / Excel), the calendar as month pages.
+- A **next-shift card** on the dashboard, and today's rostered location
+  preselects your clock-in.
+
 ### Timesheets & analytics
 - **Overview** (per employee): monthly analytics — total/avg hours, shift count,
   busiest days, share-of-time per location — with **mandatory-break math** baked
@@ -57,12 +80,15 @@ locations, people and requests — on the web or as a native Android/iOS app.
   self-service but rate-limited to once every 7 days.
 
 ### Notifications
-- **In-app bell** — a personal feed of what concerns you: shift changes to your
-  schedule, name-change decisions, and admin edits to your profile.
+- **In-app bell** — a personal feed of what concerns you: your schedule being
+  published / changed / removed, time-off decisions, late-shift alerts,
+  name-change decisions, and admin edits to your profile.
 - **Push notifications** (Firebase Cloud Messaging, native): the same events,
   delivered to your device, with **per-category preferences** (master switch +
   shift / account / requests) in Settings. Tapping opens the relevant screen —
   or the notifications panel when there's no dedicated one.
+- **Activity Log** captures every schedule and time-off action (create, edit,
+  delete, publish, request, approve/decline, late) for admins.
 
 ### Navigation
 - **Command palette** (**⌘K / Ctrl K**) to jump to any page or location.
@@ -111,6 +137,7 @@ src/
 ├─ features/
 │  ├─ auth/        # login, accept-invite, AuthContext, route guards
 │  ├─ shifts/      # clock in/out, realtime, Overview + export
+│  ├─ schedule/    # rota: roster grid + calendar, day editor, time off, exports
 │  ├─ locations/   # location picker (recent + search), confirm/switch popup
 │  ├─ timesheets/  # admin shift management, exports, Activity Log
 │  ├─ admin/       # Admin Panel: orgs / locations / employees / roles
@@ -145,6 +172,8 @@ hold even for direct API calls — the UI just mirrors them.
 - **`username-login`** — resolves a username to an email for sign-in.
 - **`send-push`** — sends FCM (HTTP v1) pushes from Database Webhooks
   (`shift_audit_log`, `name_change_requests`), honouring per-user preferences.
+  Schedule and time-off notifications flow through the same `shift_audit_log`
+  webhook (rows are written by SECURITY DEFINER triggers / the publish RPC).
 
 ---
 
@@ -215,7 +244,11 @@ Create Database Webhooks (INSERT) on `shift_audit_log` and
 - **Database:** two Supabase projects — **prod** and **preprod** — kept in sync
   via the migrations in `supabase/migrations/`. CI (`verify`) runs lint, tests
   and the build on every PR.
-- **Versioning:** semver tags (`vX.Y.Z`) + GitHub Releases per release.
+- **Versioning:** semver tags (`vX.Y.Z`) + GitHub Releases per release. Notable
+  releases also carry a **codename** — a Czech town, advancing A→Z
+  (v1.9.0 = _Adamov_).
+- **Scheduled jobs (pg_cron):** auto-end open shifts at Europe/Prague midnight;
+  late-for-shift alerts every 5 minutes.
 
 ---
 
