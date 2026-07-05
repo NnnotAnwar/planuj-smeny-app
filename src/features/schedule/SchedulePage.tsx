@@ -485,10 +485,24 @@ export default function SchedulePage() {
         const exportSections: ScheduleExportSection[] = teamView
             ? sections.map((sec) => ({ name: sec.name, shifts: sec.items, label: memberFull }))
             : [{ name: t('schedule.exportTitleMine'), shifts: myShifts, label: (s) => locationName(s.location_id) }];
+        // Roster-grid view on screen → export the same people × days matrix.
+        const gridSections = teamView && viewMode === 'grid'
+            ? sections.map((sec) => ({
+                  name: sec.name,
+                  code: sec.code,
+                  rows: rowsFor(sec.id, sec.items),
+                  shifts: sec.items,
+                  leaveFor: (memberId: string, date: string) => {
+                      const e = leaveOn(memberId, date);
+                      return e ? t(`timeoff.short_${e.kind}` as 'timeoff.short_vacation') : undefined;
+                  },
+              }))
+            : undefined;
         await exportSchedule(format, {
             monthKey: selectedMonth,
             periodLabel,
             sections: exportSections,
+            gridSections,
             labels: {
                 title: teamView ? t('schedule.exportTitleTeam') : t('schedule.exportTitleMine'),
                 period: t('export.period'),

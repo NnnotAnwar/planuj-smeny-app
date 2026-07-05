@@ -7,11 +7,12 @@ import { shareNative } from '@shared/utils/shareExport';
 
 /**
  * --- SCHEDULE EXPORT ---
- * Prints the rota the way it's planned: as a month calendar per location.
- *   • PDF   — one landscape page per location: a real calendar grid with the
- *             assigned people inside each day. Made for printing.
- *   • Excel — one sheet per location with flat rows (date / member / times),
- *             made for further data work.
+ * Prints the rota the way it's shown on screen — the export mirrors the view:
+ *   • Calendar view — one month calendar per location (PDF: landscape page,
+ *     Excel: flat rows date / member / times).
+ *   • Roster-grid view — the same people × days matrix as on screen: location
+ *     letter (or ✓) per working day, times for timed shifts, leave codes, and
+ *     the Σ column.
  * On native the file goes through the OS share sheet (browser downloads don't
  * work inside the WebView); on the web it downloads.
  */
@@ -38,12 +39,26 @@ export interface ScheduleExportSection {
     label: (s: ScheduledShift) => string;
 }
 
+export interface ScheduleExportGridSection {
+    /** Section heading — the location name. */
+    name: string;
+    /** The location's short letter — replaces the ✓ in all-day cells when set. */
+    code?: string | null;
+    /** Grid rows in display order (the location's roster). */
+    rows: { id: string; name: string }[];
+    shifts: ScheduledShift[];
+    /** Approved-leave marker for a member+day (localized short code, e.g. "V"). */
+    leaveFor?: (memberId: string, date: string) => string | undefined;
+}
+
 export interface ScheduleExportContext {
     /** Selected month as `YYYY-MM`. */
     monthKey: string;
     /** Human month label, e.g. "July 2026". */
     periodLabel: string;
     sections: ScheduleExportSection[];
+    /** When set (roster-grid view on screen), export the people × days matrix instead. */
+    gridSections?: ScheduleExportGridSection[];
     labels: ScheduleExportLabels;
 }
 
@@ -80,6 +95,40 @@ function bucketByDay(shifts: ScheduledShift[]): Map<string, ScheduledShift[]> {
 
 const stem = (periodLabel: string) => `Schedule_${periodLabel}`.replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '');
 
+// --- Roster-grid (people × days) helpers ------------------------------------
+
+function daysInMonth(monthKey: string): number {
+    const [year, month] = monthKey.split('-').map(Number);
+    return new Date(year, month, 0).getDate();
+}
+
+/** Weekday index (0 = Mon) for a day of the export month. */
+function dowOf(monthKey: string, day: number): number {
+    const [year, month] = monthKey.split('-').map(Number);
+    return (new Date(year, month - 1, day).getDay() + 6) % 7;
+}
+
+/** Member's shifts bucketed by day-of-month, matching the on-screen grid. */
+function memberDayMap(shifts: ScheduledShift[]): Map<string, ScheduledShift[]> {
+    const map = new Map<string, ScheduledShift[]>();
+    for (const s of [...shifts].sort((a, b) => a.starts_at.localeCompare(b.starts_at))) {
+        const key = `${s.user_id}|${dayKey(new Date(s.starts_at))}`;
+        map.set(key, [...(map.get(key) ?? []), s]);
+    }
+    return map;
+}
+
+/** One grid cell as plain text: letter/✓, times, or a leave code. */
+function gridCellText(section: ScheduleExportGridSection, byDay: Map<string, ScheduledShift[]>, memberId: string, date: string): string {
+    const items = byDay.get(`${memberId}|${date}`) ?? [];
+    if (items.length > 0) {
+        return items
+            .map((s) => (s.all_day ? section.code || '✓' : `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`))
+            .join('\n');
+    }
+    return section.leaveFor?.(memberId, date) ?? '';
+}
+
 function triggerDownload(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -92,9 +141,79 @@ function triggerDownload(blob: Blob, filename: string) {
 }
 
 // ---------------------------------------------------------------------
-// PDF — a printable month-calendar page per section (landscape A4)
+// PDF (grid view) — the people × days matrix per section (landscape A4)
+// ---------------------------------------------------------------------
+function buildGridPdf(ctx: ScheduleExportContext): jsPDF {
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const days = daysInMonth(ctx.monthKey);
+    const dayLabels = weekdayShortLabels();
+    const weekend = new Set(Array.from({ length: days }, (_, i) => i + 1).filter((d) => dowOf(ctx.monthKey, d) >= 5));
+    const sections = (ctx.gridSections ?? []).filter((s) => s.rows.length > 0);
+
+    sections.forEach((section, i) => {
+        if (i > 0) doc.addPage();
+        const byDay = memberDayMap(section.shifts);
+
+        doc.setFontSize(16);
+        doc.setTextColor(0);
+        doc.text(`${section.name} — ${ctx.periodLabel}`, 14, 16);
+        doc.setFontSize(9);
+        doc.setTextColor(120);
+        doc.text(`${ctx.labels.title} · ${ctx.labels.generatedOn}: ${new Date().toLocaleDateString()}`, 14, 22);
+
+        // Two bands like the on-screen grid (1–15 / 16–end): bigger, printable
+        // cells. Σ only on the second band, same as the interface.
+        const bands: Array<{ from: number; to: number; sum: boolean }> = [
+            { from: 1, to: Math.min(15, days), sum: false },
+            { from: 16, to: days, sum: true },
+        ].filter((b) => b.from <= b.to);
+
+        let startY = 27;
+        for (const band of bands) {
+            const bandDays = Array.from({ length: band.to - band.from + 1 }, (_, d) => band.from + d);
+            const sumCol = band.sum ? bandDays.length + 1 : -1;
+            autoTable(doc, {
+                startY,
+                head: [[
+                    ctx.labels.colMember,
+                    ...bandDays.map((d) => `${d}\n${dayLabels[dowOf(ctx.monthKey, d)]}`),
+                    ...(band.sum ? ['Σ'] : []),
+                ]],
+                body: section.rows.map((row) => [
+                    row.name,
+                    ...bandDays.map((d) => gridCellText(section, byDay, row.id, `${ctx.monthKey}-${pad(d)}`)),
+                    ...(band.sum ? [String(section.shifts.filter((s) => s.user_id === row.id).length)] : []),
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [16, 185, 129], halign: 'center', fontStyle: 'bold', fontSize: 7, cellPadding: 1 },
+                styles: { fontSize: 8, cellPadding: 1, halign: 'center', valign: 'middle', overflow: 'linebreak', minCellHeight: 9 },
+                columnStyles: {
+                    0: { cellWidth: 34, halign: 'left', fontStyle: 'bold' },
+                    ...(band.sum ? { [sumCol]: { cellWidth: 10, fontStyle: 'bold' } } : {}),
+                    // Constant day width across both bands so the columns line up.
+                    ...Object.fromEntries(bandDays.map((_, c) => [c + 1, { cellWidth: (269 - 34 - 10) / 16 }])),
+                },
+                didParseCell: (data) => {
+                    // Weekend tint, matching the on-screen grid.
+                    const c = data.column.index;
+                    if (c >= 1 && c <= bandDays.length && weekend.has(bandDays[c - 1])) {
+                        if (data.section === 'body') data.cell.styles.fillColor = [254, 243, 199];
+                        else data.cell.styles.fillColor = [5, 150, 105];
+                    }
+                },
+            });
+            startY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
+        }
+    });
+
+    return doc;
+}
+
+// ---------------------------------------------------------------------
+// PDF (calendar view) — a printable month-calendar page per section
 // ---------------------------------------------------------------------
 function buildPdf(ctx: ScheduleExportContext): jsPDF {
+    if (ctx.gridSections) return buildGridPdf(ctx);
     const doc = new jsPDF({ orientation: 'landscape' });
     const [, month] = ctx.monthKey.split('-').map(Number);
     const weeks = monthWeeks(ctx.monthKey);
@@ -137,7 +256,7 @@ function buildPdf(ctx: ScheduleExportContext): jsPDF {
 }
 
 // ---------------------------------------------------------------------
-// Excel — one sheet per section, flat rows
+// Excel — one sheet per section (matrix in grid view, flat rows otherwise)
 // ---------------------------------------------------------------------
 async function buildExcel(ctx: ScheduleExportContext) {
     const XLSX = await import('xlsx');
@@ -154,6 +273,36 @@ async function buildExcel(ctx: ScheduleExportContext) {
         used.add(candidate.toLowerCase());
         return candidate;
     };
+
+    if (ctx.gridSections) {
+        const days = daysInMonth(ctx.monthKey);
+        let anyGrid = false;
+        for (const section of ctx.gridSections) {
+            if (section.rows.length === 0) continue;
+            anyGrid = true;
+            const byDay = memberDayMap(section.shifts);
+            const aoa: (string | number)[][] = [
+                [`${section.name} — ${ctx.periodLabel}`],
+                [`${L.generatedOn}: ${new Date().toLocaleDateString()}`],
+                [],
+                [L.colMember, ...Array.from({ length: days }, (_, d) => d + 1), 'Σ'],
+                ...section.rows.map((row) => [
+                    row.name,
+                    ...Array.from({ length: days }, (_, d) => {
+                        const date = `${ctx.monthKey}-${pad(d + 1)}`;
+                        // Multi-line cells read poorly in Excel — join with a space.
+                        return gridCellText(section, byDay, row.id, date).replace(/\n/g, ' ');
+                    }),
+                    section.shifts.filter((s) => s.user_id === row.id).length,
+                ]),
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            ws['!cols'] = [{ wch: 24 }, ...Array.from({ length: days }, () => ({ wch: 5 })), { wch: 5 }];
+            XLSX.utils.book_append_sheet(wb, ws, sheetName(section.name));
+        }
+        if (!anyGrid) return null;
+        return { XLSX, wb };
+    }
 
     let any = false;
     for (const section of ctx.sections) {
