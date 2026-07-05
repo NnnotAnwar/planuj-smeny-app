@@ -35,6 +35,7 @@ export const locationService = {
     return validated.map(l => ({
       id: l.id,
       name: l.name,
+      code: l.code ?? null,
       organization_id: l.organization_id,
       archived_at: l.archived_at ?? null,
     }));

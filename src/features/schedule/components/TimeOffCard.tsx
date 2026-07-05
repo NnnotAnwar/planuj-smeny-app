@@ -71,6 +71,8 @@ function RequestModal({
                 reviewed_by: managerMode ? selfId : null,
             });
             qc.invalidateQueries({ queryKey: ['time-off'] });
+            // Approved leave deletes the member's rota shifts on those days (DB trigger).
+            qc.invalidateQueries({ queryKey: ['schedule'] });
             onClose();
         } catch (err) {
             setError(err instanceof Error ? err.message : t('common.actionFailed'));
@@ -157,7 +159,11 @@ export function TimeOffCard({
     const qc = useQueryClient();
     const [open, setOpen] = useState(false);
 
-    const invalidate = () => qc.invalidateQueries({ queryKey: ['time-off'] });
+    const invalidate = () => {
+        qc.invalidateQueries({ queryKey: ['time-off'] });
+        // Approved leave deletes the member's rota shifts on those days (DB trigger).
+        qc.invalidateQueries({ queryKey: ['schedule'] });
+    };
     const reviewM = useMutation({
         mutationFn: ({ id, approve }: { id: string; approve: boolean }) => scheduleService.reviewTimeOff(id, approve, selfId),
         onSuccess: invalidate,
