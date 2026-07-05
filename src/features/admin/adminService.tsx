@@ -24,13 +24,15 @@ import { z } from 'zod';
 
 // Shared select used to hydrate the full organization tree (locations + members).
 const ORG_TREE_SELECT =
-    '*, locations(id, name, organization_id, archived_at), profiles(id, role(name, is_admin, rank), email, username, first_name, last_name, organization_id)';
+    '*, locations(id, name, code, organization_id, archived_at), profiles(id, role(name, is_admin, rank), email, username, first_name, last_name, organization_id, manager_id)';
 
 export interface EmployeeUpdate {
     first_name: string | null;
     last_name: string | null;
     role: string;
     organization_id?: string;
+    /** Manager this member reports to (rota scoping); null clears it. */
+    manager_id?: string | null;
 }
 
 export interface EmployeeInvite {
@@ -121,13 +123,13 @@ export const adminService = {
     // LOCATIONS
     // ----------------------------------------------------------------
 
-    async createLocation(values: { organization_id: string; name: string }): Promise<void> {
+    async createLocation(values: { organization_id: string; name: string; code?: string | null }): Promise<void> {
         const { error } = await supabase.from('locations').insert(values);
         if (error) throw error;
     },
 
-    async updateLocation(id: string, values: { name: string; organization_id?: string }): Promise<void> {
-        const patch: { name: string; organization_id?: string } = { name: values.name };
+    async updateLocation(id: string, values: { name: string; organization_id?: string; code?: string | null }): Promise<void> {
+        const patch: { name: string; organization_id?: string; code?: string | null } = { name: values.name, code: values.code ?? null };
         if (values.organization_id) patch.organization_id = values.organization_id; // Superadmin only (RLS)
         const { error } = await supabase.from('locations').update(patch).eq('id', id);
         if (error) throw error;

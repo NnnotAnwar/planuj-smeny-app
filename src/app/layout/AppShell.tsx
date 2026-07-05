@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Outlet, useSearchParams } from 'react-router-dom';
-import { WarningCircleIcon, CheckCircleIcon, InfoIcon, XIcon, MapPinIcon } from '@phosphor-icons/react';
+import { WarningCircleIcon, CheckCircleIcon, InfoIcon, XIcon, MapPinIcon, WifiSlashIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -10,9 +10,12 @@ import { openNotificationsPanel } from '@features/notifications/notificationsPan
 import { useLocationManagement } from '@features/locations/hooks/useLocationManagement';
 import { useToasts, toastStore } from '@shared/toast/toastStore';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { useOnline } from '@shared/hooks/useOnline';
 
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
+import { BiometricLock } from '@features/auth/BiometricLock';
+import { useBiometricEnabled } from '@features/auth/biometricSetting';
 import { CommandPalette } from '../CommandPalette';
 import { LocationPopup, type LocationPopupVariant } from '@features/locations/components/LocationPopup';
 import { type User, type Shift, type Location } from '@shared/types';
@@ -62,6 +65,12 @@ export function AppShell() {
   // store auto-dismisses each entry.
   const toasts = useToasts();
 
+  // Network connectivity — drives the offline banner.
+  const online = useOnline();
+
+  // Biometric app-lock: opt-in per device, only for admins (rank >= 30).
+  const biometricEnabled = useBiometricEnabled();
+
   // Command palette (⌘K / Ctrl+K) open state + global hotkey.
   const [paletteOpen, setPaletteOpen] = useState(false);
   useEffect(() => {
@@ -107,7 +116,7 @@ export function AppShell() {
   // We avoid unmounting the whole AppShell when shifts are refreshing in the background (flicker fix).
   if (isAuthChecking || (isAuthLoading && !user) || !user) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-[var(--grad-from)] transition-colors duration-500">
+      <div className="min-h-dvh flex items-center justify-center bg-(--grad-from) transition-colors duration-500">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin shadow-lg shadow-emerald-500/20"></div>
           <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm animate-pulse">Loading experience...</p>
@@ -125,12 +134,34 @@ export function AppShell() {
 
   return (
     <div className="App min-h-dvh w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
+      {/* BIOMETRIC LOCK — opt-in per device, admins only (rank >= 30). */}
+      <BiometricLock enforce={(user.role.rank ?? 0) >= 30 && biometricEnabled} />
+
+      {/* OFFLINE BANNER — unobtrusive top pill; the server-dependent actions
+          (e.g. clocking in) are guarded separately. */}
+      <AnimatePresence>
+        {!online && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            role="status"
+            className="fixed left-1/2 -translate-x-1/2 z-190 top-[calc(0.5rem+env(safe-area-inset-top,0px))] flex items-center gap-2 rounded-full bg-gray-900 dark:bg-gray-700 text-white px-3.5 py-1.5 text-caption shadow-lg"
+          >
+            <WifiSlashIcon weight="bold" className="w-4 h-4 shrink-0" />
+            {t('offline.banner')}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* SIDEBAR — persistent dispatch board / navigation (desktop) + header (mobile) */}
       <Sidebar onLocationSelect={handleLocationSelect} onOpenSearch={() => setPaletteOpen(true)} />
 
       {/* MAIN CONTENT AREA — bottom padding clears the mobile tab bar (+ the
-          floating check-in button on Home); md+ uses the sidebar instead. */}
-      <main className="flex-1 p-3 pb-32 md:p-6 md:pb-6 max-w-7xl transition-all">
+          floating check-in button on Home); md+ uses the sidebar instead.
+          No max-width: collapsing the sidebar should hand its space to the
+          content (a capped main just sat left-aligned with a dead right gap). */}
+      <main className="flex-1 min-w-0 p-3 pb-32 md:p-6 md:pb-6 transition-all">
         <Outlet context={contextValue} />
       </main>
 
@@ -138,7 +169,7 @@ export function AppShell() {
       <BottomNav />
 
       {/* ACTION ERROR TOASTS — surface failed shift actions (start/end/move). */}
-      <div className="fixed left-1/2 -translate-x-1/2 z-[200] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 w-[calc(100%-2rem)] max-w-md space-y-2">
+      <div className="fixed left-1/2 -translate-x-1/2 z-200 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 w-[calc(100%-2rem)] max-w-md space-y-2">
         <AnimatePresence>
           {toasts.map((toastItem) => {
             // Colour + icon by intent so success/undo reads differently from an error.
@@ -199,7 +230,7 @@ export function AppShell() {
             transition={{ type: 'spring', stiffness: 360, damping: 30 }}
             role="status"
             onClick={() => setHereToast(null)}
-            className="fixed left-1/2 -translate-x-1/2 z-[200] top-[calc(0.75rem+env(safe-area-inset-top))] w-[calc(100%-2rem)] max-w-sm"
+            className="fixed left-1/2 -translate-x-1/2 z-200 top-[calc(0.75rem+env(safe-area-inset-top))] w-[calc(100%-2rem)] max-w-sm"
           >
             <div className="flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-3 shadow-2xl">
               <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">

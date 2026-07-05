@@ -116,7 +116,7 @@ export function DatePicker({ value, onChange, disabled, ...rest }: DatePickerPro
                             left: pos?.left ?? 0,
                             visibility: pos ? 'visible' : 'hidden',
                         }}
-                        className="z-[70] w-64 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-2xl p-3"
+                        className="z-70 w-64 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-2xl p-3"
                     >
                         <div className="flex items-center justify-between mb-2 px-1">
                             <button type="button" onClick={prev} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">

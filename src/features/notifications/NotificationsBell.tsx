@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import {
     BellIcon,
     PlusIcon,
     PencilSimpleIcon,
     TrashIcon,
     AtIcon,
+    ClockCountdownIcon,
+    PaperPlaneTiltIcon,
+    SunHorizonIcon,
     CheckCircleIcon,
     XCircleIcon,
     UserGearIcon,
@@ -33,6 +37,35 @@ function fmtWhen(iso: string): string {
 }
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
+
+/** "3 · 21 Jul · San Carlo" for grouped rota events. */
+function fmtRota(d: { count?: number | null; scheduled_start?: string | null; location_name?: string | null }, t: Translate): string | undefined {
+    const parts: string[] = [];
+    if (d.count) parts.push(`${d.count} ${t('schedule.shiftsCount')}`);
+    if (d.scheduled_start) {
+        const dt = new Date(d.scheduled_start);
+        parts.push(`${dt.getDate()} ${monthShort(dt)}`);
+    }
+    if (d.location_name) parts.push(d.location_name);
+    return parts.join(' · ') || undefined;
+}
+
+/** "Vacation · 21 Jul – 25 Jul" for time-off events. */
+function fmtLeave(d: { kind?: string | null; starts_on?: string | null; ends_on?: string | null }, t: Translate): string | undefined {
+    const parts: string[] = [];
+    if (d.kind) parts.push(t(`timeoff.${d.kind}` as TranslationKey));
+    if (d.starts_on) {
+        const from = new Date(`${d.starts_on}T00:00`);
+        const fromTxt = `${from.getDate()} ${monthShort(from)}`;
+        if (d.ends_on && d.ends_on !== d.starts_on) {
+            const to = new Date(`${d.ends_on}T00:00`);
+            parts.push(`${fromTxt} – ${to.getDate()} ${monthShort(to)}`);
+        } else {
+            parts.push(fromTxt);
+        }
+    }
+    return parts.join(' · ') || undefined;
+}
 
 const FIELD_LABEL: Record<string, TranslationKey> = {
     name: 'notif.field.name',
@@ -66,6 +99,28 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
             return { Icon: XCircleIcon, tint: 'text-red-500', title: t('notif.nameDeclined'), detail: d.note || undefined };
         case 'profile_updated':
             return { Icon: UserGearIcon, tint: 'text-blue-500', title: t('notif.profileUpdated'), detail: fmtProfileChanges(d.changes, t) };
+        case 'schedule_published':
+            return { Icon: PaperPlaneTiltIcon, tint: 'text-emerald-500', title: t('notif.schedulePublished'), detail: fmtRota(d, t) };
+        case 'schedule_updated':
+            return { Icon: PencilSimpleIcon, tint: 'text-blue-500', title: t('notif.scheduleUpdated'), detail: fmtRota(d, t) };
+        case 'schedule_removed':
+            return { Icon: TrashIcon, tint: 'text-red-500', title: t('notif.scheduleRemoved'), detail: fmtRota(d, t) };
+        case 'timeoff_requested':
+            return { Icon: SunHorizonIcon, tint: 'text-amber-500', title: t('notif.timeoffRequested', { name: d.target_name || '—' }), detail: fmtLeave(d, t) };
+        case 'timeoff_approved':
+            return { Icon: CheckCircleIcon, tint: 'text-emerald-500', title: t('notif.timeoffApproved'), detail: fmtLeave(d, t) };
+        case 'timeoff_declined':
+            return { Icon: XCircleIcon, tint: 'text-red-500', title: t('notif.timeoffDeclined'), detail: fmtLeave(d, t) };
+        case 'late_15':
+        case 'late_60':
+            // Same entry goes to the late member and their manager; the name in
+            // the title reads fine for both.
+            return {
+                Icon: ClockCountdownIcon,
+                tint: 'text-amber-500',
+                title: t(entry.action === 'late_60' ? 'notif.late60' : 'notif.late15', { name: d.target_name || '—' }),
+                detail: [d.location_name, d.scheduled_start ? fmtClock(d.scheduled_start) : null].filter(Boolean).join(' · ') || undefined,
+            };
         default:
             return { Icon: BellIcon, tint: 'text-gray-400', title: t('notif.account') };
     }
@@ -85,8 +140,44 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
 export function NotificationsBell() {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+    // Fixed-position coords for the portal panel. The bell can sit anywhere
+    // (header, or the BOTTOM of the collapsed rail), so anchor the panel edge
+    // nearest the trigger: top-aligned for a trigger in the upper half of the
+    // screen, bottom-aligned for the lower half — the panel then grows toward
+    // the free space whatever its real height, never drifting away.
+    const [pos, setPos] = useState<{ top?: number; bottom?: number; left?: number; right?: number } | null>(null);
     const { notifications, unread, isUnread, markSeen, dismiss, clearAll, isLoading } = useNotifications();
     const t = useTranslation();
+
+    const place = useCallback(() => {
+        const r = ref.current?.getBoundingClientRect();
+        if (!r) return;
+        const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+        const lowerHalf = r.top > window.innerHeight / 2;
+        const vertical = lowerHalf
+            ? { bottom: Math.max(8, window.innerHeight - r.bottom) }
+            : { top: Math.max(8, r.top) };
+        if (isDesktop) {
+            // Flyout to the right of the trigger (sidebar/rail).
+            setPos({ left: r.right + 8, ...vertical });
+        } else {
+            // Mobile: right-aligned under (or above) the trigger.
+            setPos({ right: Math.max(8, window.innerWidth - r.right), ...(lowerHalf ? vertical : { top: r.bottom + 8 }) });
+        }
+    }, []);
+
+    useLayoutEffect(() => {
+        if (!open) return;
+        place();
+        const onMove = () => place();
+        window.addEventListener('resize', onMove);
+        window.addEventListener('scroll', onMove, true);
+        return () => {
+            window.removeEventListener('resize', onMove);
+            window.removeEventListener('scroll', onMove, true);
+        };
+    }, [open, place]);
 
     // Open when a deep-linked push asks for the notifications panel.
     useEffect(() => subscribeOpenNotifications(() => setOpen(true)), []);
@@ -100,7 +191,9 @@ export function NotificationsBell() {
     useEffect(() => {
         if (!open) return;
         const onPointerDown = (e: PointerEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) close();
+            const target = e.target as Node;
+            if (ref.current?.contains(target) || panelRef.current?.contains(target)) return;
+            close();
         };
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') close();
@@ -130,16 +223,17 @@ export function NotificationsBell() {
                 )}
             </button>
 
-            <AnimatePresence>
-                {open && (
+            {/* Portal panel (no AnimatePresence — it drops portal children). */}
+            {open && pos && createPortal(
                     <motion.div
+                        ref={panelRef}
                         initial={{ opacity: 0, y: -8, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
                         transition={{ duration: 0.15 }}
                         role="dialog"
                         aria-label={t('notif.title')}
-                        className="absolute right-0 md:left-full md:right-auto top-full mt-2 z-50 w-80 max-w-[calc(100vw-2rem)] origin-top-right rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-2xl overflow-hidden"
+                        style={{ position: 'fixed', top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right }}
+                        className="z-100 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-2xl overflow-hidden"
                     >
                         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 dark:border-white/5">
                             <p className="text-body-strong text-gray-900 dark:text-white">{t('notif.title')}</p>
@@ -200,9 +294,9 @@ export function NotificationsBell() {
                                 })
                             )}
                         </div>
-                    </motion.div>
+                    </motion.div>,
+                    document.body,
                 )}
-            </AnimatePresence>
         </div>
     );
 }

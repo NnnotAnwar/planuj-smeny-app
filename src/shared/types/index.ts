@@ -23,6 +23,7 @@ export const ProfileSchema = z.object({
   }),
   organization_id: z.string(), // The company this user belongs to
   username_changed_at: z.string().nullable().optional(), // last username change (7-day self-service limit)
+  manager_id: z.string().nullable().optional(), // the manager this member reports to (rota scoping)
 });
 
 /**
@@ -86,12 +87,56 @@ export const ShiftWithProfileSchema = ShiftSchema.extend({
   profiles: ShiftProfileSchema.nullable()
 });
 
+/**
+ * ScheduledShiftSchema: a planned/future shift a manager assigns to a member
+ * (the rota), separate from the actual worked `shifts`.
+ */
+export const ScheduledShiftSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  organization_id: z.string(),
+  location_id: z.string().nullable(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  // "Works that day" without exact times (starts/ends hold the day bounds).
+  all_day: z.boolean().default(false),
+  // Draft rows (false) are only visible to planners until the month is published.
+  published: z.boolean().default(false),
+  note: z.string().nullable().optional(),
+  created_by: z.string().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  // Joined member profile for the manager's roster view.
+  profiles: ShiftProfileSchema.optional().nullable(),
+});
+export type ScheduledShift = z.infer<typeof ScheduledShiftSchema>;
+
+/**
+ * TimeOffSchema: a member's leave (vacation / sick / other) over a date range.
+ * Pending until a manager approves; approved leave blocks rota planning.
+ */
+export const TimeOffSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  organization_id: z.string(),
+  kind: z.enum(['vacation', 'sick', 'other']),
+  starts_on: z.string(), // YYYY-MM-DD
+  ends_on: z.string(), // YYYY-MM-DD
+  note: z.string().nullable().optional(),
+  status: z.enum(['pending', 'approved', 'declined']),
+  reviewed_by: z.string().nullable().optional(),
+  created_at: z.string(),
+  profiles: ShiftProfileSchema.optional().nullable(),
+});
+export type TimeOff = z.infer<typeof TimeOffSchema>;
+
 /** 
  * LocationSchema: Defines what a physical work location looks like.
  */
 export const LocationSchema = z.object({
   id: z.string(), // Unique location ID
   name: z.string(), // Name of the restaurant/office
+  code: z.string().nullable().optional(), // short rota-grid letter (e.g. "D"), set by admins
   organization_id: z.string().optional(),
   organizationName: z.string().optional(),
   archived_at: z.string().nullable().optional(), // soft-delete: hidden from pickers, history kept
@@ -108,6 +153,7 @@ export const OrganizationSchema = z.object({
     {
       id: z.string(),
       name: z.string(),
+      code: z.string().nullable().optional(),
       organization_id: z.string(),
       archived_at: z.string().nullable().optional()
     }
@@ -123,7 +169,8 @@ export const OrganizationSchema = z.object({
     username: z.string(),
     first_name: z.string().nullable(),
     last_name: z.string().nullable(),
-    organization_id: z.string()
+    organization_id: z.string(),
+    manager_id: z.string().nullable().optional()
   }))
 })
 
@@ -194,6 +241,16 @@ export const ShiftAuditLogSchema = z.object({
       old_name: z.string().nullable().optional(),
       new_name: z.string().nullable().optional(),
       note: z.string().nullable().optional(),
+      // Late-for-shift alerts (late_15 / late_60 from the pg_cron check).
+      location_name: z.string().nullable().optional(),
+      scheduled_start: z.string().nullable().optional(),
+      minutes: z.number().nullable().optional(),
+      // Rota events (schedule_created/updated/removed/published) + time off.
+      count: z.number().nullable().optional(),
+      month_start: z.string().nullable().optional(),
+      kind: z.string().nullable().optional(),
+      starts_on: z.string().nullable().optional(),
+      ends_on: z.string().nullable().optional(),
       // Admin profile edits (name / role / organization changed from the panel).
       changes: z
         .array(

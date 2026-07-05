@@ -23,11 +23,17 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
     const [lastName, setLastName] = useState(employee.last_name ?? '');
     const [role, setRole] = useState(employee.role.name);
     const [organizationId, setOrganizationId] = useState(employee.organization_id);
+    const [managerId, setManagerId] = useState(employee.manager_id ?? '');
     const [isBusy, setIsBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Only Superadmins can move a user to another organization.
     const showOrgSelect = isSuperAdmin && (adminData?.length ?? 0) > 1;
+
+    // Managers (rank >= 20) in the member's organization they can report to.
+    const managerOptions = (adminData?.find((o) => o.id === employee.organization_id)?.profiles ?? [])
+        .filter((p) => p.role.rank >= 20 && p.id !== employee.id)
+        .sort((a, b) => (a.first_name ?? a.username).localeCompare(b.first_name ?? b.username));
 
     // Roles strictly below the current user's rank (e.g. an Admin can assign up
     // to Manager). The edited member always ranks below us, so their current
@@ -43,6 +49,7 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
                 first_name: firstName.trim() || null,
                 last_name: lastName.trim() || null,
                 role,
+                manager_id: managerId || null,
                 ...(isSuperAdmin ? { organization_id: organizationId } : {}),
             });
             onClose();
@@ -70,6 +77,17 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
                             <option key={r.name} value={r.name}>
                                 {r.name}
                                 {r.description ? ` — ${r.description}` : ''}
+                            </option>
+                        ))}
+                    </SelectInput>
+                </Field>
+
+                <Field label={t('admin.fieldManager')}>
+                    <SelectInput value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+                        <option value="">—</option>
+                        {managerOptions.map((m) => (
+                            <option key={m.id} value={m.id}>
+                                {[m.first_name, m.last_name].filter(Boolean).join(' ') || m.username}
                             </option>
                         ))}
                     </SelectInput>

@@ -56,7 +56,7 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
                 className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm active:scale-95 transition-all"
             >
                 <CalendarBlankIcon weight="bold" className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-xs font-black dark:text-white min-w-[70px] text-left truncate">{label}</span>
+                <span className="text-xs font-black dark:text-white min-w-17.5 text-left truncate">{label}</span>
                 <CaretDownIcon
                     weight="bold"
                     className={`w-2.5 h-2.5 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
@@ -89,9 +89,8 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
                                     <button
                                         key={idx}
                                         onClick={() => handleMonthClick(idx)}
-                                        className={`relative py-1.5 rounded-lg text-caption transition-all ${
-                                            isSelected ? 'bg-emerald-500 text-white shadow-md' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
-                                        } ${isCurrent && !isSelected ? 'ring-1 ring-inset ring-emerald-500/30 text-emerald-600 dark:text-emerald-400' : ''}`}
+                                        className={`relative py-1.5 rounded-lg text-caption transition-all ${isSelected ? 'bg-emerald-500 text-white shadow-md' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                                            } ${isCurrent && !isSelected ? 'ring-1 ring-inset ring-emerald-500/30 text-emerald-600 dark:text-emerald-400' : ''}`}
                                     >
                                         {month}
                                         {isCurrent && <span className={`absolute top-0.5 right-1 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-emerald-500'}`} />}

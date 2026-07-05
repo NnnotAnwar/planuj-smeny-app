@@ -43,12 +43,14 @@ const AcceptInvitePage = lazy(() =>
     import('./features/auth/AcceptInvitePage').then((m) => ({ default: m.AcceptInvitePage })),
 );
 const OverviewPage = lazy(() => import('./features/shifts/OverviewPage'));
+const SchedulePage = lazy(() => import('./features/schedule/SchedulePage'));
 const AdminPage = lazy(() => import('./features/admin/AdminPage').then((m) => ({ default: m.AdminPage })));
 const RequestsPage = lazy(() => import('./features/requests/RequestsPage').then((m) => ({ default: m.RequestsPage })));
 const TimesheetsPage = lazy(() => import('./features/timesheets/TimesheetsPage').then((m) => ({ default: m.TimesheetsPage })));
 const AuditLogPage = lazy(() => import('./features/timesheets/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 const ProfilePage = lazy(() => import('./features/profile/ProfilePage'));
+const LegalPage = lazy(() => import('./features/legal/LegalPage').then((m) => ({ default: m.LegalPage })));
 
 /** Handles Android hardware back button: go back in history or exit app. */
 function BackButtonHandler() {
@@ -90,6 +92,10 @@ export default function App() {
                 {/* PUBLIC: invite acceptance manages its own session (no guard). */}
                 <Route path="/accept-invite" element={<AcceptInvitePage />} />
 
+                {/* PUBLIC: legal pages, linkable from anywhere (incl. app stores). */}
+                <Route path="/privacy" element={<LegalPage doc="privacy" />} />
+                <Route path="/terms" element={<LegalPage doc="terms" />} />
+
                 {/* LOGGED-OUT ONLY: redirects to "/" if already authenticated. */}
                 <Route element={<PublicRoute />}>
                   <Route path="/login" element={<LoginPage />} />
@@ -100,6 +106,7 @@ export default function App() {
                   <Route path="/" element={<AppShell />}>
                     <Route index element={<HomePage />} />
                     <Route path="overview" element={<OverviewPage />} />
+                    <Route path="schedule" element={<SchedulePage />} />
                     <Route element={<RoleGuard />}>
                       <Route path="admin" element={<AdminPage />} />
                       {/* Requests is admin-only (rank >= 30); the page self-guards too. */}

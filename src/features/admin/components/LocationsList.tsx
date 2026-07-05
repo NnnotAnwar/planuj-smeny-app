@@ -7,6 +7,7 @@ import { EmptyState } from './AdminStateViews';
 export interface LocationRow {
     id: string;
     name: string;
+    code?: string | null;
     organization_id: string;
     organizationName: string;
 }

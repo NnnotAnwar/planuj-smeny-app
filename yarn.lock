@@ -12,6 +12,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aparajita/capacitor-biometric-auth@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "@aparajita/capacitor-biometric-auth@npm:10.0.0"
+  dependencies:
+    "@capacitor/android": "npm:^8.0.2"
+    "@capacitor/app": "npm:^8.0.0"
+    "@capacitor/core": "npm:^8.0.2"
+    "@capacitor/ios": "npm:^8.0.2"
+  checksum: 10c0/ae505f5d15c10ba01d4404d940617d8fa535f50781fa693eb8625811ef468c6a0f5e9291da17cb31782ff4e461452f1afaa6258ca69fc4d69f618d64c8a9af2c
+  languageName: node
+  linkType: hard
+
 "@asamuzakjp/css-color@npm:^5.1.11":
   version: 5.1.11
   resolution: "@asamuzakjp/css-color@npm:5.1.11"
@@ -274,6 +286,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@capacitor/android@npm:^8.0.2":
+  version: 8.4.1
+  resolution: "@capacitor/android@npm:8.4.1"
+  peerDependencies:
+    "@capacitor/core": ^8.4.0
+  checksum: 10c0/84df2b3e50e6735ad8a1f8899593df7e420d3e7894c02fd57416dba8da928d67fcee650ae365275548e261ff125e89418153d7baa0a73981116227420aa26444
+  languageName: node
+  linkType: hard
+
 "@capacitor/android@npm:^8.1.0":
   version: 8.4.0
   resolution: "@capacitor/android@npm:8.4.0"
@@ -283,7 +304,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@capacitor/app@npm:^8.0.1":
+"@capacitor/app@npm:^8.0.0, @capacitor/app@npm:^8.0.1":
   version: 8.1.0
   resolution: "@capacitor/app@npm:8.1.0"
   peerDependencies:
@@ -370,6 +391,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@capacitor/core@npm:^8.0.2":
+  version: 8.4.1
+  resolution: "@capacitor/core@npm:8.4.1"
+  dependencies:
+    tslib: "npm:^2.1.0"
+  checksum: 10c0/c5c733865544d20c884d577120d5429a3dd19696387b515d916b6b8c3456eac543f60a8bfa01e8fc3bd4df4e3d387c4b079e9f247ecc5942aa52f4030a5e3817
+  languageName: node
+  linkType: hard
+
 "@capacitor/core@npm:^8.1.0":
   version: 8.4.0
   resolution: "@capacitor/core@npm:8.4.0"
@@ -399,6 +429,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@capacitor/ios@npm:^8.0.2":
+  version: 8.4.1
+  resolution: "@capacitor/ios@npm:8.4.1"
+  peerDependencies:
+    "@capacitor/core": ^8.4.0
+  checksum: 10c0/b0eaa3230875388c9e8d6e8f6836ad5c50b2f9792349338be40d5810466e5e9c369cf9f3408daaf24a44d9df2ab6498756940fe637f86e88845f2f90cc63ee13
+  languageName: node
+  linkType: hard
+
 "@capacitor/ios@npm:^8.1.0":
   version: 8.4.0
   resolution: "@capacitor/ios@npm:8.4.0"
@@ -414,6 +453,15 @@ __metadata:
   peerDependencies:
     "@capacitor/core": ">=8.0.0"
   checksum: 10c0/264731185eb7000d36df689b69d96c8f8b5f4d1314fcd2852d5ec727af4aedab8b78c192cd02775e3c1f84233a563d0600aad828da009067b5699e733029eb0e
+  languageName: node
+  linkType: hard
+
+"@capacitor/network@npm:^8.0.0":
+  version: 8.0.1
+  resolution: "@capacitor/network@npm:8.0.1"
+  peerDependencies:
+    "@capacitor/core": ">=8.0.0"
+  checksum: 10c0/3eaf5e1e80140e635afc28e02af99ac31ef655e580716179e2f3cb5a508aa9afaca076fc61e453595a3243dc49e0511c06e1126276600403669409648523b3be
   languageName: node
   linkType: hard
 
@@ -7443,6 +7491,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "planuj-smeny-app@workspace:."
   dependencies:
+    "@aparajita/capacitor-biometric-auth": "npm:^10.0.0"
     "@capacitor/android": "npm:^8.1.0"
     "@capacitor/app": "npm:^8.0.1"
     "@capacitor/assets": "npm:^3.0.5"
@@ -7452,6 +7501,7 @@ __metadata:
     "@capacitor/haptics": "npm:^8.0.1"
     "@capacitor/ios": "npm:^8.1.0"
     "@capacitor/keyboard": "npm:^8.0.1"
+    "@capacitor/network": "npm:^8.0.0"
     "@capacitor/preferences": "npm:^8.0.1"
     "@capacitor/push-notifications": "npm:^8.1.1"
     "@capacitor/share": "npm:^8.0.1"

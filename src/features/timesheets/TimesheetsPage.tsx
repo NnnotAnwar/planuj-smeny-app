@@ -31,7 +31,7 @@ import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } f
 import { formatClock, monthShort, monthKey, weekdayShort } from '@shared/utils/date';
 
 import { timesheetService } from './timesheetService';
-import { type ExportFormat } from './exportShifts';
+import { type ExportFormat, makeExportLabels } from './exportShifts';
 import { shareOrExport, shareOrExportAll } from '@shared/utils/shareExport';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
 import { ShiftEditorModal, type ShiftFormValues } from './components/ShiftEditorModal';
@@ -236,7 +236,7 @@ function TimesheetsInner() {
         setExportOpen(false);
         setExporting(true);
         try {
-            await shareOrExport({ employeeName: memberName(selected), periodLabel, shifts, locationName }, fmt);
+            await shareOrExport({ employeeName: memberName(selected), periodLabel, shifts, locationName, labels: makeExportLabels(t) }, fmt);
         } finally {
             setExporting(false);
         }
@@ -267,6 +267,7 @@ function TimesheetsInner() {
                 periodLabel,
                 locationName: (id) => locMap.get(id) ?? t('common.unknown'),
                 groups,
+                labels: makeExportLabels(t),
             }, fmt);
         } finally {
             setExportingAll(false);

@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MagnifyingGlassIcon, MapPinIcon, type Icon } from '@phosphor-icons/react';
+import { MagnifyingGlassIcon, MapPinIcon, SunIcon, MoonIcon, SignOutIcon, type Icon } from '@phosphor-icons/react';
 
 import { useNavItems } from './navigation';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { useRecentLocations } from '@features/locations/useRecentLocations';
 import { useBackHandler } from '@shared/hooks/useBackHandler';
+import { useTheme } from '@app/providers/ThemeContext';
+import { useAuthContext } from '@features/auth/AuthContext';
 
 /**
  * --- COMMAND PALETTE (⌘K / Ctrl+K) ---
@@ -42,6 +44,8 @@ export function CommandPalette({ open, onClose, locations, selectedLocationId, o
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const navItems = useNavItems();
+    const { resolvedTheme, setTheme } = useTheme();
+    const { logout } = useAuthContext();
 
     // Picking a location is only allowed on the dashboard.
     const locationsEnabled = pathname === '/';
@@ -93,13 +97,39 @@ export function CommandPalette({ open, onClose, locations, selectedLocationId, o
         }));
     }, [locationsEnabled, locations, selectedLocationId, recentIds, q, recordPick, onSelectLocation, onClose]);
 
+    // Global quick actions — available anywhere, filtered by the query.
+    const actions: CmdItem[] = useMemo(() => {
+        const all: CmdItem[] = [
+            {
+                key: 'a:theme',
+                label: t('cmd.toggleTheme'),
+                icon: resolvedTheme === 'dark' ? SunIcon : MoonIcon,
+                run: () => {
+                    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+                    onClose();
+                },
+            },
+            {
+                key: 'a:logout',
+                label: t('nav.logout'),
+                icon: SignOutIcon,
+                run: () => {
+                    onClose();
+                    logout();
+                },
+            },
+        ];
+        return all.filter((a) => a.label.toLowerCase().includes(q));
+    }, [t, resolvedTheme, setTheme, logout, onClose, q]);
+
     const groups = useMemo(
         () =>
             [
                 { label: t('cmd.pages'), items: pages },
                 { label: t('cmd.locations'), items: locationItems },
+                { label: t('cmd.actions'), items: actions },
             ].filter((g) => g.items.length > 0),
-        [pages, locationItems, t],
+        [pages, locationItems, actions, t],
     );
 
     const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);

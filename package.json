@@ -1,7 +1,7 @@
 {
   "name": "planuj-smeny-app",
   "private": true,
-  "version": "1.8.0",
+  "version": "1.9.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
@@ -14,6 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^10.0.0",
     "@capacitor/android": "^8.1.0",
     "@capacitor/app": "^8.0.1",
     "@capacitor/cli": "^8.1.0",
@@ -22,6 +23,7 @@
     "@capacitor/haptics": "^8.0.1",
     "@capacitor/ios": "^8.1.0",
     "@capacitor/keyboard": "^8.0.1",
+    "@capacitor/network": "^8.0.0",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/push-notifications": "^8.1.1",
     "@capacitor/share": "^8.0.1",

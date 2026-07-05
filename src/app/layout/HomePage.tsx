@@ -5,6 +5,7 @@ import { ArrowClockwiseIcon, CoffeeIcon } from '@phosphor-icons/react';
 import { type AppOutletContext } from './AppShell';
 
 import { ActiveShift } from '@features/shifts/components/ActiveShift';
+import { NextShiftCard } from '@features/schedule/components/NextShiftCard';
 import { CheckIn } from '@features/shifts/components/CheckIn';
 import { ShiftCards } from '@features/shifts/components/ShiftCards';
 import { MobileLocationField } from '@features/locations/components/MobileLocationField';
@@ -114,6 +115,9 @@ export function HomePage() {
 
       {/* 2. ACTIVE STATUS (If user is working) */}
       <ActiveShift />
+
+      {/* NEXT ROSTERED SHIFT — quick glance + link to the schedule. */}
+      <NextShiftCard />
 
       {/* 3. START BUTTON (If user is not working) */}
       <CheckIn />

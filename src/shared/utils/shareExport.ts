@@ -19,8 +19,9 @@ function sanitize(stem: string): string {
     return stem.replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '') || 'export';
 }
 
-/** Write the generated file to the cache dir and open the share sheet. */
-async function shareNative(
+/** Write the generated file to the cache dir and open the share sheet.
+ *  Exported for other exporters (e.g. the schedule) to reuse. */
+export async function shareNative(
     format: ExportFormat,
     stem: string,
     title: string,
@@ -60,7 +61,7 @@ export async function shareOrExportAll(context: ExportAllContext, format: Export
         return;
     }
     const data = await exportAllShifts(format, context, { returnData: true });
-    const title = `Timesheets — ${context.periodLabel}`;
+    const title = `${context.labels.teamTitle} — ${context.periodLabel}`;
     const ok = await shareNative(format, `Timesheets_${context.periodLabel}`, title, data);
     if (!ok) await exportAllShifts(format, context);
 }

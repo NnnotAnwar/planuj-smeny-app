@@ -92,6 +92,7 @@ function AdminPanel() {
                     .map((loc) => ({
                         id: loc.id,
                         name: loc.name,
+                        code: loc.code ?? null,
                         organization_id: loc.organization_id,
                         organizationName: org.name,
                     })),
@@ -141,15 +142,15 @@ function AdminPanel() {
         safeTab === 'employees'
             ? canManageEmp
             : safeTab === 'locations'
-              ? canManageLoc
-              : safeTab === 'organizations'
-                ? isSuperAdmin
-                : false;
+                ? canManageLoc
+                : safeTab === 'organizations'
+                    ? isSuperAdmin
+                    : false;
 
     return (
         <div className="space-y-6 px-1 max-w-7xl mx-auto w-full">
             {/* --- HEADER --- */}
-            <header className="relative overflow-hidden rounded-3xl border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50 via-white to-white dark:from-emerald-950/40 dark:via-gray-900/40 dark:to-gray-900/40 p-5 sm:p-6">
+            <header className="relative overflow-hidden rounded-3xl border border-emerald-100 dark:border-emerald-900/30 bg-linear-to-br from-emerald-50 via-white to-white dark:from-emerald-950/40 dark:via-gray-900/40 dark:to-gray-900/40 p-5 sm:p-6">
                 <div className="absolute -right-8 -top-10 w-40 h-40 rounded-full bg-emerald-400/10 blur-2xl" />
                 <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <div className="space-y-1">
@@ -196,11 +197,10 @@ function AdminPanel() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as TabType)}
-                                className={`relative flex items-center justify-center gap-2 flex-1 md:flex-none px-4 py-2 rounded-xl text-micro transition-all z-10 h-9 ${
-                                    isActive
+                                className={`relative flex items-center justify-center gap-2 flex-1 md:flex-none px-4 py-2 rounded-xl text-micro transition-all z-10 h-9 ${isActive
                                         ? 'text-emerald-700 dark:text-emerald-400'
                                         : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                                }`}
+                                    }`}
                             >
                                 {isActive && (
                                     <motion.div

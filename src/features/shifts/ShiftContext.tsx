@@ -6,6 +6,7 @@ import { type Shift, type ShiftWithProfile, type Location } from '@shared/types'
 import { useShiftQueries } from './hooks/useShiftQueries';
 import { useShiftMutations } from './hooks/useShiftMutations';
 import { useShiftRealtime } from './hooks/useRealtime';
+import { useTodayPlannedLocation } from '@features/schedule/useTodayPlannedLocation';
 
 /**
  * --- SHIFT CONTEXT ---
@@ -46,12 +47,16 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
     const { defaultLocationId } = usePreferences();
     const activeShiftData = activeShift.data ?? null;
 
+    // Where the user is rostered today — preselects the clock-in location.
+    const plannedLocationId = useTodayPlannedLocation(user?.id);
+
     // When a shift is active its location is the source of truth; otherwise the
-    // selection is the user's manual pick, falling back to their configured
-    // default clock-in location. Derived (no effect) so it stays in sync with the
+    // selection is the user's manual pick, then today's ROSTERED location, then
+    // the configured default. Derived (no effect) so it stays in sync with the
     // active-shift query without cascading renders.
     const [pickedLocationId, setPickedLocationId] = useState<string | null>(null);
-    const selectedLocationId = activeShiftData?.location_id ?? pickedLocationId ?? defaultLocationId;
+    const selectedLocationId =
+        activeShiftData?.location_id ?? pickedLocationId ?? plannedLocationId ?? defaultLocationId;
 
     const handleStartShift = () => {
         if (!user || !selectedLocationId || mutations.startShift.isPending) return;

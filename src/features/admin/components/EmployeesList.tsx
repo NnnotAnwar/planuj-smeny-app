@@ -44,7 +44,7 @@ function AdminBadgeWithTooltip() {
                         className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-micro rounded-md shadow-xl z-50 whitespace-nowrap pointer-events-none"
                     >
                         {t('admin.administrator')}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-gray-900 dark:border-t-white" />
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-white" />
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -120,19 +120,19 @@ export function EmployeesList({
         { key: 'role', header: t('profile.field.role'), align: 'right', width: 'w-24 sm:w-32', render: (emp) => <RoleBadge role={emp.role} /> },
         ...(anyManageable
             ? [
-                  {
-                      key: 'actions',
-                      header: '',
-                      align: 'right' as const,
-                      width: 'w-20 sm:w-28',
-                      render: (emp: Profile) =>
-                          manageable(emp) ? (
-                              <div className="flex justify-end">
-                                  <ActionButtons onEdit={() => onEdit(emp)} onDelete={() => onDelete(emp)} />
-                              </div>
-                          ) : null,
-                  },
-              ]
+                {
+                    key: 'actions',
+                    header: '',
+                    align: 'right' as const,
+                    width: 'w-20 sm:w-28',
+                    render: (emp: Profile) =>
+                        manageable(emp) ? (
+                            <div className="flex justify-end">
+                                <ActionButtons onEdit={() => onEdit(emp)} onDelete={() => onDelete(emp)} />
+                            </div>
+                        ) : null,
+                },
+            ]
             : []),
     ];
 
