@@ -15,13 +15,131 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 type PrefCategory = 'shifts' | 'account' | 'requests';
+type Lang = 'en' | 'cs';
 
+/**
+ * A notification to deliver. `key` + `vars` are localized per recipient at send
+ * time (the recipient's language lives on their notification_preferences row).
+ * Direct invocations may instead pass a ready `title`/`body`.
+ */
 interface PushMessage {
     userId: string;
-    title: string;
-    body: string;
     route?: string;
     category?: PrefCategory;
+    // Localized form:
+    key?: string;
+    vars?: Record<string, string | number | undefined>;
+    // Pre-rendered form (direct `{ userId, title, body }` invocations):
+    title?: string;
+    body?: string;
+}
+
+// --- Push string localization (mirrors the client's notif.* keys) -------------
+
+/** Czech plural pick: (1) one, (2–4) few, (else) many. */
+function csPlural(n: number, one: string, few: string, many: string): string {
+    if (n === 1) return one;
+    if (n >= 2 && n <= 4) return few;
+    return many;
+}
+
+/** Localized "N shifts". */
+function shiftsCount(n: number, lang: Lang): string {
+    return lang === 'cs' ? `${n} ${csPlural(n, 'směna', 'směny', 'směn')}` : `${n} shift${n === 1 ? '' : 's'}`;
+}
+
+const KIND_ACC: Record<Lang, Record<string, string>> = {
+    en: { vacation: 'vacation', sick: 'sick leave', other: 'leave' },
+    cs: { vacation: 'dovolenou', sick: 'nemocenskou', other: 'volno' },
+};
+const KIND_NOM: Record<Lang, Record<string, string>> = {
+    en: { vacation: 'vacation', sick: 'sick leave', other: 'leave' },
+    cs: { vacation: 'dovolená', sick: 'nemocenská', other: 'volno' },
+};
+
+/** Render a notification's title + body for a recipient's language. */
+function render(msg: PushMessage, lang: Lang): { title: string; body: string } {
+    if (msg.title !== undefined || msg.body !== undefined) {
+        return { title: msg.title ?? '', body: msg.body ?? '' };
+    }
+    const v = msg.vars ?? {};
+    const cs = lang === 'cs';
+    const actor = String(v.actor ?? (cs ? 'Někdo' : 'Someone'));
+    const who = String(v.who ?? (cs ? 'Člen týmu' : 'A team member'));
+    const loc = v.loc ? String(v.loc) : '';
+    const atLoc = loc ? (cs ? ` v ${loc}` : ` at ${loc}`) : '';
+    const n = Number(v.count ?? 1);
+    const kind = String(v.kind ?? 'other');
+    const range = String(v.range ?? '');
+
+    switch (msg.key) {
+        case 'create':
+            return cs
+                ? { title: 'Nová směna', body: `${actor} vám přidal(a) směnu${v.when ? `: ${v.when}` : ' do rozpisu'}.` }
+                : { title: 'New shift', body: `${actor} added a shift${v.when ? `: ${v.when}` : ' to your schedule'}.` };
+        case 'update':
+            return cs
+                ? { title: 'Změna směny', body: `${actor} upravil(a) vaši směnu${v.when ? `: ${v.when}` : ''}.` }
+                : { title: 'Shift changed', body: `${actor} updated your shift${v.when ? `: ${v.when}` : ''}.` };
+        case 'delete':
+            return cs
+                ? { title: 'Směna odebrána', body: `${actor} odebral(a) vaši směnu${v.when ? `: ${v.when}` : ''}.` }
+                : { title: 'Shift removed', body: `${actor} removed your shift${v.when ? `: ${v.when}` : ''}.` };
+        case 'name_request_approved':
+            return cs
+                ? { title: 'Změna jména schválena', body: 'Vaše žádost o změnu jména byla schválena.' }
+                : { title: 'Name change approved', body: 'Your name change request was approved.' };
+        case 'name_request_rejected':
+            return cs
+                ? { title: 'Změna jména zamítnuta', body: 'Vaše žádost o změnu jména byla zamítnuta.' }
+                : { title: 'Name change declined', body: 'Your name change request was declined.' };
+        case 'late': {
+            const mins = v.bucket === '60' ? (cs ? '1+ hodinu' : '1+ hour') : (cs ? '15+ min' : '15+ min');
+            return cs
+                ? { title: 'Směna nezahájena', body: `${who} se nepřihlásil(a)${atLoc} — ${mins} zpoždění.` }
+                : { title: 'Shift not started', body: `${who} hasn't clocked in${atLoc} — ${mins} late.` };
+        }
+        case 'schedule_published':
+            return cs
+                ? { title: 'Rozpis zveřejněn', body: `${actor} zveřejnil(a) váš rozpis — ${shiftsCount(n, 'cs')}.` }
+                : { title: 'Schedule published', body: `${actor} published your schedule — ${shiftsCount(n, 'en')}.` };
+        case 'schedule_updated': {
+            const what = cs ? (n === 1 ? 'jednu vaši směnu' : `${n} vašich směn`) : (n === 1 ? 'a shift of yours' : `${n} of your shifts`);
+            return cs
+                ? { title: 'Změna rozpisu', body: `${actor} změnil(a) ${what}${atLoc}.` }
+                : { title: 'Schedule changed', body: `${actor} changed ${what}${atLoc}.` };
+        }
+        case 'schedule_removed': {
+            const what = cs ? (n === 1 ? 'jednu vaši směnu' : `${n} vašich směn`) : (n === 1 ? 'a shift of yours' : `${n} of your shifts`);
+            return cs
+                ? { title: 'Směny odebrány', body: `${actor} odebral(a) ${what}${atLoc}.` }
+                : { title: 'Shifts removed', body: `${actor} removed ${what}${atLoc}.` };
+        }
+        case 'timeoff_requested':
+            return cs
+                ? { title: 'Žádost o volno', body: `${who} žádá o ${KIND_ACC.cs[kind]}: ${range}.` }
+                : { title: 'Time-off request', body: `${who} requested ${KIND_ACC.en[kind]}: ${range}.` };
+        case 'timeoff_approved':
+            return cs
+                ? { title: 'Volno schváleno', body: `Vaše ${KIND_NOM.cs[kind]} (${range}) byla schválena.` }
+                : { title: 'Time off approved', body: `Your ${KIND_NOM.en[kind]} (${range}) was approved.` };
+        case 'timeoff_declined':
+            return cs
+                ? { title: 'Volno zamítnuto', body: `Vaše ${KIND_NOM.cs[kind]} (${range}) byla zamítnuta.` }
+                : { title: 'Time off declined', body: `Your ${KIND_NOM.en[kind]} (${range}) was declined.` };
+        case 'profile_updated': {
+            const fields = String(v.fields ?? (cs ? 'profil' : 'profile'));
+            return cs
+                ? { title: 'Profil upraven', body: `${actor} upravil(a) váš ${fields}.` }
+                : { title: 'Profile updated', body: `${actor} updated your ${fields}.` };
+        }
+        case 'name_request_new':
+            return cs
+                ? { title: 'Nová žádost o změnu jména', body: 'Člen týmu požádal o změnu jména.' }
+                : { title: 'New name-change request', body: 'A team member requested a name change.' };
+        default:
+            return { title: '', body: '' };
+    }
 }
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -92,20 +210,28 @@ async function projectId(): Promise<string> {
 
 // --- Send to all of a user's devices ------------------------------------------
 
-/** Respect the recipient's notification preferences (missing row = all on). */
-async function prefsAllow(userId: string, category?: PrefCategory): Promise<boolean> {
+/**
+ * The recipient's push preferences + language in one read (missing row = all on,
+ * English). Category gating and localization both use this.
+ */
+async function fetchPrefs(userId: string, category?: PrefCategory): Promise<{ allow: boolean; lang: Lang }> {
     const { data } = await admin
         .from('notification_preferences')
-        .select('push_enabled, shifts, account, requests')
+        .select('push_enabled, shifts, account, requests, language')
         .eq('user_id', userId)
         .maybeSingle();
-    if (!data) return true;
-    if (!data.push_enabled) return false;
-    return category ? data[category] !== false : true;
+    const lang: Lang = data?.language === 'cs' ? 'cs' : 'en';
+    if (!data) return { allow: true, lang };
+    if (!data.push_enabled) return { allow: false, lang };
+    const allow = category ? data[category] !== false : true;
+    return { allow, lang };
 }
 
-async function sendToUser({ userId, title, body, route, category }: PushMessage): Promise<number> {
-    if (!(await prefsAllow(userId, category))) return 0;
+async function sendToUser(msg: PushMessage): Promise<number> {
+    const { userId, route, category } = msg;
+    const { allow, lang } = await fetchPrefs(userId, category);
+    if (!allow) return 0;
+    const { title, body } = render(msg, lang);
 
     const { data: tokens } = await admin.from('device_tokens').select('token').eq('user_id', userId);
     if (!tokens || tokens.length === 0) return 0;
@@ -158,110 +284,80 @@ async function messagesFromWebhook(table: string, record: Record<string, unknown
         const actor = displayName(record, details);
         if (!target) return [];
 
-        // "5 Jul at San Carlo" from a shift snapshot, for richer bodies.
-        const shiftWhen = (snap: Record<string, unknown> | undefined | null): string => {
-            if (!snap) return '';
-            const parts: string[] = [];
-            if (typeof snap.started_at === 'string') {
+        // Date part of a shift snapshot ("5 Jul"); the location is passed
+        // separately so the render layer can localize the "at"/"v" joiner.
+        const shiftDate = (snap: Record<string, unknown> | undefined | null): string => {
+            if (snap && typeof snap.started_at === 'string') {
                 try {
-                    parts.push(new Date(snap.started_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+                    return new Date(snap.started_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
                 } catch { /* ignore */ }
             }
-            if (typeof snap.location_name === 'string' && snap.location_name) parts.push(`at ${snap.location_name}`);
-            return parts.join(' ');
+            return '';
+        };
+        const whenOf = (snap: Record<string, unknown> | undefined | null): string => {
+            const d = shiftDate(snap);
+            const loc = snap && typeof snap.location_name === 'string' ? snap.location_name : '';
+            return [d, loc && `· ${loc}`].filter(Boolean).join(' ');
         };
         const nu = details.new as Record<string, unknown> | undefined;
         const ol = details.old as Record<string, unknown> | undefined;
+        const dateRange = (): string =>
+            details.starts_on === details.ends_on ? String(details.starts_on ?? '') : `${details.starts_on}–${details.ends_on}`;
 
         switch (action) {
-            case 'create': {
-                const when = shiftWhen(nu);
-                return [{ userId: target, title: 'New shift', body: `${actor} added a shift${when ? `: ${when}` : ' to your schedule'}.`, route: '/overview', category: 'shifts' }];
-            }
-            case 'update': {
-                const when = shiftWhen(nu);
-                return [{ userId: target, title: 'Shift changed', body: `${actor} updated your shift${when ? `: ${when}` : ''}.`, route: '/overview', category: 'shifts' }];
-            }
-            case 'delete': {
-                const when = shiftWhen(ol);
-                return [{ userId: target, title: 'Shift removed', body: `${actor} removed your shift${when ? `: ${when}` : ''}.`, route: '/overview', category: 'shifts' }];
-            }
+            case 'create':
+                return [{ userId: target, key: 'create', vars: { actor, when: whenOf(nu) }, route: '/overview', category: 'shifts' }];
+            case 'update':
+                return [{ userId: target, key: 'update', vars: { actor, when: whenOf(nu) }, route: '/overview', category: 'shifts' }];
+            case 'delete':
+                return [{ userId: target, key: 'delete', vars: { actor, when: whenOf(ol) }, route: '/overview', category: 'shifts' }];
             case 'name_request_approved':
-                return [{ userId: target, title: 'Name change approved', body: 'Your name change request was approved.', route: '/profile', category: 'account' }];
+                return [{ userId: target, key: 'name_request_approved', route: '/profile', category: 'account' }];
             case 'name_request_rejected':
-                return [{ userId: target, title: 'Name change declined', body: 'Your name change request was declined.', route: '/profile', category: 'account' }];
+                return [{ userId: target, key: 'name_request_rejected', route: '/profile', category: 'account' }];
             case 'late_15':
-            case 'late_60': {
-                // Sent to BOTH the late member and their manager. Neutral copy
-                // works for either recipient.
-                const who = (details.target_name as string) || 'A team member';
-                const loc = (details.location_name as string) || '';
-                const mins = action === 'late_60' ? '1+ hour' : '15+ min';
+            case 'late_60':
+                // Sent to BOTH the late member and their manager; neutral copy works for either.
                 return [{
                     userId: target,
-                    title: 'Shift not started',
-                    body: `${who} hasn't clocked in${loc ? ` at ${loc}` : ''} — ${mins} late.`,
+                    key: 'late',
+                    vars: { who: (details.target_name as string) || '', loc: (details.location_name as string) || '', bucket: action === 'late_60' ? '60' : '15' },
                     route: '/?openNotifications=1',
                     category: 'shifts',
                 }];
-            }
-            case 'schedule_published': {
-                const n = (details.count as number) || 0;
-                return [{
-                    userId: target,
-                    title: 'Schedule published',
-                    body: `${actor} published your schedule — ${n} shift${n === 1 ? '' : 's'}.`,
-                    route: '/schedule',
-                    category: 'shifts',
-                }];
-            }
+            case 'schedule_published':
+                return [{ userId: target, key: 'schedule_published', vars: { actor, count: (details.count as number) || 0 }, route: '/schedule', category: 'shifts' }];
             case 'schedule_updated':
-            case 'schedule_removed': {
-                const n = (details.count as number) || 1;
-                const loc = (details.location_name as string) || '';
-                const what = n === 1 ? 'a shift of yours' : `${n} of your shifts`;
-                const verb = action === 'schedule_removed' ? 'removed' : 'changed';
+            case 'schedule_removed':
                 return [{
                     userId: target,
-                    title: action === 'schedule_removed' ? 'Shifts removed' : 'Schedule changed',
-                    body: `${actor} ${verb} ${what}${loc ? ` at ${loc}` : ''}.`,
+                    key: action,
+                    vars: { actor, count: (details.count as number) || 1, loc: (details.location_name as string) || '' },
                     route: '/schedule',
                     category: 'shifts',
                 }];
-            }
-            case 'timeoff_requested': {
-                const who = (details.target_name as string) || 'A team member';
-                const range = details.starts_on === details.ends_on
-                    ? String(details.starts_on ?? '')
-                    : `${details.starts_on}–${details.ends_on}`;
+            case 'timeoff_requested':
                 return [{
                     userId: target,
-                    title: 'Time-off request',
-                    body: `${who} requested ${details.kind ?? 'time off'}: ${range}.`,
+                    key: 'timeoff_requested',
+                    vars: { who: (details.target_name as string) || '', kind: (details.kind as string) || 'other', range: dateRange() },
                     route: '/schedule',
                     category: 'requests',
                 }];
-            }
             case 'timeoff_approved':
-            case 'timeoff_declined': {
-                const range = details.starts_on === details.ends_on
-                    ? String(details.starts_on ?? '')
-                    : `${details.starts_on}–${details.ends_on}`;
-                const ok = action === 'timeoff_approved';
+            case 'timeoff_declined':
                 return [{
                     userId: target,
-                    title: ok ? 'Time off approved' : 'Time off declined',
-                    body: `Your ${details.kind ?? 'time off'} (${range}) was ${ok ? 'approved' : 'declined'}.`,
+                    key: action,
+                    vars: { kind: (details.kind as string) || 'other', range: dateRange() },
                     route: '/schedule',
                     category: 'requests',
                 }];
-            }
             case 'profile_updated': {
                 const changes = (details.changes as { field: string }[] | undefined) ?? [];
-                const fields = changes.map((c) => c.field).join(', ') || 'profile';
                 // Regular users have no admin screen for this — open the app on the
                 // in-app notifications feed (client reads ?openNotifications=1).
-                return [{ userId: target, title: 'Profile updated', body: `${actor} updated your ${fields}.`, route: '/?openNotifications=1', category: 'account' }];
+                return [{ userId: target, key: 'profile_updated', vars: { actor, fields: changes.map((c) => c.field).join(', ') }, route: '/?openNotifications=1', category: 'account' }];
             }
             default:
                 return [];
@@ -281,8 +377,7 @@ async function messagesFromWebhook(table: string, record: Record<string, unknown
             .map((a: { id: string }) => a.id);
         return reviewers.map((id) => ({
             userId: id,
-            title: 'New name-change request',
-            body: 'A team member requested a name change.',
+            key: 'name_request_new',
             route: '/requests',
             category: 'requests' as const,
         }));
