@@ -504,6 +504,12 @@ export const en = {
     'settings.support.hint': 'Questions or problems? We usually reply within a day.',
     'settings.privacy': 'Privacy Policy',
     'settings.terms': 'Terms of Service',
+    'settings.dataPrivacy': 'Privacy & data',
+    'settings.exportData': 'Export my data',
+    'settings.exportDataHint': 'Download everything we hold about you as a JSON file.',
+    'settings.deleteAccount': 'Delete account',
+    'settings.deleteAccountHint': 'Permanently erase your account and all your data.',
+    'settings.deleteAccountConfirm': 'This permanently deletes your account and all your data (shifts, schedule, time off). This cannot be undone.',
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -670,6 +676,12 @@ export const cs: Record<TranslationKey, string> = {
     'settings.support.hint': 'Dotazy nebo potíže? Obvykle odpovídáme do jednoho dne.',
     'settings.privacy': 'Zásady ochrany osobních údajů',
     'settings.terms': 'Podmínky použití',
+    'settings.dataPrivacy': 'Soukromí a data',
+    'settings.exportData': 'Exportovat moje data',
+    'settings.exportDataHint': 'Stáhnout vše, co o vás evidujeme, jako soubor JSON.',
+    'settings.deleteAccount': 'Smazat účet',
+    'settings.deleteAccountHint': 'Trvale odstranit váš účet a všechna vaše data.',
+    'settings.deleteAccountConfirm': 'Tímto trvale smažete svůj účet a všechna svá data (směny, rozpis, volno). Akci nelze vrátit zpět.',
 
     'common.toggleTheme': 'Přepnout motiv',
     'common.cancel': 'Zrušit',
