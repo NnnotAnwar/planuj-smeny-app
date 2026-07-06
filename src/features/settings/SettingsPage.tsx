@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import {
@@ -8,7 +9,12 @@ import {
   FileTextIcon,
   ArrowSquareOutIcon,
   CaretRightIcon,
+  DownloadSimpleIcon,
+  TrashIcon,
 } from '@phosphor-icons/react';
+import { ConfirmDialog } from '@features/admin/components/Modal';
+import { toast } from '@shared/toast/toastStore';
+import { exportMyData, deleteMyAccount } from './accountService';
 import { useTheme, COMBO_LIST } from '@app/providers/ThemeContext';
 import { usePreferences } from '@shared/preferences/PreferencesContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -133,11 +139,32 @@ export default function SettingsPage() {
   const { language, setLanguage, timeFormat, setTimeFormat, defaultLocationId, setDefaultLocationId, t } =
     usePreferences();
   const { locations } = useShiftContext();
-  const { user } = useAuthContext();
+  const { user, logout } = useAuthContext();
   const { prefs, update: updatePrefs } = useNotificationPrefs();
   const biometricEnabled = useBiometricEnabled();
   const isReviewer = (user?.role.rank ?? 0) >= 30;
   const isDark = resolvedTheme === 'dark';
+
+  // GDPR self-service: export personal data / delete account.
+  const [exporting, setExporting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const handleExport = async () => {
+    if (!user) return;
+    setExporting(true);
+    try {
+      await exportMyData(user.id);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : t('common.actionFailed'), 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    await deleteMyAccount();
+    await logout();
+  };
 
   const activeLabel = COMBO_LIST.find((o) => o.key === comboKey)?.label;
   const pickableLocations = locations.filter((l) => !l.archived_at);
@@ -314,6 +341,52 @@ export default function SettingsPage() {
           <NavRow icon={<FileTextIcon weight="bold" className="w-4 h-4" />} label={t('settings.terms')} to="/terms" />
         </div>
       </div>
+
+      {/* PRIVACY & DATA — GDPR self-service (export / delete) */}
+      <div className="space-y-2">
+        <h3 className="px-1 text-label text-gray-400">{t('settings.dataPrivacy')}</h3>
+        <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-60"
+          >
+            <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
+              <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-body-strong text-gray-900 dark:text-white">{t('settings.exportData')}</p>
+              <p className="text-micro text-gray-400">{t('settings.exportDataHint')}</p>
+            </div>
+            {exporting && <span className="text-caption text-gray-400">{t('common.working')}</span>}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className="w-full flex items-center gap-3 p-4 text-left hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500 shrink-0">
+              <TrashIcon weight="bold" className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-body-strong text-red-600 dark:text-red-400">{t('settings.deleteAccount')}</p>
+              <p className="text-micro text-gray-400">{t('settings.deleteAccountHint')}</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title={t('settings.deleteAccount')}
+          message={t('settings.deleteAccountConfirm')}
+          confirmLabel={t('settings.deleteAccount')}
+          onConfirm={handleDelete}
+          onClose={() => setConfirmDelete(false)}
+        />
+      )}
     </div>
   );
 }
