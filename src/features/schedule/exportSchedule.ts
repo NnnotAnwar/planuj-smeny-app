@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { registerPdfFont } from '@shared/utils/pdfFont';
 import { Capacitor } from '@capacitor/core';
 import type { ScheduledShift } from '@shared/types';
 import { formatTime, weekdayShortLabels } from '@shared/utils/date';
@@ -118,12 +119,14 @@ function memberDayMap(shifts: ScheduledShift[]): Map<string, ScheduledShift[]> {
     return map;
 }
 
-/** One grid cell as plain text: letter/✓, times, or a leave code. */
-function gridCellText(section: ScheduleExportGridSection, byDay: Map<string, ScheduledShift[]>, memberId: string, date: string): string {
+/** One grid cell as plain text: letter/mark, times, or a leave code.
+ *  `allDayMark` is the fallback for an all-day cell with no location letter —
+ *  '✓' on screen/Excel, '•' for PDF (the embedded font has no checkmark glyph). */
+function gridCellText(section: ScheduleExportGridSection, byDay: Map<string, ScheduledShift[]>, memberId: string, date: string, allDayMark = '✓'): string {
     const items = byDay.get(`${memberId}|${date}`) ?? [];
     if (items.length > 0) {
         return items
-            .map((s) => (s.all_day ? section.code || '✓' : `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`))
+            .map((s) => (s.all_day ? section.code || allDayMark : `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`))
             .join('\n');
     }
     return section.leaveFor?.(memberId, date) ?? '';
@@ -145,6 +148,7 @@ function triggerDownload(blob: Blob, filename: string) {
 // ---------------------------------------------------------------------
 function buildGridPdf(ctx: ScheduleExportContext): jsPDF {
     const doc = new jsPDF({ orientation: 'landscape' });
+    const font = registerPdfFont(doc); // Czech-capable embedded font
     const days = daysInMonth(ctx.monthKey);
     const dayLabels = weekdayShortLabels();
     const weekend = new Set(Array.from({ length: days }, (_, i) => i + 1).filter((d) => dowOf(ctx.monthKey, d) >= 5));
@@ -181,12 +185,12 @@ function buildGridPdf(ctx: ScheduleExportContext): jsPDF {
                 ]],
                 body: section.rows.map((row) => [
                     row.name,
-                    ...bandDays.map((d) => gridCellText(section, byDay, row.id, `${ctx.monthKey}-${pad(d)}`)),
+                    ...bandDays.map((d) => gridCellText(section, byDay, row.id, `${ctx.monthKey}-${pad(d)}`, '•')),
                     ...(band.sum ? [String(section.shifts.filter((s) => s.user_id === row.id).length)] : []),
                 ]),
                 theme: 'grid',
                 headStyles: { fillColor: [16, 185, 129], halign: 'center', fontStyle: 'bold', fontSize: 7, cellPadding: 1 },
-                styles: { fontSize: 8, cellPadding: 1, halign: 'center', valign: 'middle', overflow: 'linebreak', minCellHeight: 9 },
+                styles: { fontSize: 8, cellPadding: 1, halign: 'center', valign: 'middle', overflow: 'linebreak', minCellHeight: 9, font },
                 columnStyles: {
                     0: { cellWidth: 34, halign: 'left', fontStyle: 'bold' },
                     ...(band.sum ? { [sumCol]: { cellWidth: 10, fontStyle: 'bold' } } : {}),
@@ -215,6 +219,7 @@ function buildGridPdf(ctx: ScheduleExportContext): jsPDF {
 function buildPdf(ctx: ScheduleExportContext): jsPDF {
     if (ctx.gridSections) return buildGridPdf(ctx);
     const doc = new jsPDF({ orientation: 'landscape' });
+    const font = registerPdfFont(doc); // Czech-capable embedded font
     const [, month] = ctx.monthKey.split('-').map(Number);
     const weeks = monthWeeks(ctx.monthKey);
     const dayLabels = weekdayShortLabels();
@@ -247,7 +252,7 @@ function buildPdf(ctx: ScheduleExportContext): jsPDF {
             ),
             theme: 'grid',
             headStyles: { fillColor: [16, 185, 129], halign: 'center', fontStyle: 'bold' },
-            styles: { fontSize: 7.5, cellPadding: 1.5, valign: 'top', overflow: 'linebreak', minCellHeight: 22 },
+            styles: { fontSize: 7.5, cellPadding: 1.5, valign: 'top', overflow: 'linebreak', minCellHeight: 22, font },
             columnStyles: Object.fromEntries(Array.from({ length: 7 }, (_, c) => [c, { cellWidth: 38.5 }])),
         });
     });

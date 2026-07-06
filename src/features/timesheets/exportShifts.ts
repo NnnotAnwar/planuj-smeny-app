@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { registerPdfFont } from '@shared/utils/pdfFont';
 import autoTable from 'jspdf-autotable';
 import { type Shift } from '@shared/types';
 import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from '@features/shifts/shiftStats';
@@ -163,9 +164,12 @@ function drawTimesheetPDF(doc: jsPDF, ctx: ExportContext) {
     const { rows, totals } = build(ctx);
     const L = ctx.labels;
 
+    // Embed a Unicode font so Czech háček glyphs (č ě ř š ž …) render.
+    const font = registerPdfFont(doc);
+
     doc.setFontSize(20);
     doc.setTextColor(0);
-    doc.text('Planuj Smeny', 14, 22);
+    doc.text('Planuj Směny', 14, 22);
     doc.setFontSize(11);
     doc.setTextColor(100);
     doc.text(`${L.title} — ${ctx.employeeName}`, 14, 30);
@@ -202,7 +206,7 @@ function drawTimesheetPDF(doc: jsPDF, ctx: ExportContext) {
         theme: 'striped',
         headStyles: { fillColor: [16, 185, 129] },
         footStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: 'bold' },
-        styles: { fontSize: 8 },
+        styles: { fontSize: 8, font },
     });
 
     // Signature block — this document is meant to be printed and signed.
