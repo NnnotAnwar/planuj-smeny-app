@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useCallback, useContext, useMemo, useReducer, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react';
 import { useAuthContext } from '@features/auth/AuthContext';
+import { supabase } from '@shared/api/supabaseClient';
 import { translations, type Language, type TranslationKey } from '@shared/i18n/translations';
 import { setTimeFormatPreference, setLocalePreference, type TimeFormat } from '@shared/utils/date';
 
@@ -58,6 +59,17 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
         localStorage.setItem(STORAGE.language, lang);
         setLanguageState(lang);
     }, []);
+
+    // Mirror the UI language onto the user's notification_preferences row so the
+    // send-push Edge Function can localize push bodies (it has no other view of
+    // the language). Runs on sign-in (backfills existing users) and on change;
+    // only the language column is written, so category toggles are untouched.
+    useEffect(() => {
+        if (!userId) return;
+        void supabase
+            .from('notification_preferences')
+            .upsert({ user_id: userId, language, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    }, [userId, language]);
 
     const setTimeFormat = useCallback((format: TimeFormat) => {
         localStorage.setItem(STORAGE.timeFormat, format);
