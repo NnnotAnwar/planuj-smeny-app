@@ -20,6 +20,7 @@ import { ScheduledShiftEditor, type DayEditorResult } from './components/Schedul
 import { MonthCalendar } from './components/MonthCalendar';
 import { RosterGrid, type RosterRow } from './components/RosterGrid';
 import { MemberSearchAdd } from './components/MemberSearchAdd';
+import { quickFillDays, copyTargetDay } from './scheduleLogic';
 import { MyTeam } from './components/MyTeam';
 import { TimeOffCard } from './components/TimeOffCard';
 import { toast } from '@shared/toast/toastStore';
@@ -352,16 +353,10 @@ export default function SchedulePage() {
         );
 
         const [y, m] = selectedMonth.split('-').map(Number);
-        const daysInMonth = new Date(y, m, 0).getDate();
-        const offset = (new Date(y, m - 1, 1).getDay() + 6) % 7; // Mon-first offset of day 1
         const rows: Array<{ user_id: string; starts_at: string; ends_at: string; all_day: boolean }> = [];
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dow = (new Date(y, m - 1, day).getDay() + 6) % 7; // 0 = Monday
-            const weekIndex = Math.floor((day - 1 + offset) / 7);
-            const isShortWeek = action === 'short' ? weekIndex % 2 === 0 : weekIndex % 2 === 1;
-            const included = isShortWeek ? dow === 2 || dow === 3 : dow !== 2 && dow !== 3;
+        for (const day of quickFillDays(selectedMonth, action)) {
             const dateKey = `${selectedMonth}-${pad(day)}`;
-            if (!included || blocked.has(dateKey) || leaveOn(memberId, dateKey)) continue;
+            if (blocked.has(dateKey) || leaveOn(memberId, dateKey)) continue;
             rows.push({
                 user_id: memberId,
                 starts_at: new Date(y, m - 1, day).toISOString(),
@@ -438,9 +433,7 @@ export default function SchedulePage() {
                 for (const s of prev) {
                     if (!plannableIds.has(s.user_id)) continue;
                     const d = new Date(s.starts_at);
-                    const dow = (d.getDay() + 6) % 7;
-                    const weekIdx = Math.floor((d.getDate() - 1 + prevOffset) / 7);
-                    const targetDay = weekIdx * 7 + dow - targetOffset + 1;
+                    const targetDay = copyTargetDay(d, prevOffset, targetOffset);
                     if (targetDay < 1 || targetDay > daysInTarget) continue;
                     const key = `${s.user_id}|${targetDay}`;
                     if (taken.has(key)) continue;
