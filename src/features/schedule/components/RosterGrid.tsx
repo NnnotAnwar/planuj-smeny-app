@@ -5,6 +5,13 @@ import type { ScheduledShift } from '@shared/types';
 import { weekdayShortLabels, formatTime } from '@shared/utils/date';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 
+/** Compact 24h HH:MM for the dense grid cells — no AM/PM suffix to wrap
+ *  (the calendar view and exports still honour the 12h/24h preference). */
+const hm = (iso: string): string => {
+    const d = new Date(iso);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
 /**
  * --- ROSTER GRID (the "spreadsheet" view) ---
  * One location's month: a row per person, a column per day, split into two
@@ -246,9 +253,9 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                                 </span>
                                                             ) : (
                                                                 <span className={`inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-0.5 py-0.5 leading-[1.15] tabular-nums ${items.some((s) => !s.published) ? 'opacity-50' : ''}`}>
-                                                                    {formatTime(items[0].starts_at)}
+                                                                    {hm(items[0].starts_at)}
                                                                     <br />
-                                                                    {formatTime(items[0].ends_at)}
+                                                                    {hm(items[0].ends_at)}
                                                                 </span>
                                                             ))}
                                                     </td>
