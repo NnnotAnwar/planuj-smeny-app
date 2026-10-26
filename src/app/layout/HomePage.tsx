@@ -10,12 +10,14 @@ import { CheckIn } from '@features/shifts/components/CheckIn';
 import { ShiftCards } from '@features/shifts/components/ShiftCards';
 import { MobileLocationField } from '@features/locations/components/MobileLocationField';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
+import { AnnouncementBanner } from '@features/announcements/AnnouncementBanner';
 import { Clock } from '@shared/components/Clock';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { usePullToRefresh } from '@shared/hooks/usePullToRefresh';
 import { shiftKeys } from '@features/shifts/shiftKeys';
 import { type ShiftDisplayData } from '@shared/types';
 import { formatTime } from '@shared/utils/date';
+
 
 /**
  * --- HOME PAGE ---
@@ -112,6 +114,7 @@ export function HomePage() {
           <Clock seconds={true} />
         </div>
       </div>
+      <AnnouncementBanner />
 
       {/* 2. ACTIVE STATUS (If user is working) */}
       <ActiveShift />
