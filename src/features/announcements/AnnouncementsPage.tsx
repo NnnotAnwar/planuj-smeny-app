@@ -25,17 +25,17 @@ export function AnnouncementsPage() {
                 </div>
             )}
 
-            {/* Ошибка загрузки — НЕ то же самое, что пусто */}
-            {list.isError && (
-                <p className="text-body text-red-500 py-10 text-center">
-                Couldn't load announcements. Please try again.
-                </p>
-            )}
+            {/* Запрос упал — это НЕ то же самое, что пустой список */}
+      {list.isError && (
+        <p className="text-body text-red-500 py-10 text-center">
+          Couldn't load announcements. Please try again.
+        </p>
+      )}
 
             {/* 2) Загрузилось, но пусто */}
-            {!list.isLoading && !list.isError && (list.data?.length ?? 0) === 0 && (
-                <p className="text-body text-gray-400 py-10 text-center">No announcements yet.</p>
-            )}
+                  {!list.isLoading && !list.isError && (list.data?.length ?? 0) === 0 && (
+        <p className="text-body text-gray-400 py-10 text-center">No announcements yet.</p>
+      )}
 
             {/* 3) Список: по карточке на каждое объявление */}
             <div className="space-y-3">
