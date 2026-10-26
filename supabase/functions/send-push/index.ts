@@ -277,6 +277,32 @@ function displayName(rec: Record<string, unknown>, details: Record<string, unkno
 }
 
 async function messagesFromWebhook(table: string, record: Record<string, unknown>): Promise<PushMessage[]> {
+    // New announcement → notify every member of the org except the author.
+    if (table === 'announcements') {
+        const orgId = record.organization_id as string;
+        const authorId = (record.author_id as string | null) ?? null;
+        const titleText = (record.title as string) || 'Announcement';
+        const bodyText = (record.body as string) || '';
+        const shortBody = bodyText.length > 140 ? `${bodyText.slice(0, 139)}…` : bodyText;
+
+        const { data: members } = await admin
+            .from('profiles')
+            .select('id')
+            .eq('organization_id', orgId);
+
+        return (members ?? [])
+            .map((m: { id: string }) => m.id)
+            .filter((id) => id !== authorId)
+            .map((id) => ({
+                userId: id,
+                // User-authored content — passed pre-rendered (no localization).
+                title: `📣 ${titleText}`,
+                body: shortBody,
+                route: '/announcements',
+                // No category: gated only by the recipient's push_enabled toggle.
+            }));
+    }
+
     if (table === 'shift_audit_log') {
         const target = record.target_user_id as string | null;
         const action = record.action as string;
