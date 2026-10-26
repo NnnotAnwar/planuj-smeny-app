@@ -11,10 +11,12 @@ import { AnnouncementSchema, type Announcement, type AnnouncementInput } from '.
  * queries and validate the results (see locationService for the same pattern).
  */
 
-// Pull the author's name alongside each row for the "posted by" line. Only
-// author_id references profiles, so this embed is unambiguous.
+// Pull the author's name alongside each row for the "posted by" line. We name
+// the FK explicitly (announcements_author_id_fkey) to disambiguate: the
+// announcement_reads table also links announcements↔profiles, so a bare
+// `profiles` embed is ambiguous (PGRST201).
 const SELECT_WITH_AUTHOR =
-  '*, author:profiles(username, first_name, last_name)';
+  '*, author:profiles!announcements_author_id_fkey(username, first_name, last_name)';
 
 export const announcementService = {
   /** All announcements the current user may see, newest first, pinned on top. */
