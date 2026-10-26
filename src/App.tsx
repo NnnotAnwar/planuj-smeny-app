@@ -40,10 +40,11 @@ import { PageLoader } from './shared/components/PageLoader';
 const HomePage = lazy(() => import('./app/layout/HomePage').then((m) => ({ default: m.HomePage })));
 const LoginPage = lazy(() => import('./features/auth/LoginPage').then((m) => ({ default: m.LoginPage })));
 const AcceptInvitePage = lazy(() =>
-    import('./features/auth/AcceptInvitePage').then((m) => ({ default: m.AcceptInvitePage })),
+  import('./features/auth/AcceptInvitePage').then((m) => ({ default: m.AcceptInvitePage })),
 );
 const OverviewPage = lazy(() => import('./features/shifts/OverviewPage'));
 const SchedulePage = lazy(() => import('./features/schedule/SchedulePage'));
+const AnnouncementsPage = lazy(() => import('./features/announcements/AnnouncementsPage').then((m) => ({ default: m.AnnouncementsPage })));
 const AdminPage = lazy(() => import('./features/admin/AdminPage').then((m) => ({ default: m.AdminPage })));
 const RequestsPage = lazy(() => import('./features/requests/RequestsPage').then((m) => ({ default: m.RequestsPage })));
 const TimesheetsPage = lazy(() => import('./features/timesheets/TimesheetsPage').then((m) => ({ default: m.TimesheetsPage })));
@@ -82,54 +83,55 @@ export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-       <ThemeProvider>
-        <AuthProvider>
-         <PreferencesProvider>
-          <ShiftProvider>
-            <BackButtonHandler />
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                {/* PUBLIC: invite acceptance manages its own session (no guard). */}
-                <Route path="/accept-invite" element={<AcceptInvitePage />} />
+        <ThemeProvider>
+          <AuthProvider>
+            <PreferencesProvider>
+              <ShiftProvider>
+                <BackButtonHandler />
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    {/* PUBLIC: invite acceptance manages its own session (no guard). */}
+                    <Route path="/accept-invite" element={<AcceptInvitePage />} />
 
-                {/* PUBLIC: legal pages, linkable from anywhere (incl. app stores). */}
-                <Route path="/privacy" element={<LegalPage doc="privacy" />} />
-                <Route path="/terms" element={<LegalPage doc="terms" />} />
+                    {/* PUBLIC: legal pages, linkable from anywhere (incl. app stores). */}
+                    <Route path="/privacy" element={<LegalPage doc="privacy" />} />
+                    <Route path="/terms" element={<LegalPage doc="terms" />} />
 
-                {/* LOGGED-OUT ONLY: redirects to "/" if already authenticated. */}
-                <Route element={<PublicRoute />}>
-                  <Route path="/login" element={<LoginPage />} />
-                </Route>
-
-                {/* PROTECTED: requires a session; redirects to "/login" otherwise. */}
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/" element={<AppShell />}>
-                    <Route index element={<HomePage />} />
-                    <Route path="overview" element={<OverviewPage />} />
-                    <Route path="schedule" element={<SchedulePage />} />
-                    <Route element={<RoleGuard />}>
-                      <Route path="admin" element={<AdminPage />} />
-                      {/* Requests is admin-only (rank >= 30); the page self-guards too. */}
-                      <Route path="requests" element={<RequestsPage />} />
-                      {/* Timesheets is for managers+ (rank >= 20). */}
-                      <Route path="timesheets" element={<TimesheetsPage />} />
-                      {/* Activity Log is admin-only (rank >= 30); the page self-guards too. */}
-                      <Route path="activity" element={<AuditLogPage />} />
+                    {/* LOGGED-OUT ONLY: redirects to "/" if already authenticated. */}
+                    <Route element={<PublicRoute />}>
+                      <Route path="/login" element={<LoginPage />} />
                     </Route>
-                    <Route path="settings" element={<SettingsPage />} />
-                    <Route path="profile" element={<ProfilePage />} />
-                    <Route path="profile/:userId" element={<ProfilePage />} />
-                  </Route>
-                </Route>
 
-                {/* FALLBACK: any unknown URL -> Home (then guards take over). */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
-          </ShiftProvider>
-         </PreferencesProvider>
-        </AuthProvider>
-       </ThemeProvider>
+                    {/* PROTECTED: requires a session; redirects to "/login" otherwise. */}
+                    <Route element={<ProtectedRoute />}>
+                      <Route path="/" element={<AppShell />}>
+                        <Route index element={<HomePage />} />
+                        <Route path="overview" element={<OverviewPage />} />
+                        <Route path="announcements" element={<AnnouncementsPage />} />
+                        <Route path="schedule" element={<SchedulePage />} />
+                        <Route element={<RoleGuard />}>
+                          <Route path="admin" element={<AdminPage />} />
+                          {/* Requests is admin-only (rank >= 30); the page self-guards too. */}
+                          <Route path="requests" element={<RequestsPage />} />
+                          {/* Timesheets is for managers+ (rank >= 20). */}
+                          <Route path="timesheets" element={<TimesheetsPage />} />
+                          {/* Activity Log is admin-only (rank >= 30); the page self-guards too. */}
+                          <Route path="activity" element={<AuditLogPage />} />
+                        </Route>
+                        <Route path="settings" element={<SettingsPage />} />
+                        <Route path="profile" element={<ProfilePage />} />
+                        <Route path="profile/:userId" element={<ProfilePage />} />
+                      </Route>
+                    </Route>
+
+                    {/* FALLBACK: any unknown URL -> Home (then guards take over). */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
+              </ShiftProvider>
+            </PreferencesProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
