@@ -5,49 +5,57 @@ import { formatDateShort } from '@shared/utils/date';
 import { useAnnouncementReads } from './reads/useAnnouncementReads';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
+import { PushPinIcon } from '@phosphor-icons/react';
 
 export function AnnouncementsPage() {
-    const { user } = useAuthContext();
-    const { list, create } = useAnnouncements(user);
-    const { readIds, markRead } = useAnnouncementReads(user);
+  const { user } = useAuthContext();
+  const { list, create, update } = useAnnouncements(user);
+  const { readIds, markRead } = useAnnouncementReads(user);
 
-    const [title, setTitle] = useState('');
-    const [body, setBody] = useState('');
-    const isManager = (user?.role.rank ?? 0) >= 20;
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const isManager = (user?.role.rank ?? 0) >= 20;
 
-    const submit = () => {
-        create.mutate(
-        { title, body },
-        { onSuccess: () => { setTitle(''); setBody(''); } },
-        );
-    };
+  const submit = () => {
+    create.mutate(
+      { title, body },
+      {
+        onSuccess: () => {
+          setTitle('');
+          setBody('');
+        },
+      },
+    );
+  };
 
-    return (
-        <div className="space-y-4 px-1 pb-10">
-            <header className="pt-2">
-                <p className="text-label text-emerald-500">Team</p>
-                <h1 className="text-display text-gray-900 dark:text-white">Announcements</h1>
-            </header>
+  return (
+    <div className="space-y-4 px-1 pb-10">
+      <header className="pt-2">
+        <p className="text-label text-emerald-500">Team</p>
+        <h1 className="text-display text-gray-900 dark:text-white">
+          Announcements
+        </h1>
+      </header>
 
-                  {isManager && (
-        <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-2">
+      {isManager && (
+        <div className="space-y-2 rounded-2xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Title"
-            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-body text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            className="text-body w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-emerald-500/40 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           />
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Write an announcement…"
-            className="w-full min-h-20 resize-none rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-body text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            className="text-body min-h-20 w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-emerald-500/40 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           />
           <div className="flex justify-end">
             <button
               onClick={submit}
               disabled={!title.trim() || !body.trim() || create.isPending}
-              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-body-strong px-4 py-2 disabled:opacity-50 transition-colors"
+              className="text-body-strong rounded-xl bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
             >
               {create.isPending ? 'Posting…' : 'Post'}
             </button>
@@ -55,60 +63,106 @@ export function AnnouncementsPage() {
         </div>
       )}
 
-            {/* 1) Пока грузится — скелетоны */}
-            {list.isLoading && (
-                <div className="space-y-3">
-                    <Skeleton className="h-24 rounded-2xl" />
-                    <Skeleton className="h-24 rounded-2xl" />
-                </div>
-            )}
+      {/* 1) Пока грузится — скелетоны */}
+      {list.isLoading && (
+        <div className="space-y-3">
+          <Skeleton className="h-24 rounded-2xl" />
+          <Skeleton className="h-24 rounded-2xl" />
+        </div>
+      )}
 
-            {/* Запрос упал — это НЕ то же самое, что пустой список */}
+      {/* Запрос упал — это НЕ то же самое, что пустой список */}
       {list.isError && (
-        <p className="text-body text-red-500 py-10 text-center">
+        <p className="text-body py-10 text-center text-red-500">
           Couldn't load announcements. Please try again.
         </p>
       )}
 
-            {/* 2) Загрузилось, но пусто */}
-                  {!list.isLoading && !list.isError && (list.data?.length ?? 0) === 0 && (
-        <p className="text-body text-gray-400 py-10 text-center">No announcements yet.</p>
+      {/* 2) Загрузилось, но пусто */}
+      {!list.isLoading && !list.isError && (list.data?.length ?? 0) === 0 && (
+        <p className="text-body py-10 text-center text-gray-400">
+          No announcements yet.
+        </p>
       )}
 
-            {/* 3) Список: по карточке на каждое объявление */}
-            <div className="space-y-3">
-                {list.data?.map((a) => {
-                    const isNew = !readIds.has(a.id);
-                    return (
-                        <article
-                        key={a.id}
-                        onClick={() => markRead.mutate(a.id)}
-                        className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 cursor-pointer"
+      {/* 3) Список: по карточке на каждое объявление */}
+      <div className="flex flex-col gap-3">
+        <AnimatePresence>
+          {list.data?.map((a) => {
+            const isNew = !readIds.has(a.id);
+            return (
+              <motion.article
+                key={a.id}
+                layout
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                onClick={() => markRead.mutate(a.id)}
+                className="cursor-pointer rounded-2xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    {a.pinned && (
+                      <span className="text-micro mb-0.5 inline-flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400">
+                        <PushPinIcon weight="fill" className="h-3.5 w-3.5" />
+                        Pinned
+                      </span>
+                    )}
+                    <h2 className="text-body-strong text-gray-900 dark:text-white">
+                      {a.title}
+                    </h2>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <AnimatePresence>
+                      {isNew && (
+                        <motion.span
+                          initial={{ opacity: 0, scale: 0.6 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.6 }}
+                          transition={{ duration: 0.2 }}
+                          className="text-micro shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
                         >
-                        <div className="flex items-start justify-between gap-2">
-                            <h2 className="text-body-strong text-gray-900 dark:text-white">{a.title}</h2>
-                            <AnimatePresence>
-                                {isNew && (
-                                    <motion.span
-                                        initial={{ opacity: 0, scale: 0.6 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.6 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="shrink-0 text-micro font-semibold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full px-2 py-0.5"
-                                    >
-                                        New
-                                    </motion.span>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                        <p className="text-body text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-wrap">{a.body}</p>
-                        <p className="text-micro text-gray-400 mt-2">
-                            {a.author?.username ? `Posted by ${a.author.username}` : 'Announcement'} · {formatDateShort(a.created_at)}
-                        </p>
-                        </article>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
+                          New
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+                <p className="text-body mt-1 whitespace-pre-wrap text-gray-600 dark:text-gray-300">
+                  {a.body}
+                </p>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <p className="text-micro text-gray-400">
+                    {a.author?.username
+                      ? `Posted by ${a.author.username}`
+                      : 'Announcement'}{' '}
+                    · {formatDateShort(a.created_at)}
+                  </p>
+                  {isManager && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        update.mutate({
+                          id: a.id,
+                          patch: { pinned: !a.pinned },
+                        });
+                      }}
+                      title={a.pinned ? 'Unpin' : 'Pin'}
+                      className={`shrink-0 transition-colors ${a.pinned ? 'text-amber-500' : 'text-gray-400 hover:text-amber-500'}`}
+                    >
+                      <PushPinIcon
+                        weight={a.pinned ? 'fill' : 'regular'}
+                        className="h-5 w-5"
+                      />
+                    </button>
+                  )}
+                </div>
+              </motion.article>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
