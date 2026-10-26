@@ -4,11 +4,23 @@ import { useAnnouncements } from './useAnnouncements';
 import { formatDateShort } from '@shared/utils/date';
 import { useAnnouncementReads } from './reads/useAnnouncementReads';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 
 export function AnnouncementsPage() {
     const { user } = useAuthContext();
-    const { list } = useAnnouncements(user);
+    const { list, create } = useAnnouncements(user);
     const { readIds, markRead } = useAnnouncementReads(user);
+
+    const [title, setTitle] = useState('');
+    const [body, setBody] = useState('');
+    const isManager = (user?.role.rank ?? 0) >= 20;
+
+    const submit = () => {
+        create.mutate(
+        { title, body },
+        { onSuccess: () => { setTitle(''); setBody(''); } },
+        );
+    };
 
     return (
         <div className="space-y-4 px-1 pb-10">
@@ -16,6 +28,32 @@ export function AnnouncementsPage() {
                 <p className="text-label text-emerald-500">Team</p>
                 <h1 className="text-display text-gray-900 dark:text-white">Announcements</h1>
             </header>
+
+                  {isManager && (
+        <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-2">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Title"
+            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-body text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          />
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Write an announcement…"
+            className="w-full min-h-20 resize-none rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-body text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          />
+          <div className="flex justify-end">
+            <button
+              onClick={submit}
+              disabled={!title.trim() || !body.trim() || create.isPending}
+              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-body-strong px-4 py-2 disabled:opacity-50 transition-colors"
+            >
+              {create.isPending ? 'Posting…' : 'Post'}
+            </button>
+          </div>
+        </div>
+      )}
 
             {/* 1) Пока грузится — скелетоны */}
             {list.isLoading && (
