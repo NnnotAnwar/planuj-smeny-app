@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 
 import { formatTime } from '@shared/utils/date';
 import { Clock } from '@shared/components/Clock';
-import { MapPinIcon, SignOutIcon, CaretRightIcon, MagnifyingGlassIcon, SidebarSimpleIcon } from '@phosphor-icons/react';
+import { MapPinIcon, SignOutIcon, MagnifyingGlassIcon, SidebarSimpleIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
@@ -26,6 +26,10 @@ import { NotificationsBell } from '@features/notifications/NotificationsBell';
  * The persistent left navigation / dispatch panel (desktop) and top header (mobile).
  * Designed as a "command board" — the most important information is always the user's current physical post.
  *
+ * Desktop renders as a floating frosted-glass panel inset from the window edge;
+ * mobile keeps a slim translucent top bar (BottomNav + HomePage carry the rest).
+ * Density is deliberately compact — small type and tight rows that stay legible.
+ *
  * This was previously misnamed "Dashboard". It is layout/navigation, not the home dashboard content.
  */
 
@@ -39,6 +43,26 @@ const SHORTCUT_LABEL =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent)
     ? '⌘K'
     : 'Ctrl K';
+
+/** Quiet inset surface shared by the search field and the location card. */
+const INSET_SURFACE =
+  'bg-white/55 dark:bg-white/5 ring-1 ring-inset ring-ink/6 dark:ring-white/8 hover:bg-white/80 dark:hover:bg-white/8';
+
+/** Icon-rail button geometry + idle colours (collapsed mode). */
+const RAIL_BTN = 'relative flex items-center justify-center size-10 rounded-xl transition-colors shrink-0';
+const RAIL_IDLE = 'text-ink-soft dark:text-slate-400 hover:bg-white/60 dark:hover:bg-white/5';
+
+/** Map pin in a soft accent disc; a solid dot on its corner marks a live shift. */
+function LocationPin({ live }: { live: boolean }) {
+  return (
+    <span className="relative flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/12 text-emerald-600 dark:text-emerald-300">
+      <MapPinIcon className="size-3.5" weight="fill" />
+      {live && (
+        <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
+      )}
+    </span>
+  );
+}
 
 /** The signature element — shows the active shift location ("Aktuální směna").
  *  Only rendered when a shift has been started (no "Vybraná směna" panel when idle).
@@ -57,37 +81,26 @@ function CurrentPost({
   return (
     <div
       onClick={onSelect}
-      className={`group rounded-2xl border p-3 transition-all bg-gray-100 dark:bg-[color-mix(in_srgb,var(--grad-to)_85%,black)] border-emerald-200 dark:border-emerald-400/40 ${
-        onSelect ? 'cursor-pointer active:scale-[0.985] hover:border-emerald-300 dark:hover:border-emerald-400/70' : ''
-      }`}
+      className={`group rounded-xl p-2.5 transition-all ${INSET_SURFACE} ${onSelect ? 'cursor-pointer active:scale-[0.985]' : ''}`}
     >
-      <div className="flex items-center justify-between mb-1">
-        <div className="uppercase text-[10px] font-semibold tracking-[1px] text-gray-500 dark:text-slate-400">
-          {t('sidebar.currentPost')}
-        </div>
-        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] font-medium tracking-wider">{t('sidebar.onShift')}</span>
+      <div className="flex items-center justify-between">
+        <div className="text-eyebrow text-ink-soft dark:text-slate-400">{t('sidebar.currentLocation')}</div>
+        <div className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-emerald-700 dark:text-emerald-300">
+          <span className="size-1.5 rounded-full bg-emerald-500" />
+          <span className="text-eyebrow normal-case tracking-normal">{t('sidebar.onShift')}</span>
         </div>
       </div>
 
-      <div className="flex items-start gap-2.5">
-        <div className="mt-0.5 rounded-lg p-1 bg-emerald-100 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400">
-          <MapPinIcon className="w-4 h-4" weight="fill" />
-        </div>
+      <div className="mt-2 flex items-center gap-2">
+        <LocationPin live />
         <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-semibold leading-tight tracking-[-0.2px] text-gray-900 dark:text-white">
+          <div className="font-display text-sm font-bold leading-tight tracking-[-0.01em] text-ink dark:text-white truncate">
             {currentLocation?.name || t('common.unknown')}
           </div>
-
-          {activeShift && (
-            <div className="mt-0.5 text-xs text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
-              <span>{t('sidebar.started')}</span>
-              <span className="font-mono tabular-nums">
-                {formatTime(activeShift.started_at)}
-              </span>
-            </div>
-          )}
+          <div className="mt-0.5 flex items-center gap-1 text-caption text-ink-soft dark:text-slate-400">
+            <span>{t('sidebar.started')}</span>
+            <span className="tabular-nums font-semibold text-ink dark:text-slate-200">{formatTime(activeShift.started_at)}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -106,32 +119,35 @@ function SidebarNavSection({
 }) {
   if (items.length === 0) return null;
   return (
-    <div className="mb-2.5">
-      <div className="uppercase text-[10px] font-semibold tracking-[1px] text-gray-500 dark:text-slate-500 mb-1 px-3">
-        {title}
-      </div>
+    <div className="mb-3">
+      <div className="text-eyebrow text-ink-soft/70 dark:text-slate-500 mb-1.5 px-2.5">{title}</div>
       <nav className="flex flex-col gap-0.5">
         {items.map((item) => {
-        const active = currentPath === item.route;
-        return (
-          <Link
-            key={item.route}
-            to={item.route}
-            className={`group flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all ${
-              active
-                ? 'bg-gray-100 dark:bg-[color-mix(in_srgb,var(--grad-to)_85%,black)] text-gray-900 dark:text-white font-medium border-l-2 border-emerald-500 -ml-0.5 pl-3.5'
-                : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-(--grad-to)/80 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            <item.icon className="w-4 h-4 opacity-80" />
-            <span className="flex-1">{item.label}</span>
-            {item.badgeCount > 0 && (
-              <span className="ml-auto bg-emerald-500 dark:bg-emerald-400 text-white dark:text-[#0B1120] text-[10px] font-bold px-1.5 rounded-full min-w-4.25 h-4.25 flex items-center justify-center">
-                {item.badgeCount}
-              </span>
-            )}
-          </Link>
-        );
+          const active = currentPath === item.route;
+          return (
+            <Link
+              key={item.route}
+              to={item.route}
+              aria-current={active ? 'page' : undefined}
+              className={`group flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-meta transition-all ${
+                active
+                  ? 'bg-emerald-500 text-white font-semibold shadow-md shadow-emerald-500/30'
+                  : 'text-ink-soft dark:text-slate-400 hover:bg-white/60 dark:hover:bg-white/5 hover:text-ink dark:hover:text-white'
+              }`}
+            >
+              <item.icon weight={active ? 'fill' : 'regular'} className="size-4 shrink-0" />
+              <span className="flex-1 truncate">{item.label}</span>
+              {item.badgeCount > 0 && (
+                <span
+                  className={`ml-auto min-w-4 h-4 px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${
+                    active ? 'bg-white/25 text-white' : 'bg-emerald-500 text-white'
+                  }`}
+                >
+                  {item.badgeCount}
+                </span>
+              )}
+            </Link>
+          );
         })}
       </nav>
     </div>
@@ -142,33 +158,30 @@ function SidebarNavSection({
  *  the two never shifts the layout. */
 function LocationPickerTrigger({
   selected,
+  live,
   onClick,
   t,
 }: {
   selected?: { name: string };
+  live: boolean;
   onClick: () => void;
   t: TranslateFn;
 }) {
   return (
     <button
       onClick={onClick}
-      className="group w-full text-left rounded-2xl border p-3 cursor-pointer transition-all active:scale-[0.985] bg-gray-100 dark:bg-[color-mix(in_srgb,var(--grad-to)_85%,black)] border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-400/60"
+      className={`group w-full text-left rounded-xl p-2.5 cursor-pointer transition-all active:scale-[0.985] ${INSET_SURFACE}`}
     >
-      <div className="flex items-center justify-between mb-1">
-        <div className="uppercase text-[10px] font-semibold tracking-[1px] text-gray-500 dark:text-slate-400">
-          {t('sidebar.availablePosts')}
-        </div>
-        <CaretRightIcon className="w-3.5 h-3.5 text-gray-400 transition-transform group-hover:translate-x-0.5" />
-      </div>
-      <div className="flex items-start gap-2.5">
-        <div className="mt-0.5 rounded-lg p-1 bg-emerald-100 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400">
-          <MapPinIcon className="w-4 h-4" weight="fill" />
-        </div>
+      <div className="text-eyebrow text-ink-soft dark:text-slate-400">{t('sidebar.currentLocation')}</div>
+      <div className="mt-2 flex items-center gap-2">
+        <LocationPin live={live} />
         <div className="min-w-0 flex-1">
-          <div className="text-[15px] font-semibold leading-tight tracking-[-0.2px] text-gray-900 dark:text-white truncate">
+          <div className="font-display text-sm font-bold leading-tight tracking-[-0.01em] text-ink dark:text-white truncate">
             {selected ? selected.name : t('location.select')}
           </div>
-          <div className="mt-0.5 text-xs text-gray-500 dark:text-slate-400">{t('location.change')}</div>
+          <div className="mt-0.5 text-caption text-emerald-600 dark:text-emerald-300 group-hover:underline underline-offset-2">
+            {t('location.change')}
+          </div>
         </div>
       </div>
     </button>
@@ -181,6 +194,9 @@ function LocationPickerTrigger({
  * so navigating never shifts the layout. Tapping either opens the shared
  * LocationPicker in a flyout popover anchored to the RIGHT of the sidebar, so it
  * never overlaps the nav.
+ *
+ * `variant="rail"` renders just a pin button for the collapsed icon rail, opening
+ * the same flyout — so a location can always be picked without expanding.
  */
 function LocationHero({
   locations,
@@ -189,6 +205,7 @@ function LocationHero({
   currentLocation,
   isDashboard,
   onLocationSelect,
+  variant = 'card',
   t,
 }: {
   locations: Array<{ id: string; name: string; archived_at?: string | null }>;
@@ -197,6 +214,7 @@ function LocationHero({
   currentLocation?: { id: string; name: string };
   isDashboard: boolean;
   onLocationSelect: (id: string) => void;
+  variant?: 'card' | 'rail';
   t: TranslateFn;
 }) {
   const { recentIds, recordPick } = useRecentLocations();
@@ -212,7 +230,7 @@ function LocationHero({
     if (!r) return;
     // Flyout sits just to the right of the sidebar, vertically clamped to stay on screen.
     const top = Math.max(8, Math.min(r.top, window.innerHeight - 420));
-    setPos({ left: r.right + 8, top });
+    setPos({ left: r.right + 16, top });
   }, []);
 
   useLayoutEffect(() => {
@@ -239,12 +257,27 @@ function LocationHero({
     setOpen(false);
   };
 
+  // Rail label names the place you're at (or prompts to pick one).
+  const railLabel = (activeShift ? currentLocation?.name : selected?.name) ?? t('location.select');
+
   return (
-    <div ref={ref} className="mb-4">
-      {showPost && activeShift ? (
+    <div ref={ref} className={variant === 'card' ? 'mb-3' : ''}>
+      {variant === 'rail' ? (
+        <button
+          onClick={() => setOpen(true)}
+          aria-label={railLabel}
+          title={railLabel}
+          className={`${RAIL_BTN} ${open ? 'bg-white/70 text-emerald-600 dark:bg-white/8 dark:text-emerald-300' : RAIL_IDLE}`}
+        >
+          <MapPinIcon weight={activeShift || selected ? 'fill' : 'regular'} className="size-5" />
+          {activeShift && (
+            <span className="absolute top-2 right-2 size-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
+          )}
+        </button>
+      ) : showPost && activeShift ? (
         <CurrentPost currentLocation={currentLocation} activeShift={activeShift} t={t} />
       ) : (
-        <LocationPickerTrigger selected={selected} onClick={() => setOpen(true)} t={t} />
+        <LocationPickerTrigger selected={selected} live={!!activeShift} onClick={() => setOpen(true)} t={t} />
       )}
 
       {open &&
@@ -257,7 +290,7 @@ function LocationHero({
               animate={{ opacity: 1, x: 0, scale: 1 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
               role="dialog"
-              className="fixed z-60 w-72 max-h-[70vh] flex flex-col rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-(--grad-to) shadow-2xl p-2"
+              className="glass glass-menu fixed z-60 w-72 max-h-[70vh] flex flex-col rounded-2xl p-2"
               style={{ left: pos.left, top: pos.top }}
             >
               <LocationPicker
@@ -275,8 +308,8 @@ function LocationHero({
   );
 }
 
-/** Icon-only rail (desktop compact mode). Tooltips via native title; tapping the
- *  location pin expands the sidebar so the full picker is available. */
+/** Icon-only rail (desktop compact mode). Tooltips via native title; the
+ *  location pin opens the picker flyout directly, so nothing needs expanding. */
 function CollapsedRail({
   navItems,
   currentPath,
@@ -284,6 +317,7 @@ function CollapsedRail({
   onOpenSearch,
   onExpand,
   logout,
+  location,
   t,
 }: {
   navItems: ResolvedNavItem[];
@@ -292,36 +326,31 @@ function CollapsedRail({
   onOpenSearch: () => void;
   onExpand: () => void;
   logout: () => void;
+  location: ReactNode;
   t: TranslateFn;
 }) {
-  const railBtn = 'relative flex items-center justify-center w-11 h-11 rounded-xl transition-colors shrink-0';
   return (
     <div className="hidden md:flex md:flex-col items-center flex-1 min-h-0 py-1 gap-1">
-      <button
-        onClick={onExpand}
-        aria-label={t('sidebar.expand')}
-        title={t('sidebar.expand')}
-        className={`${railBtn} text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5`}
-      >
-        <SidebarSimpleIcon weight="bold" className="w-5 h-5" />
+      <button onClick={onExpand} aria-label={t('sidebar.expand')} title={t('sidebar.expand')} className={`${RAIL_BTN} ${RAIL_IDLE}`}>
+        <SidebarSimpleIcon weight="bold" className="size-5" />
       </button>
 
-      <button
-        onClick={onOpenSearch}
-        aria-label={t('cmd.search')}
-        title={t('cmd.search')}
-        className={`${railBtn} text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5`}
-      >
-        <MagnifyingGlassIcon weight="bold" className="w-5 h-5" />
+      <button onClick={onOpenSearch} aria-label={t('cmd.search')} title={t('cmd.search')} className={`${RAIL_BTN} ${RAIL_IDLE}`}>
+        <MagnifyingGlassIcon weight="bold" className="size-5" />
       </button>
 
       {user && (
-        <Link to="/profile" aria-label={t('nav.profile')} title={user.first_name || user.username} className={railBtn}>
-          <span className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
+        <Link to="/profile" aria-label={t('nav.profile')} title={user.first_name || user.username} className={RAIL_BTN}>
+          <span className="size-7 rounded-full bg-linear-to-br from-emerald-400 to-emerald-600 ring-2 ring-white dark:ring-white/15 flex items-center justify-center text-white text-[11px] font-display font-bold">
             {getFullInitials(user.first_name, user.last_name)}
           </span>
         </Link>
       )}
+
+      {/* LOCATION — pick / see where you are without expanding */}
+      {location}
+
+      <div className="my-1 h-px w-6 bg-ink/8 dark:bg-white/8" />
 
       <div className="flex-1 min-h-0 overflow-y-auto emerald-scrollbar flex flex-col items-center gap-1 w-full">
         {navItems.map((item) => {
@@ -331,23 +360,20 @@ function CollapsedRail({
               key={item.route}
               to={item.route}
               aria-label={item.label}
+              aria-current={active ? 'page' : undefined}
               title={item.label}
-              className={`${railBtn} ${
-                active
-                  ? 'bg-gray-100 dark:bg-[color-mix(in_srgb,var(--grad-to)_85%,black)] text-emerald-600 dark:text-emerald-400'
-                  : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5'
-              }`}
+              className={`${RAIL_BTN} ${active ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30' : RAIL_IDLE}`}
             >
-              <item.icon weight={active ? 'fill' : 'regular'} className="w-5 h-5" />
+              <item.icon weight={active ? 'fill' : 'regular'} className="size-5" />
               {item.badgeCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 ring-2 ring-white dark:ring-(--grad-to)" />
+                <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
               )}
             </Link>
           );
         })}
       </div>
 
-      <div className={railBtn}>
+      <div className={RAIL_BTN}>
         <NotificationsBell />
       </div>
 
@@ -355,9 +381,9 @@ function CollapsedRail({
         onClick={logout}
         aria-label={t('nav.logout')}
         title={t('nav.logout')}
-        className={`${railBtn} text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10`}
+        className={`${RAIL_BTN} text-rose-600 dark:text-rose-400 hover:bg-rose-500/8`}
       >
-        <SignOutIcon className="w-5 h-5" />
+        <SignOutIcon weight="bold" className="size-5" />
       </button>
     </div>
   );
@@ -383,48 +409,64 @@ export function Sidebar({ onLocationSelect, onOpenSearch }: SidebarProps) {
   // Current location is the heart of the experience
   const currentLocation = locations.find((l) => l.id === selectedLocationId);
 
+  const heroProps = {
+    locations,
+    selectedLocationId,
+    activeShift,
+    currentLocation,
+    isDashboard: currentRoute.pathname === '/',
+    onLocationSelect,
+    t,
+  };
+
   return (
-    <header className={`sticky top-0 z-50 md:h-dvh w-full ${collapsed ? 'md:w-20' : 'md:w-80'} bg-white/90 dark:bg-(--grad-to) backdrop-blur-xl text-gray-900 dark:text-slate-100 border-b md:border-b-0 md:border-r border-gray-200 dark:border-slate-800 flex flex-col transition-all duration-300`}>
-      <div className="flex flex-col h-full px-3 pt-[calc(0.25rem+env(safe-area-inset-top,0px))] pb-1 md:pt-2.5 md:pb-2.5">
-        {/* Top brand row - restore original mobile header with centered time */}
-        <div className={`shrink-0 flex justify-between items-center h-10 md:h-12 relative md:mb-4 ${collapsed ? 'md:justify-center' : ''}`}>
-          <div className="flex items-center gap-3 z-10">
-            <div className="w-8 h-8 md:w-9 md:h-9 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center shadow-sm">
-              <span className="text-white font-black text-sm md:text-base tracking-[-0.5px]">PS</span>
+    <header
+      className={`sticky top-0 z-50 w-full text-ink dark:text-slate-100 flex flex-col transition-all duration-300
+        max-md:bg-white/75 max-md:dark:bg-slate-950/70 max-md:backdrop-blur-xl max-md:border-b max-md:border-white/70 max-md:dark:border-white/5
+        md:glass md:top-3 md:m-3 md:h-[calc(100dvh-1.5rem)] md:shrink-0 md:rounded-2xl ${collapsed ? 'md:w-16' : 'md:w-64'}`}
+    >
+      <div className="flex flex-col h-full px-3 pt-[calc(0.25rem+env(safe-area-inset-top,0px))] pb-1 md:px-3 md:pt-3 md:pb-3">
+        {/* Top brand row — desktop: logo + collapse + bell; mobile: logo, centred clock, search + bell */}
+        <div className={`shrink-0 flex justify-between items-center h-10 md:h-9 relative md:mb-3 ${collapsed ? 'md:justify-center' : ''}`}>
+          <div className="flex items-center gap-2 z-10">
+            <div className="size-8 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center shadow-md shadow-emerald-500/30 ring-1 ring-white/40">
+              <span className="font-display text-white font-black text-sm tracking-[-0.04em]">PS</span>
             </div>
-            {/* Hidden in the collapsed rail — a 2-line wrap would overflow the 80px width. */}
-            <span className={`${collapsed ? 'hidden' : 'hidden lg:block'} font-semibold tracking-[-0.2px] text-base whitespace-nowrap text-gray-900 dark:text-white`}>Planuj Směny</span>
+            {/* Hidden in the collapsed rail — a 2-line wrap would overflow the rail width. */}
+            <span className={`${collapsed ? 'hidden' : 'hidden lg:block'} font-display font-bold tracking-[-0.02em] text-sm whitespace-nowrap text-ink dark:text-white`}>
+              Planuj Směny
+            </span>
           </div>
 
           {/* Desktop: collapse toggle + notifications bell (hidden when collapsed —
               they live in the icon rail instead). */}
-          <div className={`z-10 items-center gap-1 ${collapsed ? 'hidden' : 'hidden md:flex'}`}>
+          <div className={`z-10 items-center ${collapsed ? 'hidden' : 'hidden md:flex'}`}>
             <button
               onClick={toggleCollapsed}
               aria-label={t('sidebar.collapse')}
               title={t('sidebar.collapse')}
-              className="p-2 rounded-xl text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5 active:scale-90 transition-all"
+              className="p-1.5 rounded-lg text-ink-soft dark:text-slate-400 hover:bg-white/70 dark:hover:bg-white/5 active:scale-90 transition-all"
             >
-              <SidebarSimpleIcon weight="bold" className="w-5 h-5" />
+              <SidebarSimpleIcon weight="bold" className="size-4.5" />
             </button>
             <NotificationsBell />
           </div>
 
           {/* Mobile: centered clock */}
           <div className="absolute inset-0 flex items-center justify-center md:hidden pointer-events-none">
-            <div className="text-xl font-bold text-gray-800 dark:text-white tracking-tight">
+            <div className="text-base font-semibold tabular-nums tracking-tight text-ink dark:text-white">
               <Clock seconds={false} />
             </div>
           </div>
 
           {/* Mobile: search + notifications bell */}
-          <div className="md:hidden z-10 flex items-center gap-0.5">
+          <div className="md:hidden z-10 flex items-center">
             <button
               onClick={onOpenSearch}
               aria-label={t('cmd.search')}
-              className="p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-emerald-500/5 dark:hover:bg-white/5 active:scale-90 transition-all"
+              className="p-2 rounded-xl text-ink-soft dark:text-slate-300 hover:bg-white/70 dark:hover:bg-white/5 active:scale-90 transition-all"
             >
-              <MagnifyingGlassIcon weight="bold" className="w-6 h-6" />
+              <MagnifyingGlassIcon weight="bold" className="size-5" />
             </button>
             <NotificationsBell />
           </div>
@@ -439,84 +481,71 @@ export function Sidebar({ onLocationSelect, onOpenSearch }: SidebarProps) {
             onOpenSearch={onOpenSearch}
             onExpand={toggleCollapsed}
             logout={logout}
+            location={<LocationHero {...heroProps} variant="rail" />}
             t={t}
           />
         ) : (
-        <div className="hidden md:flex md:flex-col flex-1 min-h-0 py-1">
+          <div className="hidden md:flex md:flex-col flex-1 min-h-0">
+            {/* Scrollable region: search → profile → hero → nav. Footer stays pinned. */}
+            <div className="flex-1 min-h-0 overflow-y-auto emerald-scrollbar -mx-1 px-1">
+              {/* SEARCH — opens the ⌘K command palette; the kbd hint makes it discoverable */}
+              <button
+                onClick={onOpenSearch}
+                className={`w-full flex items-center gap-2 mb-3 px-2.5 py-1.5 rounded-lg text-ink-soft dark:text-slate-400 transition-colors ${INSET_SURFACE}`}
+              >
+                <MagnifyingGlassIcon weight="bold" className="size-3.5 shrink-0" />
+                <span className="flex-1 text-left text-meta">{t('cmd.search')}…</span>
+                <kbd className="font-sans text-[10px] font-semibold px-1.5 py-0.5 rounded bg-white/85 dark:bg-white/10 ring-1 ring-ink/8 dark:ring-white/10 text-ink-soft dark:text-slate-300">
+                  {SHORTCUT_LABEL}
+                </kbd>
+              </button>
 
-        {/* Scrollable region: search → profile → hero → nav. Footer stays pinned. */}
-        <div className="flex-1 min-h-0 overflow-y-auto emerald-scrollbar -mx-1 px-1">
+              {/* USER — avatar + name + role, quiet and tight */}
+              {user && (
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-2.5 mb-3 px-2 py-1.5 rounded-lg hover:bg-white/60 dark:hover:bg-white/5 transition-colors"
+                >
+                  <div className="size-8 rounded-full bg-linear-to-br from-emerald-400 to-emerald-600 ring-2 ring-white dark:ring-white/15 shadow-sm shadow-emerald-500/25 flex items-center justify-center text-white text-[11px] font-display font-bold shrink-0">
+                    {getFullInitials(user.first_name, user.last_name)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-display text-sm font-bold tracking-[-0.01em] text-ink dark:text-white truncate leading-tight">
+                      {user.first_name || user.username}
+                    </div>
+                    <div className="mt-0.5 text-eyebrow text-ink-soft dark:text-slate-400">{user.role.name}</div>
+                  </div>
+                </Link>
+              )}
 
-        {/* SEARCH — opens the ⌘K command palette; the kbd hint makes it discoverable */}
-        <button
-          onClick={onOpenSearch}
-          className="w-full flex items-center gap-2.5 mb-3 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-(--grad-to) text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-        >
-          <MagnifyingGlassIcon weight="bold" className="w-4 h-4 shrink-0" />
-          <span className="flex-1 text-left text-sm">{t('cmd.search')}…</span>
-          <kbd className="font-sans text-micro normal-case tracking-normal px-1.5 py-0.5 rounded-md bg-gray-200/70 dark:bg-white/10 text-gray-500 dark:text-slate-300">
-            {SHORTCUT_LABEL}
-          </kbd>
-        </button>
+              {/* HERO — picker trigger on the dashboard, live current-post elsewhere;
+                  same height so navigating never shifts the layout. Opens the picker
+                  flyout to the right of the sidebar. */}
+              <LocationHero {...heroProps} />
 
-        {/* USER — secondary, quiet (styled like mobile profile) */}
-        {user && (
-          <Link
-            to="/profile"
-            className="flex items-center gap-3 mb-4 px-3 py-2 rounded-2xl bg-white/70 dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-          >
-            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 shadow-md flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-semibold shrink-0">
-              {getFullInitials(user.first_name, user.last_name)}
+              {/* NAVIGATION — grouped into Work / Manage / System */}
+              {NAV_SECTIONS.map((section) => (
+                <SidebarNavSection
+                  key={section}
+                  title={t(SECTION_LABEL_KEYS[section])}
+                  items={navItems.filter((i) => i.section === section)}
+                  currentPath={currentRoute.pathname}
+                />
+              ))}
             </div>
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-gray-800 dark:text-slate-200 truncate">
-                {user.first_name || user.username}
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.5px] text-gray-500 dark:text-slate-500">
-                {user.role.name}
-              </div>
+
+            {/* FOOTER — log out, aligned with the nav rows */}
+            <div className="pt-2 border-t border-ink/6 dark:border-white/6 shrink-0">
+              <button
+                onClick={logout}
+                className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-meta text-rose-600 dark:text-rose-400 hover:bg-rose-500/8 transition-colors"
+              >
+                <SignOutIcon weight="bold" className="size-4" />
+                <span>{t('nav.logout')}</span>
+              </button>
             </div>
-          </Link>
+          </div>
         )}
-
-        {/* HERO — picker trigger on the dashboard, live current-post elsewhere;
-            same height so navigating never shifts the layout. Opens the picker
-            flyout to the right of the sidebar. */}
-        <LocationHero
-          locations={locations}
-          selectedLocationId={selectedLocationId}
-          activeShift={activeShift}
-          currentLocation={currentLocation}
-          isDashboard={currentRoute.pathname === '/'}
-          onLocationSelect={onLocationSelect}
-          t={t}
-        />
-
-        {/* NAVIGATION — grouped into Work / Manage / System */}
-        {NAV_SECTIONS.map((section) => (
-          <SidebarNavSection
-            key={section}
-            title={t(SECTION_LABEL_KEYS[section])}
-            items={navItems.filter((i) => i.section === section)}
-            currentPath={currentRoute.pathname}
-          />
-        ))}
-
-        </div> {/* close scroll region */}
-
-        {/* FOOTER — minimal, clear action */}
-        <div className="pt-3 border-t border-gray-200 dark:border-slate-800 shrink-0">
-          <button
-            onClick={logout}
-            className="w-full flex items-center justify-center gap-2 text-sm text-red-600 dark:text-red-400 py-1.5 rounded-xl bg-white dark:bg-gray-900/40 border border-red-100 dark:border-red-900/20 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
-          >
-            <SignOutIcon className="w-4 h-4" />
-            <span className="font-medium">{t('nav.logout')}</span>
-          </button>
-        </div>
-
-        </div>
-        )} {/* close md: content wrapper / collapsed rail */}
       </div>
     </header>
   );

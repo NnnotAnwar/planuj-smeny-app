@@ -1,5 +1,5 @@
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import { ArrowBendUpLeftIcon } from '@phosphor-icons/react';
+import { ArrowBendUpLeftIcon, UsersIcon, ClockCountdownIcon } from '@phosphor-icons/react';
 import { type ShiftDisplayData } from '@shared/types';
 import { getRoleBadgeColor } from '@/shared/utils/roleColors';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
@@ -30,7 +30,7 @@ const MOVED_STRIPE = 'border-l-4 border-l-gray-900 dark:border-l-white';
 
 const itemVariants: Variants = {
   hidden: { opacity: 0, x: -20, height: 0, marginTop: 0 },
-  show: { opacity: 1, x: 0, height: 'auto', marginTop: 8 },
+  show: { opacity: 1, x: 0, height: 'auto', marginTop: 6 },
   exit: { opacity: 0, x: 20, height: 0, marginTop: 0 },
 };
 
@@ -38,15 +38,17 @@ const itemVariants: Variants = {
 function MovedFrom({ from }: { from?: string }) {
   const t = useTranslation();
   return (
-    <span className="inline-flex items-center gap-1 text-micro font-bold text-gray-900 dark:text-white mb-0.5 normal-case tracking-normal">
-      <ArrowBendUpLeftIcon weight="bold" className="w-3 h-3 shrink-0" />
+    <span className="inline-flex items-center gap-1 text-micro font-bold text-ink dark:text-white normal-case tracking-normal">
+      <ArrowBendUpLeftIcon weight="bold" className="size-3 shrink-0" />
       <span className="truncate">{from ? t('shifts.movedFrom', { location: from }) : t('shifts.moved')}</span>
     </span>
   );
 }
 
 export function ShiftCards({ locationName, shifts, userShift, onSelectUser }: ShiftCardsProps) {
-  const hasContent = shifts.length > 0 || userShift;
+  const t = useTranslation();
+  const count = shifts.length + (userShift ? 1 : 0);
+  const hasContent = count > 0;
 
   return (
     <motion.div
@@ -55,16 +57,20 @@ export function ShiftCards({ locationName, shifts, userShift, onSelectUser }: Sh
       animate={{
         opacity: hasContent ? 1 : 0,
         height: hasContent ? 'auto' : 0,
-        marginBottom: hasContent ? 16 : 0,
         display: hasContent ? 'block' : 'none',
       }}
-      className="rounded-xl bg-white/40 dark:bg-white/5 backdrop-blur-md p-0 md:p-4 border border-emerald-500/10 dark:border-white/5 overflow-hidden shadow-xl shadow-emerald-500/5"
+      className="glass overflow-hidden rounded-2xl p-1.5"
     >
-      <h3 className="mb-2 flex items-center justify-between rounded-lg bg-gray-800 dark:bg-gray-800/90 px-3 py-1.5 text-body-strong text-white border border-gray-700 shadow-md">
-        <span>{locationName}</span>
+      {/* Dark slate header — the location, and how many people are on shift there. */}
+      <h3 className="flex items-center justify-between gap-3 rounded-xl bg-slate-ink px-3 py-2 text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.08)] dark:bg-white/8">
+        <span className="truncate font-display text-sm font-bold tracking-[-0.01em]">{locationName}</span>
+        <span className="flex shrink-0 items-center gap-1.5 text-caption font-medium text-white/60">
+          <UsersIcon weight="bold" className="size-3.5" />
+          {t('home.onShiftCount', { n: count })}
+        </span>
       </h3>
 
-      <motion.div layout className="flex flex-col gap-2">
+      <motion.div layout className="flex flex-col">
         <AnimatePresence mode="popLayout" initial={false}>
           {/* OWN SHIFT FIRST */}
           {userShift && (
@@ -89,9 +95,22 @@ export function ShiftCards({ locationName, shifts, userShift, onSelectUser }: Sh
   );
 }
 
+/** Start-time chip shared by every row; the accent fill marks your own shift. */
+function TimeChip({ time, own }: { time?: string; own: boolean }) {
+  return (
+    <div
+      className={`flex h-9 min-w-12 shrink-0 items-center justify-center rounded-lg px-1.5 text-white ${
+        own ? 'bg-emerald-500 shadow-md shadow-emerald-500/25' : 'bg-slate-ink/85 dark:bg-white/10'
+      }`}
+    >
+      <span className="text-metric-sm whitespace-nowrap">{time ?? '--:--'}</span>
+    </div>
+  );
+}
+
 /**
- * UI for YOUR OWN active shift card — always accent-tinted; a move adds the amber
- * stripe + chip instead of recolouring the whole card.
+ * UI for YOUR OWN active shift card — always accent-tinted; a move adds the
+ * monochrome stripe + chip instead of recolouring the whole card.
  */
 function UserShiftCard({ userShift, onSelectUser }: { userShift: NonNullable<ShiftCardsProps['userShift']>; onSelectUser?: (userId: string) => void }) {
   const t = useTranslation();
@@ -101,25 +120,23 @@ function UserShiftCard({ userShift, onSelectUser }: { userShift: NonNullable<Shi
   return (
     <div
       onClick={clickable ? () => onSelectUser!(userShift.userId!) : undefined}
-      className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center transition-all border backdrop-blur-sm bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-500/20 ${isChange ? MOVED_STRIPE : ''} ${clickable ? 'cursor-pointer hover:brightness-[0.98] active:scale-[0.99]' : ''}`}
+      className={`flex items-center gap-2.5 rounded-xl bg-white/85 p-1.5 ring-1 ring-emerald-500/20 transition-all dark:bg-white/8 dark:ring-emerald-400/20 ${isChange ? MOVED_STRIPE : ''} ${clickable ? 'cursor-pointer hover:bg-white active:scale-[0.99] dark:hover:bg-white/12' : ''}`}
     >
-      <div className="flex items-center justify-center shrink-0 rounded-lg min-w-12 px-1.5 h-10 md:h-11 bg-emerald-600 text-white shadow-md">
-        <span className="text-metric-sm whitespace-nowrap">{userShift.start ?? '--:--'}</span>
-      </div>
+      <TimeChip time={userShift.start} own />
 
-      <div className="flex flex-1 items-center justify-between min-w-0">
-        <div className="flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 items-center justify-between">
+        <div className="flex min-w-0 flex-col">
           {isChange ? (
             <MovedFrom from={userShift.previousLocationName} />
           ) : (
-            <p className="text-micro mb-0.5 text-emerald-700 dark:text-emerald-400">{t('shifts.yourShift')}</p>
+            <p className="text-eyebrow text-emerald-600 dark:text-emerald-300">{t('shifts.yourShift')}</p>
           )}
-          <p className="truncate text-body-strong text-gray-900 dark:text-white leading-tight">{userShift.name}</p>
+          <p className="mt-0.5 truncate text-sm font-semibold leading-tight text-ink dark:text-white">{userShift.name}</p>
         </div>
 
-        <div className={`shrink-0 ml-2 rounded-full px-2.5 py-1 text-micro shadow-xs ${getRoleBadgeColor(userShift.role)}`}>
+        <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-micro ${getRoleBadgeColor(userShift.role)}`}>
           {userShift.role}
-        </div>
+        </span>
       </div>
     </div>
   );
@@ -127,7 +144,7 @@ function UserShiftCard({ userShift, onSelectUser }: { userShift: NonNullable<Shi
 
 /**
  * UI for a COLLEAGUE'S shift card — neutral surface (never accent, to avoid being
- * mistaken for your own), with the same amber move indicator.
+ * mistaken for your own), with the same monochrome move indicator.
  */
 function AssignedShiftCard({ shift, onSelectUser }: { shift: ShiftDisplayData; onSelectUser?: (userId: string) => void }) {
   const isChange = !!(shift.isChangeLocation || shift.previousLocationName);
@@ -136,21 +153,19 @@ function AssignedShiftCard({ shift, onSelectUser }: { shift: ShiftDisplayData; o
   return (
     <div
       onClick={clickable ? () => onSelectUser!(shift.userId!) : undefined}
-      className={`flex flex-row gap-3 md:gap-4 rounded-xl p-1.5 shadow-sm items-center backdrop-blur-sm transition-all border bg-white/80 dark:bg-white/5 border-white dark:border-white/5 ${isChange ? MOVED_STRIPE : ''} ${clickable ? 'cursor-pointer hover:brightness-[0.98] active:scale-[0.99]' : ''}`}
+      className={`flex items-center gap-2.5 rounded-xl bg-white/55 p-1.5 ring-1 ring-ink/5 transition-all dark:bg-white/4 dark:ring-white/6 ${isChange ? MOVED_STRIPE : ''} ${clickable ? 'cursor-pointer hover:bg-white/80 active:scale-[0.99] dark:hover:bg-white/8' : ''}`}
     >
-      <div className="flex items-center justify-center shrink-0 rounded-lg min-w-12 px-1.5 h-10 md:h-11 text-white shadow-xs bg-linear-to-br from-gray-400 to-gray-500 dark:from-gray-700 dark:to-gray-800">
-        <span className="text-metric-sm whitespace-nowrap">{shift.start ?? '--:--'}</span>
-      </div>
+      <TimeChip time={shift.start} own={false} />
 
-      <div className="flex flex-1 items-center justify-between min-w-0">
-        <div className="flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 items-center justify-between">
+        <div className="flex min-w-0 flex-col">
           {isChange && <MovedFrom from={shift.previousLocationName} />}
-          <p className="truncate text-body-strong leading-tight text-gray-800 dark:text-white">{shift.name}</p>
+          <p className="truncate text-sm font-semibold leading-tight text-ink dark:text-white">{shift.name}</p>
         </div>
 
-        <div className={`shrink-0 ml-2 rounded-full px-2.5 py-1 text-micro shadow-xs ${getRoleBadgeColor(shift.role)}`}>
+        <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-micro ${getRoleBadgeColor(shift.role)}`}>
           {shift.role}
-        </div>
+        </span>
       </div>
     </div>
   );
@@ -158,15 +173,13 @@ function AssignedShiftCard({ shift, onSelectUser }: { shift: ShiftDisplayData; o
 
 function UnassignedShiftCard({ shift }: { shift: ShiftDisplayData }) {
   return (
-    <div className="flex flex-col justify-between gap-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-4 shadow-sm md:flex-row md:items-center transition-colors">
-      <div className="flex h-16 min-w-16 items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 md:min-w-42">
-        <svg className="h-6 w-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+    <div className="flex items-center gap-2.5 rounded-xl bg-amber-50/80 p-1.5 ring-1 ring-amber-500/20 dark:bg-amber-500/8">
+      <div className="flex h-9 min-w-12 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-300">
+        <ClockCountdownIcon weight="bold" className="size-4" />
       </div>
-      <div className="flex flex-1 items-center justify-between">
-        <p className="flex-1 truncate text-title text-gray-900 dark:text-white">{shift.name}</p>
-        <span className={`rounded-full px-2.5 py-1 text-micro ${getRoleBadgeColor(shift.role)}`}>
+      <div className="flex min-w-0 flex-1 items-center justify-between">
+        <p className="truncate text-sm font-semibold text-ink dark:text-white">{shift.name}</p>
+        <span className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-micro ${getRoleBadgeColor(shift.role)}`}>
           {shift.role}
         </span>
       </div>

@@ -49,18 +49,21 @@ export function NextShiftCard() {
     return (
         <Link
             to="/schedule"
-            className="mb-4 flex items-center gap-3 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/60 dark:bg-emerald-900/10 px-4 py-3 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/20 transition-colors"
+            className="glass group mb-3 flex items-center gap-2.5 rounded-xl px-3 py-2 transition-transform duration-200 hover:-translate-y-px"
         >
-            <span className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <CalendarBlankIcon weight="fill" className="w-4 h-4" />
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/12 text-emerald-600 dark:text-emerald-300">
+                <CalendarBlankIcon weight="duotone" className="size-4" />
             </span>
             <span className="min-w-0 flex-1">
-                <span className="block text-micro text-emerald-600 dark:text-emerald-400">{t('schedule.nextShift')}</span>
-                <span className="block text-small-strong text-gray-900 dark:text-white truncate">
+                <span className="block text-eyebrow text-ink-soft dark:text-slate-400">{t('schedule.nextShift')}</span>
+                <span className="mt-0.5 block truncate text-meta font-semibold text-ink dark:text-white">
                     {when} · {time} · {locName}
                 </span>
             </span>
-            <CaretRightIcon weight="bold" className="w-4 h-4 text-emerald-500 shrink-0" />
+            <CaretRightIcon
+                weight="bold"
+                className="size-3.5 shrink-0 text-ink-soft transition-transform duration-200 group-hover:translate-x-0.5 dark:text-slate-400"
+            />
         </Link>
     );
 }

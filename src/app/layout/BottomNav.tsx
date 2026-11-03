@@ -116,7 +116,7 @@ export function BottomNav() {
                         initial="closed"
                         animate="open"
                         exit="closed"
-                        className="md:hidden fixed inset-x-0 top-0 z-60 bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] flex flex-col bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl pt-[env(safe-area-inset-top,0px)]"
+                        className="md:hidden fixed inset-x-0 top-0 z-60 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] flex flex-col bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl pt-[env(safe-area-inset-top,0px)]"
                     >
                         {/* Header — just "Menu", no logo */}
                         <div className="flex justify-between items-center px-5 h-14 shrink-0 border-b border-gray-200/70 dark:border-white/5">
@@ -229,9 +229,9 @@ export function BottomNav() {
             {/* BOTTOM BAR */}
             <nav
                 aria-label="Primary"
-                className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 pb-[env(safe-area-inset-bottom)]"
+                className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/70 bg-white/75 backdrop-blur-xl dark:border-white/5 dark:bg-slate-950/75 pb-[env(safe-area-inset-bottom)]"
             >
-                <div className="flex items-stretch justify-around h-16">
+                <div className="flex items-stretch justify-around h-14">
                     {items.map((item) => {
                         // While the sheet is open, the bar shows nothing as active
                         // (only "More" is lit) — fixes the double-highlight.
@@ -242,12 +242,15 @@ export function BottomNav() {
                                 to={item.route}
                                 onClick={() => setMenuOpen(false)}
                                 aria-current={active ? 'page' : undefined}
-                                className={`flex flex-col items-center justify-center gap-1 flex-1 min-w-0 active:scale-95 transition-transform ${
-                                    active ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'
+                                className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 active:scale-95 transition-transform ${
+                                    active ? 'text-emerald-600 dark:text-emerald-300' : 'text-ink-soft dark:text-slate-500'
                                 }`}
                             >
-                                <item.icon weight={active ? 'fill' : 'regular'} className="w-6 h-6" />
-                                <span className="text-caption">{item.shortLabel}</span>
+                                {/* Active capsule echoes the desktop sidebar's selected row. */}
+                                <span className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${active ? 'bg-emerald-500/15' : ''}`}>
+                                    <item.icon weight={active ? 'fill' : 'regular'} className="size-5" />
+                                </span>
+                                <span className={`text-caption ${active ? 'font-semibold' : ''}`}>{item.shortLabel}</span>
                             </Link>
                         );
                     })}
@@ -257,21 +260,21 @@ export function BottomNav() {
                         onClick={() => setMenuOpen((v) => !v)}
                         aria-expanded={menuOpen}
                         aria-label={t('nav.more')}
-                        className={`relative flex flex-col items-center justify-center gap-1 flex-1 min-w-0 active:scale-95 transition-transform ${
-                            moreActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'
+                        className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 active:scale-95 transition-transform ${
+                            moreActive ? 'text-emerald-600 dark:text-emerald-300' : 'text-ink-soft dark:text-slate-500'
                         }`}
                     >
                         {/* Icon + badge share a relative wrapper, so the badge pins to
                             the icon's corner instead of a fragile 50%-based offset. */}
-                        <span className="relative">
-                            <DotsThreeOutlineIcon weight={moreActive ? 'fill' : 'regular'} className="w-6 h-6" />
+                        <span className={`relative flex h-7 w-12 items-center justify-center rounded-full transition-colors ${moreActive ? 'bg-emerald-500/15' : ''}`}>
+                            <DotsThreeOutlineIcon weight={moreActive ? 'fill' : 'regular'} className="size-5" />
                             {!menuOpen && moreBadge > 0 && (
-                                <span className="absolute -top-1 -right-2 min-w-4 h-4 px-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">
+                                <span className="absolute top-0 right-2 min-w-4 h-4 px-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-950">
                                     {moreBadge}
                                 </span>
                             )}
                         </span>
-                        <span className="text-caption">{t('nav.more')}</span>
+                        <span className={`text-caption ${moreActive ? 'font-semibold' : ''}`}>{t('nav.more')}</span>
                     </button>
                 </div>
             </nav>

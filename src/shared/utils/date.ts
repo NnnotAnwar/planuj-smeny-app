@@ -102,6 +102,11 @@ export function formatDateLong(isoString: string | null | undefined): string {
   }
 }
 
+/** Localised "Tuesday 3 Nov" / "úterý 3. lis" — the dashboard greeting's date line. */
+export function formatWeekdayDate(date: Date): string {
+  return date.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short' });
+}
+
 /** Localised short month for a Date (e.g. "Jun" / "čvn"). */
 export function monthShort(date: Date): string {
   return date.toLocaleDateString(locale, { month: 'short' });

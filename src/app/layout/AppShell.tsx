@@ -134,6 +134,14 @@ export function AppShell() {
 
   return (
     <div className="App min-h-dvh w-full font-sans md:flex md:flex-row transition-all duration-500 ease-in-out">
+      {/* AMBIENT LIGHT — two soft accent orbs behind everything, so the glass
+          surfaces have something to frost. Accent-derived, so they re-tint with
+          the chosen colour scheme. */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-48 -right-32 h-144 w-144 rounded-full bg-emerald-400/20 blur-[120px] dark:bg-emerald-500/15" />
+        <div className="absolute -bottom-56 -left-40 h-128 w-128 rounded-full bg-sky-300/25 blur-[120px] dark:bg-sky-500/10" />
+      </div>
+
       {/* BIOMETRIC LOCK — opt-in per device, admins only (rank >= 30). */}
       <BiometricLock enforce={(user.role.rank ?? 0) >= 30 && biometricEnabled} />
 
@@ -161,7 +169,7 @@ export function AppShell() {
           floating check-in button on Home); md+ uses the sidebar instead.
           No max-width: collapsing the sidebar should hand its space to the
           content (a capped main just sat left-aligned with a dead right gap). */}
-      <main className="flex-1 min-w-0 p-3 pb-32 md:p-6 md:pb-6 transition-all">
+      <main className="flex-1 min-w-0 p-3 pb-32 md:py-6 md:pr-6 md:pl-3 transition-all">
         <Outlet context={contextValue} />
       </main>
 

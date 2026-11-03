@@ -14,7 +14,101 @@
   --color-emerald-950: #022c22;
 }
 
+/*
+ * --- PREMIUM GLASS TOKENS ---
+ * Type: Inter carries the UI and every number (its tabular figures keep live
+ * clocks from jittering); Satoshi is the display face, used sparingly for
+ * words with personality — the greeting and card titles.
+ * Ink + shadows are indigo-tinted rather than neutral grey: grey shadows on a
+ * lilac canvas read as muddy. The shadow tint follows the active accent
+ * (`--color-emerald-*` is re-pointed at runtime), so every scheme stays coherent.
+ */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #1b1a2e;
+  --color-ink-soft: #66637f;
+  --color-slate-ink: #1e1b33;
+
+  --shadow-glass: 0 1px 2px rgb(27 26 46 / 0.04), 0 12px 32px -14px color-mix(in srgb, var(--color-emerald-600) 26%, transparent);
+  --shadow-glass-lg: 0 1px 2px rgb(27 26 46 / 0.05), 0 28px 56px -24px color-mix(in srgb, var(--color-emerald-600) 34%, transparent);
+
+  --animate-glow-breathe: glow-breathe 3.6s ease-in-out infinite;
+  --animate-hint-blink: hint-blink 1.4s ease-in-out infinite;
+
+  @keyframes glow-breathe {
+    0%, 100% { opacity: 0.45; transform: scale(0.9); }
+    50% { opacity: 0.85; transform: scale(1.06); }
+  }
+
+  /* A ring that blinks to say "tap here" — used where an action is required. */
+  @keyframes hint-blink {
+    0%, 100% { opacity: 0.15; transform: scale(0.96); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Frosted-glass surface with a lit 1px edge. The edge is a real gradient
+ * border (mask on ::before): bright where light catches the top-left, fading to
+ * a faint accent tint — not a flat hairline. Give the element a `rounded-*`
+ * so the edge follows its corners.
+ */
+@utility glass {
+  position: relative;
+  background-color: var(--glass-bg, rgb(255 255 255 / 0.62));
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  backdrop-filter: blur(22px) saturate(1.6);
+  /* Override per element with [--glass-shadow:var(--shadow-glass-lg)] — avoids
+     racing a separate shadow-* utility for the same property. */
+  box-shadow: var(--glass-shadow, var(--shadow-glass));
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.95),
+      rgb(255 255 255 / 0.35) 45%,
+      color-mix(in srgb, var(--color-emerald-400) 38%, transparent)
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  :where(.dark) & {
+    background-color: var(--glass-bg-dark, rgb(255 255 255 / 0.045));
+  }
+
+  :where(.dark) &::before {
+    background: linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.2),
+      rgb(255 255 255 / 0.04) 45%,
+      color-mix(in srgb, var(--color-emerald-400) 32%, transparent)
+    );
+  }
+}
+
+/*
+ * Denser glass for floating menus/popovers: lists must stay legible over busy
+ * content, so the frost is near-opaque. Dark mode tints from the active scheme's
+ * canvas (--grad-to) so the menu belongs to whichever colour scheme is on.
+ * Use together with `glass`.
+ */
+@utility glass-menu {
+  --glass-bg: rgb(255 255 255 / 0.94);
+  --glass-bg-dark: color-mix(in srgb, var(--grad-to) 96%, transparent);
+  --glass-shadow: var(--shadow-glass-lg);
+}
 
 /*
  * --- TYPOGRAPHY SYSTEM ---
@@ -43,6 +137,14 @@
   /* Numeric metrics */
   .text-metric    { @apply text-lg font-black tabular-nums tracking-tight; }
   .text-metric-sm { @apply text-sm font-black tabular-nums; }
+
+  /* Premium glass layer — display words (Satoshi) + precise numbers (Inter tnum) */
+  .text-greeting   { @apply font-display text-[22px] font-bold tracking-[-0.03em] leading-[1.1] xl:text-[26px]; }
+  .text-card-title { @apply font-display text-base font-bold tracking-[-0.015em] leading-tight; }
+  .text-clock      { @apply text-lg font-semibold tabular-nums tracking-[-0.02em] leading-none; }
+  .text-eyebrow    { @apply text-[10px] font-semibold uppercase tracking-[0.14em] leading-none; }
+  /* Compact-but-readable secondary line (location · time · duration, nav, search). */
+  .text-meta       { @apply text-[13px] font-medium leading-snug; }
 }
 
 html, body, #root {

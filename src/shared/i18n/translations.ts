@@ -127,6 +127,7 @@ export const en = {
 
     // Sidebar
     'sidebar.currentPost': 'Current shift',
+    'sidebar.currentLocation': 'Current location',
     'sidebar.collapse': 'Collapse sidebar',
     'sidebar.expand': 'Expand sidebar',
     'sidebar.selectedPost': 'Selected shift',
@@ -142,6 +143,11 @@ export const en = {
     'dashboard.greeting': 'Hello, {name}!',
     'home.noActivity': 'No one is on shift right now.',
     'home.noActivityHint': 'Pick a location and tap Start when you arrive.',
+    'home.greetingMorning': 'Good morning, {name}',
+    'home.greetingAfternoon': 'Good afternoon, {name}',
+    'home.greetingEvening': 'Good evening, {name}',
+    'home.onShiftCount': '{n} on shift',
+    'home.pickLocationHint': 'Click the clock to choose where you work',
     'cmd.placeholder': 'Search or jump to…',
     'cmd.search': 'Search',
     'cmd.pages': 'Pages',
@@ -648,6 +654,7 @@ export const cs: Record<TranslationKey, string> = {
 
     // Sidebar
     'sidebar.currentPost': 'Aktuální směna',
+    'sidebar.currentLocation': 'Aktuální místo',
     'sidebar.collapse': 'Sbalit panel',
     'sidebar.expand': 'Rozbalit panel',
     'sidebar.selectedPost': 'Vybraná směna',
@@ -662,6 +669,11 @@ export const cs: Record<TranslationKey, string> = {
     'dashboard.greeting': 'Dobrý den, {name}!',
     'home.noActivity': 'Nikdo teď není ve směně.',
     'home.noActivityHint': 'Vyberte místo a po příchodu klepněte na Začít.',
+    'home.greetingMorning': 'Dobré ráno, {name}',
+    'home.greetingAfternoon': 'Dobré odpoledne, {name}',
+    'home.greetingEvening': 'Dobrý večer, {name}',
+    'home.onShiftCount': '{n} na směně',
+    'home.pickLocationHint': 'Klikněte na hodiny a vyberte místo práce',
     'cmd.placeholder': 'Hledat nebo přejít…',
     'cmd.search': 'Hledat',
     'cmd.pages': 'Stránky',
