@@ -9,7 +9,9 @@ import { CircleNotchIcon, type Icon, type IconWeight } from '@phosphor-icons/rea
  * guarantees a consistent visual hierarchy — one obvious `primary` action per
  * view — and bakes in a few UX defaults:
  *
- *  • Touch-friendly — `md`/`lg` are ≥44px tall (Apple HIG / Material minimum).
+ *  • Touch-friendly on phones — `md`/`lg` are ≥44px tall there (Apple HIG /
+ *    Material minimum); from `md:` up, where a pointer is precise, they tighten
+ *    to the compact desktop density.
  *  • Built-in loading — pass `loading` to show a spinner and block re-taps,
  *    so every async action has consistent in-flight feedback.
  *  • Accent-aware — `primary` uses the themable emerald token, so it follows
@@ -20,41 +22,44 @@ type Variant = 'primary' | 'danger' | 'secondary' | 'tonal' | 'ghost';
 type Size = 'sm' | 'md' | 'lg' | 'xl';
 
 const BASE =
-    'inline-flex items-center justify-center gap-2 rounded-xl font-bold transition-all ' +
+    'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all ' +
     'active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap select-none';
 
 const SIZES: Record<Size, string> = {
-    sm: 'text-sm px-3 min-h-9 gap-1.5',
-    md: 'text-sm px-4 min-h-11', // 44px — the mobile touch-target floor
-    lg: 'text-base px-6 min-h-12',
-    xl: 'text-lg px-6 min-h-14 gap-2.5 tracking-tight', // hero CTAs (Start/End shift)
+    sm: 'text-meta px-3 min-h-9 md:min-h-8 gap-1.5',
+    md: 'text-sm px-4 min-h-11 md:min-h-9', // 44px on phones — the touch-target floor
+    lg: 'text-sm px-5 min-h-12 md:min-h-10',
+    xl: 'text-base px-6 min-h-14 md:min-h-11 gap-2.5 tracking-tight', // hero CTAs (Start/End shift)
 };
 
 // Icons scale with the button so a big CTA doesn't get a tiny glyph.
 const ICON_SIZES: Record<Size, string> = {
-    sm: 'w-4 h-4',
-    md: 'w-4 h-4',
-    lg: 'w-5 h-5',
-    xl: 'w-6 h-6',
+    sm: 'size-3.5',
+    md: 'size-4',
+    lg: 'size-4',
+    xl: 'size-5',
 };
+
+// The lit top edge every filled button shares — reads as a pressable surface.
+const LIT = 'shadow-[inset_0_1px_0_rgb(255_255_255/0.22),0_6px_16px_-8px_var(--btn-glow)]';
 
 const VARIANTS: Record<Variant, string> = {
     // One dominant, accent-filled CTA — the happy path. accent-700 so white text
     // clears WCAG AA (>=4.5:1) on every motif, including the emerald brand.
-    primary: 'bg-emerald-700 text-white shadow-sm shadow-emerald-700/20 hover:bg-emerald-800',
+    primary: `bg-linear-to-b from-emerald-600 to-emerald-700 text-white ${LIT} [--btn-glow:var(--color-emerald-600)] hover:brightness-110`,
     // Destructive, filled — reserved for irreversible actions. red-600 (not 500)
     // so white text clears WCAG AA (~4.8:1).
-    danger: 'bg-red-600 text-white shadow-sm shadow-red-600/20 hover:bg-red-700',
+    danger: `bg-linear-to-b from-rose-600 to-rose-700 text-white ${LIT} [--btn-glow:var(--color-rose-600)] hover:brightness-110`,
     // Quiet, outlined — secondary choices that shouldn't compete with primary.
     secondary:
-        'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 ' +
-        'hover:bg-gray-50 dark:hover:bg-white/5',
+        'bg-white/60 ring-1 ring-ink/10 text-ink hover:bg-white ' +
+        'dark:bg-white/5 dark:ring-white/10 dark:text-slate-200 dark:hover:bg-white/10',
     // Soft accent tint — an inviting-but-not-loud action (e.g. Edit, Request).
     tonal:
-        'bg-emerald-50 dark:bg-emerald-900/15 text-emerald-600 dark:text-emerald-400 ' +
-        'border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/25',
+        'bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/15 hover:bg-emerald-500/15 ' +
+        'dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/15 dark:hover:bg-emerald-400/15',
     // Lowest emphasis — tertiary / dismissive actions.
-    ghost: 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5',
+    ghost: 'text-ink-soft hover:bg-ink/5 hover:text-ink dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

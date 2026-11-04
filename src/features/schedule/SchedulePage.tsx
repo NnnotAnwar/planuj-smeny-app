@@ -25,6 +25,7 @@ import { MyTeam } from './components/MyTeam';
 import { TimeOffCard } from './components/TimeOffCard';
 import { toast } from '@shared/toast/toastStore';
 import { exportSchedule, type ScheduleExportSection } from './exportSchedule';
+import { PageHeader } from '@shared/components/PageHeader';
 
 /**
  * --- SCHEDULE PAGE (rota) ---
@@ -514,73 +515,74 @@ export default function SchedulePage() {
     };
 
     const hasAnything = teamView ? shifts.length > 0 : myShifts.length > 0;
-    const cardClass = 'rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 shadow-sm overflow-hidden';
+    const cardClass = 'glass rounded-2xl overflow-hidden';
 
     return (
         <div className="space-y-4 px-1 pb-10">
             {/* HEADER — controls mirror the Overview page (export dropdown + month picker). */}
-            <header className="pt-2 flex items-end justify-between gap-3">
-                <div className="space-y-0.5 min-w-0">
-                    <p className="text-label text-emerald-500 text-left">{canManage ? t('schedule.roster') : t('schedule.mine')}</p>
-                    <h1 className="text-display text-gray-900 dark:text-white">{t('nav.schedule')}</h1>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                    <div className="relative">
-                        <button
-                            onClick={() => setExportOpen((v) => !v)}
-                            disabled={!hasAnything}
-                            className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
-                            title={t('overview.export')}
-                        >
-                            <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
-                        </button>
-                        <AnimatePresence>
-                            {exportOpen && (
-                                <>
-                                    <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 4, scale: 1 }}
-                                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                                        className="absolute right-0 top-full z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-1.5 overflow-hidden"
-                                    >
-                                        {([
-                                            { fmt: 'pdf' as const, label: 'PDF', Icon: FilePdfIcon },
-                                            { fmt: 'excel' as const, label: 'Excel', Icon: FileXlsIcon },
-                                        ]).map(({ fmt, label, Icon }) => (
-                                            <button
-                                                key={fmt}
-                                                onClick={() => doExport(fmt)}
-                                                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
+            <PageHeader
+                eyebrow={canManage ? t('schedule.roster') : t('schedule.mine')}
+                title={t('nav.schedule')}
+                actions={
+                    <>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <div className="relative">
+                                <button
+                                    onClick={() => setExportOpen((v) => !v)}
+                                    disabled={!hasAnything}
+                                    className="glass flex items-center justify-center w-9 h-9 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
+                                    title={t('overview.export')}
+                                >
+                                    <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
+                                </button>
+                                <AnimatePresence>
+                                    {exportOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 4, scale: 1 }}
+                                                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                                                className="glass glass-menu absolute right-0 top-full z-50 w-44 rounded-2xl p-1.5 overflow-hidden"
                                             >
-                                                <Icon weight="bold" className="w-4 h-4 text-emerald-500" />
-                                                {label}
-                                            </button>
-                                        ))}
-                                    </motion.div>
-                                </>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                    <MonthPicker value={selectedMonth} onChange={(v) => setSelectedMonth(v ?? monthKeyOf(new Date()))} />
-                </div>
-            </header>
+                                                {([
+                                                    { fmt: 'pdf' as const, label: 'PDF', Icon: FilePdfIcon },
+                                                    { fmt: 'excel' as const, label: 'Excel', Icon: FileXlsIcon },
+                                                ]).map(({ fmt, label, Icon }) => (
+                                                    <button
+                                                        key={fmt}
+                                                        onClick={() => doExport(fmt)}
+                                                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
+                                                    >
+                                                        <Icon weight="bold" className="w-4 h-4 text-emerald-500" />
+                                                        {label}
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        </>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                            <MonthPicker value={selectedMonth} onChange={(v) => setSelectedMonth(v ?? monthKeyOf(new Date()))} />
+                        </div>
+                    </>
+                }
+            />
 
             {/* Tabs (managers) + quick add */}
             {canManage && (
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2 min-w-0">
-                        <div className="inline-flex rounded-2xl bg-gray-100 dark:bg-gray-800/40 p-1 shadow-sm">
+                        <div className="segmented">
                             {(['team', 'mine'] as const).map((tab) => (
                                 <button
                                     key={tab}
                                     type="button"
                                     onClick={() => setActiveTab(tab)}
-                                    className={`rounded-xl px-3 py-1.5 text-small-strong transition-colors ${
+                                    className={`rounded-[9px] px-2.5 py-1 text-meta font-semibold transition-colors ${
                                         activeTab === tab
-                                            ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
-                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                            ? 'segment-active text-ink dark:text-white'
+                                            : 'text-ink-soft dark:text-slate-400 hover:text-ink dark:hover:text-white'
                                     }`}
                                 >
                                     {tab === 'team' ? t('schedule.tabTeam') : t('schedule.tabMine')}
@@ -588,7 +590,7 @@ export default function SchedulePage() {
                             ))}
                         </div>
                         {teamView && (
-                            <div className="inline-flex rounded-2xl bg-gray-100 dark:bg-gray-800/40 p-1 shadow-sm">
+                            <div className="segmented">
                                 {([
                                     { mode: 'grid' as const, Icon: TableIcon, label: t('schedule.viewGrid') },
                                     { mode: 'calendar' as const, Icon: CalendarBlankIcon, label: t('schedule.viewCalendar') },
@@ -600,10 +602,10 @@ export default function SchedulePage() {
                                         aria-pressed={viewMode === mode}
                                         aria-label={label}
                                         title={label}
-                                        className={`rounded-xl px-2.5 py-1.5 transition-colors ${
+                                        className={`rounded-[9px] px-2 py-1 transition-colors ${
                                             viewMode === mode
-                                                ? 'bg-white dark:bg-gray-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                                ? 'segment-active text-emerald-600 dark:text-emerald-300'
+                                                : 'text-ink-soft dark:text-slate-400 hover:text-ink dark:hover:text-white'
                                         }`}
                                     >
                                         <Icon weight="bold" className="w-4 h-4" />
@@ -616,10 +618,10 @@ export default function SchedulePage() {
                                 type="button"
                                 onClick={() => setTeamOnly((v) => !v)}
                                 aria-pressed={teamOnly}
-                                className={`rounded-2xl px-3 py-2 text-small-strong border transition-colors ${
+                                className={`rounded-xl px-2.5 py-1.5 text-meta font-semibold border transition-colors ${
                                     teamOnly
-                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
-                                        : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                        ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300'
+                                        : 'bg-white/60 dark:bg-white/5 border-ink/10 dark:border-white/10 text-ink-soft dark:text-slate-400 hover:text-ink dark:hover:text-white'
                                 }`}
                             >
                                 {t('schedule.teamOnly')}

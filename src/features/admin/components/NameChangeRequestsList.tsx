@@ -97,7 +97,7 @@ function RequestListSkeleton() {
             {[0, 1, 2].map((i) => (
                 <div
                     key={i}
-                    className="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl p-4"
+                    className="glass rounded-2xl p-4"
                 >
                     <div className="flex items-center gap-3">
                         <Skeleton className="w-9 h-9 rounded-xl" />
@@ -130,7 +130,7 @@ function RequestCard({
     const hasDetails = Boolean(req.requester?.email || req.note || req.created_at);
 
     return (
-        <div className="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+        <div className="glass rounded-2xl overflow-hidden">
             {/* (4) Stacks on mobile, one aligned row at ≥sm. */}
             <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
                 {/* WHO — tapping the identity zone toggles details (2); real <button> for a11y. */}

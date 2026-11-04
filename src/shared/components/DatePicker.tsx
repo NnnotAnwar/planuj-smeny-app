@@ -95,11 +95,11 @@ export function DatePicker({ value, onChange, disabled, ...rest }: DatePickerPro
                 disabled={disabled}
                 aria-label={rest['aria-label']}
                 onClick={() => setIsOpen((v) => !v)}
-                className="flex w-full items-center justify-between gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
+                className="flex w-full items-center justify-between gap-2 rounded-xl border border-ink/10 bg-white/70 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8 px-3 py-2 transition-all active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
             >
                 <span className="flex items-center gap-2">
-                    <CalendarBlankIcon weight="bold" className="w-4 h-4 text-emerald-500" />
-                    <span className="text-body font-black text-gray-900 dark:text-white">{label}</span>
+                    <CalendarBlankIcon weight="bold" className="size-4 text-emerald-500" />
+                    <span className="text-sm font-semibold text-ink dark:text-white">{label}</span>
                 </span>
                 <CaretDownIcon weight="bold" className={`w-2.5 h-2.5 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -116,15 +116,15 @@ export function DatePicker({ value, onChange, disabled, ...rest }: DatePickerPro
                             left: pos?.left ?? 0,
                             visibility: pos ? 'visible' : 'hidden',
                         }}
-                        className="z-70 w-64 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-2xl p-3"
+                        className="glass glass-menu z-70 w-64 rounded-2xl p-2.5"
                     >
                         <div className="flex items-center justify-between mb-2 px-1">
-                            <button type="button" onClick={prev} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                                <CaretLeftIcon weight="bold" className="w-3 h-3 dark:text-white" />
+                            <button type="button" onClick={prev} className="p-1.5 hover:bg-ink/5 dark:hover:bg-white/8 rounded-lg transition-colors">
+                                <CaretLeftIcon weight="bold" className="size-3 text-ink dark:text-white" />
                             </button>
-                            <span className="font-black text-sm dark:text-white">{monthLong(new Date(viewY, viewM, 1))} {viewY}</span>
-                            <button type="button" onClick={next} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                                <CaretRightIcon weight="bold" className="w-3 h-3 dark:text-white" />
+                            <span className="font-display font-bold text-sm text-ink dark:text-white">{monthLong(new Date(viewY, viewM, 1))} {viewY}</span>
+                            <button type="button" onClick={next} className="p-1.5 hover:bg-ink/5 dark:hover:bg-white/8 rounded-lg transition-colors">
+                                <CaretRightIcon weight="bold" className="size-3 text-ink dark:text-white" />
                             </button>
                         </div>
 
@@ -148,7 +148,7 @@ export function DatePicker({ value, onChange, disabled, ...rest }: DatePickerPro
                                         className={`py-1.5 rounded-lg text-caption tabular-nums transition-all ${
                                             isSel
                                                 ? 'bg-emerald-500 text-white shadow-md'
-                                                : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                                                : 'hover:bg-ink/5 dark:hover:bg-white/8 text-gray-700 dark:text-gray-300'
                                         } ${isToday && !isSel ? 'ring-1 ring-inset ring-emerald-500/40 text-emerald-600 dark:text-emerald-400' : ''}`}
                                     >
                                         {d}

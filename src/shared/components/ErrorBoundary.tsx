@@ -37,11 +37,11 @@ export class ErrorBoundary extends Component<Props, State> {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-white dark:bg-gray-950 p-6">
         <div className="text-center space-y-4 max-w-sm">
-          <div className="mx-auto w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center text-2xl font-black">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center text-2xl font-bold">
             !
           </div>
           <div className="space-y-1">
-            <h1 className="text-xl font-black text-gray-900 dark:text-white">Something went wrong</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Something went wrong</h1>
             <p className="text-sm text-gray-500">
               An unexpected error occurred. Reloading usually fixes it.
             </p>

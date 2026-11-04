@@ -196,7 +196,7 @@ export function TimeOffCard({
             : `${formatDateShort(`${e.starts_on}T00:00`)} – ${formatDateShort(`${e.ends_on}T00:00`)}`;
 
     return (
-        <section className="rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 shadow-sm p-4 space-y-3">
+        <section className="glass rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                     <SunHorizonIcon weight="fill" className="w-4 h-4" />

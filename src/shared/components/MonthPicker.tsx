@@ -53,10 +53,10 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
         <div className="relative" ref={containerRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm active:scale-95 transition-all"
+                className="glass flex h-9 items-center gap-2 px-3 rounded-xl active:scale-95 transition-all"
             >
-                <CalendarBlankIcon weight="bold" className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-xs font-black dark:text-white min-w-17.5 text-left truncate">{label}</span>
+                <CalendarBlankIcon weight="bold" className="size-3.5 text-emerald-500" />
+                <span className="text-meta font-semibold text-ink dark:text-white min-w-17.5 text-left truncate">{label}</span>
                 <CaretDownIcon
                     weight="bold"
                     className={`w-2.5 h-2.5 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
@@ -69,15 +69,15 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
                         initial={{ opacity: 0, y: 8, scale: 0.95 }}
                         animate={{ opacity: 1, y: 4, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                        className="absolute right-0 top-full z-50 w-52 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-3 overflow-hidden"
+                        className="glass glass-menu absolute right-0 top-full z-50 w-52 rounded-2xl p-2.5 overflow-hidden"
                     >
                         <div className="flex items-center justify-between mb-3 px-1">
-                            <button onClick={() => setViewYear((v) => v - 1)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                                <CaretLeftIcon weight="bold" className="w-3 h-3 dark:text-white" />
+                            <button onClick={() => setViewYear((v) => v - 1)} className="p-1.5 hover:bg-ink/5 dark:hover:bg-white/8 rounded-lg transition-colors">
+                                <CaretLeftIcon weight="bold" className="size-3 text-ink dark:text-white" />
                             </button>
-                            <span className="font-black text-sm dark:text-white">{viewYear}</span>
-                            <button onClick={() => setViewYear((v) => v + 1)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                                <CaretRightIcon weight="bold" className="w-3 h-3 dark:text-white" />
+                            <span className="font-display font-bold text-sm text-ink dark:text-white">{viewYear}</span>
+                            <button onClick={() => setViewYear((v) => v + 1)} className="p-1.5 hover:bg-ink/5 dark:hover:bg-white/8 rounded-lg transition-colors">
+                                <CaretRightIcon weight="bold" className="size-3 text-ink dark:text-white" />
                             </button>
                         </div>
 
@@ -89,7 +89,7 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
                                     <button
                                         key={idx}
                                         onClick={() => handleMonthClick(idx)}
-                                        className={`relative py-1.5 rounded-lg text-caption transition-all ${isSelected ? 'bg-emerald-500 text-white shadow-md' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                                        className={`relative py-1.5 rounded-lg text-caption transition-all ${isSelected ? 'bg-emerald-500 text-white shadow-md' : 'hover:bg-ink/5 dark:hover:bg-white/8 text-ink dark:text-slate-300'
                                             } ${isCurrent && !isSelected ? 'ring-1 ring-inset ring-emerald-500/30 text-emerald-600 dark:text-emerald-400' : ''}`}
                                     >
                                         {month}
@@ -99,7 +99,7 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
                             })}
                         </div>
 
-                        <div className="mt-3 pt-2 border-t border-gray-50 dark:border-gray-800 flex gap-1.5">
+                        <div className="mt-3 pt-2 border-t border-ink/5 dark:border-white/6 flex gap-1.5">
                             <button onClick={() => { setViewYear(today.getFullYear()); onChange(currentMonthStr); setIsOpen(false); }} className="flex-1 py-1.5 rounded-lg text-micro bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors">{t('common.today')}</button>
                             <button onClick={() => { onChange(null); setIsOpen(false); }} className={`flex-1 py-1.5 rounded-lg text-micro transition-colors ${value === null ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>{t('common.all')}</button>
                         </div>

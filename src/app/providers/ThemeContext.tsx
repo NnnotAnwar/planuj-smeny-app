@@ -17,7 +17,7 @@ import { Capacitor } from '@capacitor/core';
 
 type Theme = 'light' | 'dark' | 'system';
 
-export type ComboKey = 'emerald-slate-snow' | 'cyan-obsidian' | 'amber-obsidian' | 'violet-graphite-pearl';
+export type ComboKey = 'lilac-indigo' | 'emerald-slate-snow' | 'cyan-obsidian' | 'amber-obsidian' | 'violet-graphite-pearl';
 
 type Palette = Record<'50' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900' | '950', string>;
 type Gradient = readonly [from: string, via: string, to: string];
@@ -31,9 +31,19 @@ interface Combo {
 
 /**
  * The single source of truth for every colour scheme. `emerald-slate-snow` is
- * the brand default and must stay exactly as-is.
+ * the original brand scheme and must stay exactly as-is.
  */
 export const COMBOS: Record<ComboKey, Combo> = {
+    // Premium redesign default — indigo #6366F1 on a barely-there cool-lilac
+    // canvas (#F5F4F9). The 300/400 shades read as lavender, used for glows.
+    'lilac-indigo': {
+        label: 'Lilac Indigo',
+        accent: {
+            '50': '#eef2ff', '100': '#e0e7ff', '200': '#c7d2fe', '300': '#a5b4fc', '400': '#818cf8',
+            '500': '#6366f1', '600': '#4f46e5', '700': '#4338ca', '800': '#3730a3', '900': '#312e81', '950': '#1e1b4b',
+        },
+        gradient: { light: ['#f8f7fc', '#f5f4f9', '#eeecf7'], dark: ['#0d0c17', '#121022', '#1a1730'] },
+    },
     'emerald-slate-snow': {
         label: 'Emerald Slate Snow',
         accent: {
@@ -83,7 +93,7 @@ export const COMBO_LIST = (Object.keys(COMBOS) as ComboKey[]).map((key) => ({
     gradient: COMBOS[key].gradient,
 }));
 
-const DEFAULT_COMBO: ComboKey = 'emerald-slate-snow';
+const DEFAULT_COMBO: ComboKey = 'lilac-indigo';
 const STORAGE = { theme: 'theme', combo: 'combo-key' } as const;
 
 // --- Pure helpers -----------------------------------------------------------

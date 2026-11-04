@@ -11,6 +11,7 @@ import type { ProfileDetail } from '@shared/types';
 import { profileService } from './profileService';
 import { ProfileView } from './components/ProfileView';
 import { ProfileEditor } from './components/ProfileEditor';
+import { PageHeader } from '@shared/components/PageHeader';
 
 export default function ProfilePage() {
   const { userId } = useParams();
@@ -38,10 +39,7 @@ export default function ProfilePage() {
   if (error || !profile) {
     return (
       <div className="space-y-4 px-1 pb-10">
-        <header className="pt-2 space-y-0.5">
-          <p className="text-label text-emerald-500 text-left">{t('profile.account')}</p>
-          <h1 className="text-display text-gray-900 dark:text-white">{t('profile.title')}</h1>
-        </header>
+        <PageHeader eyebrow={t('profile.account')} title={t('profile.title')} />
         <div className="rounded-3xl border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 p-5">
           <p className="text-body text-red-600 dark:text-red-400">
             {error instanceof Error ? error.message : t('profile.notFound')}
@@ -53,33 +51,35 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-4 px-1 pb-10">
-      <header className="pt-2 flex items-start justify-between gap-4">
-        <div className="space-y-0.5 min-w-0">
-          <p className="text-label text-emerald-500 text-left">{t('profile.account')}</p>
-          <h1 className="text-display text-gray-900 dark:text-white">{isSelf ? t('profile.my') : t('profile.employee')}</h1>
-        </div>
-        {isSelf && (
-          <div className="shrink-0 flex items-center gap-2">
-            <Button
-              variant="tonal"
-              size="sm"
-              icon={isEditing ? CheckIcon : PencilSimpleIcon}
-              onClick={() => setIsEditing((v) => !v)}
-            >
-              {isEditing ? t('profile.done') : t('profile.edit')}
-            </Button>
-            {!isEditing && (
-              <Link
-                to="/settings"
-                aria-label={t('nav.settings')}
-                className="flex items-center justify-center p-2 rounded-xl text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-              >
-                <GearIcon weight="bold" className="w-4 h-4" />
-              </Link>
+      <PageHeader
+        eyebrow={t('profile.account')}
+        title={isSelf ? t('profile.my') : t('profile.employee')}
+        actions={
+          <>
+            {isSelf && (
+              <div className="shrink-0 flex items-center gap-2">
+                <Button
+                  variant="tonal"
+                  size="sm"
+                  icon={isEditing ? CheckIcon : PencilSimpleIcon}
+                  onClick={() => setIsEditing((v) => !v)}
+                >
+                  {isEditing ? t('profile.done') : t('profile.edit')}
+                </Button>
+                {!isEditing && (
+                  <Link
+                    to="/settings"
+                    aria-label={t('nav.settings')}
+                    className="flex items-center justify-center p-2 rounded-xl text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <GearIcon weight="bold" className="w-4 h-4" />
+                  </Link>
+                )}
+              </div>
             )}
-          </div>
-        )}
-      </header>
+          </>
+        }
+      />
 
       {isSelf && isEditing ? (
         <ProfileEditor />

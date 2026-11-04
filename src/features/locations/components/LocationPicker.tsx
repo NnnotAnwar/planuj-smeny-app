@@ -87,7 +87,6 @@ export function LocationPicker({
                 onChange={setQuery}
                 placeholder={t('sidebar.searchPosts')}
                 className="mb-2"
-                inputClassName="py-2 pl-8 pr-3"
             />
 
             <div className={scroll ? 'flex-1 min-h-0 overflow-y-auto pr-0.5 space-y-3 emerald-scrollbar' : 'space-y-3'}>

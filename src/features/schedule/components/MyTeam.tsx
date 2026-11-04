@@ -31,7 +31,7 @@ export function MyTeam({ members, userId, userRank }: { members: Profile[]; user
     const name = (m: Profile) => [m.first_name, m.last_name].filter(Boolean).join(' ') || m.username;
 
     return (
-        <section className="rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 shadow-sm p-4 space-y-3">
+        <section className="glass rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                     <UsersThreeIcon weight="fill" className="w-4 h-4" />

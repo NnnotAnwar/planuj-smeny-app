@@ -175,7 +175,7 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                     const zebra = ri % 2 === 1 ? 'bg-gray-50/60 dark:bg-gray-800/20' : '';
                                     return (
                                         <tr key={row.id} className="group">
-                                            <td className={`sticky left-0 z-10 bg-white dark:bg-gray-900 border-b border-r border-gray-100 dark:border-gray-700 px-3 h-9 text-left ${NAME_W}`}>
+                                            <td className={`sticky left-0 z-10 bg-gray-50 dark:bg-gray-900 border-b border-r border-gray-100 dark:border-gray-800 px-3 h-9 text-left ${NAME_W}`}>
                                                 <span className="flex items-center gap-1">
                                                     {onOpenProfile ? (
                                                         <button
@@ -240,7 +240,7 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                     >
                                                         {leave && (
                                                             <span
-                                                                className="inline-block w-5.5 h-5.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-[10px] font-black leading-5.5"
+                                                                className="inline-block w-5.5 h-5.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-[10px] font-bold leading-5.5"
                                                                 title={leave}
                                                             >
                                                                 {leave}
@@ -248,7 +248,7 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                         )}
                                                         {has &&
                                                             (allDay ? (
-                                                                <span className={`inline-block w-5.5 h-5.5 rounded-lg bg-emerald-500 text-white text-[11px] font-black leading-5.5 shadow-sm shadow-emerald-500/30 ${items.some((s) => !s.published) ? 'opacity-50 ring-1 ring-emerald-600 ring-dashed' : ''}`}>
+                                                                <span className={`inline-block w-5.5 h-5.5 rounded-lg bg-emerald-500 text-white text-[11px] font-bold leading-5.5 shadow-sm shadow-emerald-500/30 ${items.some((s) => !s.published) ? 'opacity-50 ring-1 ring-emerald-600 ring-dashed' : ''}`}>
                                                                     {code || '✓'}
                                                                 </span>
                                                             ) : (
@@ -286,7 +286,7 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                         <div className="fixed inset-0 z-90" onClick={() => setFillMenu(null)} />
                         <div
                             style={{ position: 'fixed', left: fillMenu.left, top: fillMenu.top }}
-                            className="z-100 w-72 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl py-1"
+                            className="glass glass-menu z-100 w-72 rounded-xl py-1"
                         >
                             <p className="px-3 pt-1.5 pb-1 text-micro text-gray-400 truncate">{fillMenu.name}</p>
                             {/* Choosing a pattern REPLACES the member's all-day fills here. */}

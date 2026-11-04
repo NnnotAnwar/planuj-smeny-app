@@ -61,20 +61,20 @@ export function MobileLocationField({
             <button
                 onClick={() => setOpen(true)}
                 aria-expanded={open}
-                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-800 dark:text-slate-200 shadow-sm active:scale-[0.99] transition-all"
+                className="glass w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-ink dark:text-slate-200 active:scale-[0.99] transition-transform"
             >
-                <span className="shrink-0 w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                    <MapPinIcon weight="fill" className="w-4 h-4" />
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/12 text-emerald-600 dark:text-emerald-300">
+                    <MapPinIcon weight="fill" className="size-3.5" />
                 </span>
                 <span className="flex-1 min-w-0 text-left">
-                    <span className="block text-micro uppercase tracking-wider text-gray-400 dark:text-slate-500">
-                        {isOnShift ? t('location.change') : t('sidebar.availablePosts')}
+                    <span className="block text-eyebrow text-ink-soft dark:text-slate-400">
+                        {t('sidebar.currentLocation')}
                     </span>
-                    <span className="block text-small-strong truncate">
+                    <span className="mt-0.5 block truncate font-display text-sm font-bold tracking-[-0.01em]">
                         {selected ? selected.name : t('location.select')}
                     </span>
                 </span>
-                <CaretUpDownIcon className="w-4 h-4 shrink-0 text-gray-400" />
+                <CaretUpDownIcon className="size-4 shrink-0 text-ink-soft dark:text-slate-400" />
             </button>
 
             <AnimatePresence>

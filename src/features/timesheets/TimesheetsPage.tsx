@@ -35,6 +35,7 @@ import { type ExportFormat, makeExportLabels } from './exportShifts';
 import { shareOrExport, shareOrExportAll } from '@shared/utils/shareExport';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
 import { ShiftEditorModal, type ShiftFormValues } from './components/ShiftEditorModal';
+import { PageHeader } from '@shared/components/PageHeader';
 
 const EXPORT_FORMATS = [
     { fmt: 'pdf' as const, label: 'PDF', Icon: FilePdfIcon },
@@ -78,7 +79,7 @@ function ExportMenu({
                 disabled={disabled}
                 title={title}
                 aria-busy={busy}
-                className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
+                className="glass flex items-center justify-center w-9 h-9 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
             >
                 {busy ? (
                     <span className="w-4 h-4 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin" />
@@ -94,7 +95,7 @@ function ExportMenu({
                             initial={{ opacity: 0, y: 8, scale: 0.95 }}
                             animate={{ opacity: 1, y: 4, scale: 1 }}
                             exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                            className="absolute right-0 top-full z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-1.5 overflow-hidden"
+                            className="glass glass-menu absolute right-0 top-full z-50 w-44 rounded-2xl p-1.5 overflow-hidden"
                         >
                             {EXPORT_FORMATS.map(({ fmt, label, Icon: FmtIcon }) => (
                                 <button
@@ -325,8 +326,8 @@ function TimesheetsInner() {
             align: 'right',
             width: 'w-20',
             hideOnMobile: true,
-            className: 'text-xs font-bold tabular-nums text-gray-600 dark:text-gray-300',
-            footer: <span className="text-xs font-black tabular-nums dark:text-white">{fmtHours(totals.gross)}</span>,
+            className: 'text-xs font-bold tabular-nums whitespace-nowrap text-gray-600 dark:text-gray-300',
+            footer: <span className="text-xs font-bold tabular-nums dark:text-white">{fmtHours(totals.gross)}</span>,
             render: (s) => fmtDuration(shiftGrossHours(s)),
         },
         {
@@ -336,7 +337,7 @@ function TimesheetsInner() {
             width: 'w-20',
             hideOnMobile: true,
             className: 'text-xs font-bold tabular-nums text-amber-500',
-            footer: <span className="text-xs font-black tabular-nums text-amber-500">-{fmtHours(totals.brk)}</span>,
+            footer: <span className="text-xs font-bold tabular-nums text-amber-500">-{fmtHours(totals.brk)}</span>,
             render: (s) => {
                 const brk = shiftBreakHours(s);
                 return brk > 0 ? `-${fmtDuration(brk)}` : '—';
@@ -347,12 +348,12 @@ function TimesheetsInner() {
             header: t('overview.colNet'),
             align: 'right',
             width: canEdit ? 'w-16 sm:w-20' : 'w-20 sm:w-24',
-            footer: <span className="text-xs font-black tabular-nums whitespace-nowrap text-emerald-600 dark:text-emerald-400">{fmtHours(totals.net)}</span>,
+            footer: <span className="text-xs font-bold tabular-nums whitespace-nowrap text-emerald-600 dark:text-emerald-400">{fmtHours(totals.net)}</span>,
             render: (s) => {
                 const ongoing = !s.ended_at;
                 return (
                     <>
-                        <span className={`block text-xs font-black tabular-nums whitespace-nowrap ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        <span className={`block text-xs font-bold tabular-nums whitespace-nowrap ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
                             {fmtDuration(shiftHours(s))}
                         </span>
                         {ongoing && <span className="block text-micro text-amber-500">{t('overview.live')}</span>}
@@ -382,36 +383,38 @@ function TimesheetsInner() {
     // -----------------------------------------------------------------
     return (
         <div className="space-y-4 px-1 pb-10">
-            <header className="flex items-end justify-between gap-3 pt-2">
-                <div className="space-y-0.5">
-                    <p className="text-label text-emerald-500 text-left">{t('admin.administration')}</p>
-                    <h1 className="text-display text-gray-900 dark:text-white">{t('nav.timesheets')}</h1>
-                </div>
-                <div className="flex items-center gap-2">
-                    {selected ? (
-                        <ExportMenu
-                            open={exportOpen}
-                            setOpen={setExportOpen}
-                            onPick={doExport}
-                            disabled={shifts.length === 0 || exporting}
-                            busy={exporting}
-                            title={t('ts.exportThis')}
-                            Icon={DownloadSimpleIcon}
-                        />
-                    ) : (
-                        <ExportMenu
-                            open={exportAllOpen}
-                            setOpen={setExportAllOpen}
-                            onPick={doExportAll}
-                            disabled={exportingAll || members.length === 0}
-                            title={t('ts.exportAll')}
-                            Icon={UsersThreeIcon}
-                            busy={exportingAll}
-                        />
-                    )}
-                    <MonthPicker value={month} onChange={setMonth} />
-                </div>
-            </header>
+            <PageHeader
+                eyebrow={t('admin.administration')}
+                title={t('nav.timesheets')}
+                actions={
+                    <>
+                        <div className="flex items-center gap-2">
+                            {selected ? (
+                                <ExportMenu
+                                    open={exportOpen}
+                                    setOpen={setExportOpen}
+                                    onPick={doExport}
+                                    disabled={shifts.length === 0 || exporting}
+                                    busy={exporting}
+                                    title={t('ts.exportThis')}
+                                    Icon={DownloadSimpleIcon}
+                                />
+                            ) : (
+                                <ExportMenu
+                                    open={exportAllOpen}
+                                    setOpen={setExportAllOpen}
+                                    onPick={doExportAll}
+                                    disabled={exportingAll || members.length === 0}
+                                    title={t('ts.exportAll')}
+                                    Icon={UsersThreeIcon}
+                                    busy={exportingAll}
+                                />
+                            )}
+                            <MonthPicker value={month} onChange={setMonth} />
+                        </div>
+                    </>
+                }
+            />
 
             {/* MEMBER PICKER */}
             {!selected ? (
@@ -423,7 +426,7 @@ function TimesheetsInner() {
                             placeholder={t('ts.searchEmployees')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 py-2.5 pl-9 pr-3 text-body text-gray-900 dark:text-white outline-none focus:border-emerald-500/40 shadow-sm transition-all"
+                            className="w-full rounded-xl border border-ink/10 bg-white/70 py-2 pl-9 pr-3 text-sm text-ink placeholder:text-ink-soft/70 outline-none focus:border-emerald-500/50 focus:bg-white focus:ring-2 focus:ring-emerald-500/15 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500 transition-all"
                         />
                     </div>
 
@@ -473,7 +476,7 @@ function TimesheetsInner() {
             ) : (
                 <div className="space-y-4">
                     {/* Selected member header */}
-                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm">
+                    <div className="glass flex items-center gap-3 p-3 rounded-2xl">
                         <button
                             onClick={backToList}
                             className="shrink-0 p-2 -ml-1 rounded-xl text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
@@ -486,7 +489,7 @@ function TimesheetsInner() {
                             className="flex items-center gap-3 min-w-0 flex-1 text-left rounded-xl -m-1 p-1 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                             aria-label={`View ${memberName(selected)}'s profile`}
                         >
-                            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-black shrink-0">
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-xs font-bold shrink-0">
                                 {getFullInitials(selected.first_name, selected.last_name)}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -506,7 +509,7 @@ function TimesheetsInner() {
                             { label: t('overview.shifts'), value: String(totals.count) },
                             { label: t('ts.breaks'), value: fmtHours(totals.brk) },
                         ].map((s) => (
-                            <div key={s.label} className="bg-white dark:bg-gray-800/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                            <div key={s.label} className="glass p-3 rounded-2xl">
                                 <p className="text-micro text-gray-400 mb-1 truncate">{s.label}</p>
                                 <p className="text-metric text-emerald-600 dark:text-emerald-400">{s.value}</p>
                             </div>

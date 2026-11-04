@@ -58,13 +58,13 @@ export interface SelectProps {
 }
 
 const TRIGGER_BASE =
-    'inline-flex items-center justify-between gap-2 rounded-xl border bg-gray-50 dark:bg-gray-800/50 ' +
-    'border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white outline-none transition-all ' +
+    'inline-flex items-center justify-between gap-2 rounded-xl border bg-white/70 dark:bg-white/5 font-medium ' +
+    'border-ink/10 dark:border-white/10 text-ink dark:text-white outline-none transition-all hover:bg-white dark:hover:bg-white/8 ' +
     'focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-60 disabled:cursor-not-allowed';
 
 const SIZES = {
-    sm: 'text-small px-2.5 py-1.5',
-    md: 'text-body px-3.5 py-2.5',
+    sm: 'text-meta px-2.5 py-1.5',
+    md: 'text-sm px-3 py-2',
 };
 
 export function Select({
@@ -182,12 +182,12 @@ export function Select({
                 onKeyDown={onKeyDown}
                 className={`${TRIGGER_BASE} ${SIZES[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
             >
-                <span className={`truncate ${selected ? '' : 'text-gray-400'}`}>
+                <span className={`truncate ${selected ? '' : 'font-normal text-ink-soft/70 dark:text-slate-500'}`}>
                     {selected ? selected.label : (placeholder ?? '')}
                 </span>
                 <CaretDownIcon
                     weight="bold"
-                    className={`shrink-0 text-gray-400 transition-transform ${size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4'} ${open ? 'rotate-180' : ''}`}
+                    className={`shrink-0 text-ink-soft/70 transition-transform dark:text-slate-500 ${size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4'} ${open ? 'rotate-180' : ''}`}
                 />
             </button>
 
@@ -198,7 +198,7 @@ export function Select({
                         ref={listRef}
                         role="listbox"
                         style={{ position: 'fixed', top: coords.top, left: coords.left, minWidth: coords.width }}
-                        className="z-300 max-h-64 overflow-auto rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl py-1"
+                        className="glass glass-menu z-300 max-h-64 overflow-auto rounded-xl p-1"
                     >
                         {options.map((opt, i) => {
                             const isSel = opt.value === value;
@@ -209,14 +209,14 @@ export function Select({
                                     aria-selected={isSel}
                                     onMouseEnter={() => setActive(i)}
                                     onClick={() => choose(opt)}
-                                    className={`flex items-center gap-2 px-3 py-2 text-body cursor-pointer ${
+                                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium cursor-pointer ${
                                         opt.disabled ? 'opacity-40 cursor-not-allowed' : ''
-                                    } ${i === active ? 'bg-emerald-50 dark:bg-emerald-500/10' : ''} ${
-                                        isSel ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-gray-700 dark:text-gray-200'
+                                    } ${i === active ? 'bg-emerald-500/10 dark:bg-emerald-400/10' : ''} ${
+                                        isSel ? 'text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-ink dark:text-slate-200'
                                     }`}
                                 >
                                     <span className="flex-1 truncate">{opt.label}</span>
-                                    {isSel && <CheckIcon weight="bold" className="w-4 h-4 shrink-0" />}
+                                    {isSel && <CheckIcon weight="bold" className="size-3.5 shrink-0" />}
                                 </li>
                             );
                         })}

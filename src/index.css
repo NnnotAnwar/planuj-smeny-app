@@ -14,7 +14,144 @@
   --color-emerald-950: #022c22;
 }
 
+/*
+ * --- PREMIUM GLASS TOKENS ---
+ * Type: Inter carries the UI and every number (its tabular figures keep live
+ * clocks from jittering); Satoshi is the display face, used sparingly for
+ * words with personality — the greeting and card titles.
+ * Ink + shadows are indigo-tinted rather than neutral grey: grey shadows on a
+ * lilac canvas read as muddy. The shadow tint follows the active accent
+ * (`--color-emerald-*` is re-pointed at runtime), so every scheme stays coherent.
+ */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Satoshi", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #1b1a2e;
+  --color-ink-soft: #66637f;
+  --color-slate-ink: #1e1b33;
+
+  /* Neutral greys re-tinted to the same ink family, so every existing
+     `gray-*` across the app (text, hairlines, dark surfaces) sits in one
+     palette with the glass layer instead of drifting blue-grey. 900 = ink,
+     500 = ink-soft. */
+  --color-gray-50: #f7f6fb;
+  --color-gray-100: #efeef6;
+  --color-gray-200: #e3e1ee;
+  --color-gray-300: #cdcadc;
+  --color-gray-400: #8e8ba5;
+  --color-gray-500: #66637f;
+  --color-gray-600: #4e4b66;
+  --color-gray-700: #3a3752;
+  --color-gray-800: #26243b;
+  --color-gray-900: #1b1a2e;
+  --color-gray-950: #0f0e1c;
+
+  --shadow-glass: 0 1px 2px rgb(27 26 46 / 0.04), 0 12px 32px -14px color-mix(in srgb, var(--color-emerald-600) 26%, transparent);
+  --shadow-glass-lg: 0 1px 2px rgb(27 26 46 / 0.05), 0 28px 56px -24px color-mix(in srgb, var(--color-emerald-600) 34%, transparent);
+
+  --animate-glow-breathe: glow-breathe 3.6s ease-in-out infinite;
+  --animate-hint-blink: hint-blink 1.4s ease-in-out infinite;
+
+  @keyframes glow-breathe {
+    0%, 100% { opacity: 0.45; transform: scale(0.9); }
+    50% { opacity: 0.85; transform: scale(1.06); }
+  }
+
+  /* A ring that blinks to say "tap here" — used where an action is required. */
+  @keyframes hint-blink {
+    0%, 100% { opacity: 0.15; transform: scale(0.96); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Frosted-glass surface with a lit 1px edge. The edge is a real gradient
+ * border (mask on ::before): bright where light catches the top-left, fading to
+ * a faint accent tint — not a flat hairline. Give the element a `rounded-*`
+ * so the edge follows its corners.
+ */
+@utility glass {
+  position: relative;
+  background-color: var(--glass-bg, rgb(255 255 255 / 0.62));
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  backdrop-filter: blur(22px) saturate(1.6);
+  /* Override per element with [--glass-shadow:var(--shadow-glass-lg)] — avoids
+     racing a separate shadow-* utility for the same property. */
+  box-shadow: var(--glass-shadow, var(--shadow-glass));
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.95),
+      rgb(255 255 255 / 0.35) 45%,
+      color-mix(in srgb, var(--color-emerald-400) 38%, transparent)
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  :where(.dark) & {
+    background-color: var(--glass-bg-dark, rgb(255 255 255 / 0.045));
+  }
+
+  :where(.dark) &::before {
+    background: linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.2),
+      rgb(255 255 255 / 0.04) 45%,
+      color-mix(in srgb, var(--color-emerald-400) 32%, transparent)
+    );
+  }
+}
+
+/*
+ * Denser glass for floating menus/popovers: lists must stay legible over busy
+ * content, so the frost is near-opaque. Dark mode tints from the active scheme's
+ * canvas (--grad-to) so the menu belongs to whichever colour scheme is on.
+ * Use together with `glass`.
+ */
+@utility glass-menu {
+  --glass-bg: rgb(255 255 255 / 0.94);
+  --glass-bg-dark: color-mix(in srgb, var(--grad-to) 96%, transparent);
+  --glass-shadow: var(--shadow-glass-lg);
+}
+
+/*
+ * Segmented control: a recessed track (`segmented`) holding pill options; the
+ * chosen one lifts out as a small white chip (`segment-active`). Shared by the
+ * Schedule tabs, Admin tabs and Settings so every switcher looks the same.
+ */
+@utility segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 0.75rem;
+  background-color: color-mix(in srgb, var(--color-ink) 6%, transparent);
+
+  :where(.dark) & {
+    background-color: rgb(255 255 255 / 0.06);
+  }
+}
+
+@utility segment-active {
+  background-color: white;
+  box-shadow: 0 1px 2px rgb(27 26 46 / 0.08), 0 0 0 1px rgb(27 26 46 / 0.04);
+
+  :where(.dark) & {
+    background-color: rgb(255 255 255 / 0.12);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+}
 
 /*
  * --- TYPOGRAPHY SYSTEM ---
@@ -24,25 +161,34 @@
  * Prefer these tokens over arbitrary `text-[Npx]` / ad-hoc size+weight combos.
  */
 @layer components {
-  /* Headings */
-  .text-display    { @apply text-2xl font-black tracking-tight leading-tight; }
-  .text-title      { @apply text-lg  font-black tracking-tight leading-tight; }
-  .text-heading    { @apply text-sm  font-black tracking-tight; }
+  /* Headings — display face (Satoshi), bold not black: the glass layer reads
+     premium through precision, not weight. */
+  .text-display    { @apply font-display text-[22px] font-bold tracking-[-0.03em] leading-[1.1] xl:text-[26px]; }
+  .text-title      { @apply font-display text-base font-bold tracking-[-0.015em] leading-tight; }
+  .text-heading    { @apply font-display text-sm font-bold tracking-[-0.01em]; }
 
   /* Body */
   .text-body         { @apply text-sm font-medium; }
-  .text-body-strong  { @apply text-sm font-bold; }
+  .text-body-strong  { @apply text-sm font-semibold; }
   .text-small        { @apply text-xs font-medium; }
-  .text-small-strong { @apply text-xs font-bold; }
+  .text-small-strong { @apply text-xs font-semibold; }
 
   /* Labels & captions (tiny) */
-  .text-label   { @apply text-[11px] font-black uppercase tracking-widest leading-tight; }
+  .text-label   { @apply text-[10px] font-semibold uppercase tracking-[0.14em] leading-tight; }
   .text-caption { @apply text-[11px] font-medium leading-tight; }
-  .text-micro   { @apply text-[10px] font-black uppercase tracking-widest leading-none; }
+  .text-micro   { @apply text-[10px] font-bold uppercase tracking-[0.08em] leading-none; }
 
   /* Numeric metrics */
-  .text-metric    { @apply text-lg font-black tabular-nums tracking-tight; }
-  .text-metric-sm { @apply text-sm font-black tabular-nums; }
+  .text-metric    { @apply text-lg font-semibold tabular-nums tracking-[-0.02em]; }
+  .text-metric-sm { @apply text-sm font-semibold tabular-nums; }
+
+  /* Premium glass layer — display words (Satoshi) + precise numbers (Inter tnum) */
+  .text-greeting   { @apply font-display text-[22px] font-bold tracking-[-0.03em] leading-[1.1] xl:text-[26px]; }
+  .text-card-title { @apply font-display text-base font-bold tracking-[-0.015em] leading-tight; }
+  .text-clock      { @apply text-lg font-semibold tabular-nums tracking-[-0.02em] leading-none; }
+  .text-eyebrow    { @apply text-[10px] font-semibold uppercase tracking-[0.14em] leading-none; }
+  /* Compact-but-readable secondary line (location · time · duration, nav, search). */
+  .text-meta       { @apply text-[13px] font-medium leading-snug; }
 }
 
 html, body, #root {

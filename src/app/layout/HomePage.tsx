@@ -11,8 +11,8 @@ import { ShiftCards } from '@features/shifts/components/ShiftCards';
 import { MobileLocationField } from '@features/locations/components/MobileLocationField';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { AnnouncementBanner } from '@features/announcements/AnnouncementBanner';
-import { Clock } from '@shared/components/Clock';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { DashboardHeader } from './DashboardHeader';
 import { usePullToRefresh } from '@shared/hooks/usePullToRefresh';
 import { shiftKeys } from '@features/shifts/shiftKeys';
 import { type ShiftDisplayData } from '@shared/types';
@@ -108,22 +108,19 @@ export function HomePage() {
         </div>
       )}
 
-      {/* 1. CLOCK (Desktop Only) */}
-      <div className="hidden md:flex items-center justify-center mb-8 pt-2">
-        <div className="text-2xl font-black dark:text-white tracking-tight">
-          <Clock seconds={true} />
-        </div>
-      </div>
+      <div className="mx-auto w-full max-w-5xl">
+      {/* 1. GREETING + DATE (+ live clock on desktop) */}
+      <DashboardHeader firstName={user.first_name || user.username} />
+
       <AnnouncementBanner />
 
-      {/* 2. ACTIVE STATUS (If user is working) */}
-      <ActiveShift />
+      {/* 2. SHIFT CARD — live (ActiveShift) or idle (CheckIn); they share one slot,
+          so starting a shift reads as the same card waking up. */}
+      <ActiveShift onPickLocation={handleLocationSelect} />
+      <CheckIn onPickLocation={handleLocationSelect} />
 
       {/* NEXT ROSTERED SHIFT — quick glance + link to the schedule. */}
       <NextShiftCard />
-
-      {/* 3. START BUTTON (If user is not working) */}
-      <CheckIn />
 
       {/* 4. MOBILE LOCATION PICKER */}
       <div className="md:hidden mb-6">
@@ -135,14 +132,15 @@ export function HomePage() {
         />
       </div>
 
-      <div className={`space-y-4 ${activeShift ? 'pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : ''} md:pb-0`}>
+      {/* Mobile keeps a sticky start/end bar above the tab bar — clear it. */}
+      <div className={`grid gap-3 pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-0 ${board.length > 1 ? 'xl:grid-cols-2' : ''}`}>
         {board.length === 0 ? (
-          <div className="py-12 flex flex-col items-center text-center">
-            <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center text-gray-400 dark:text-gray-500 mb-3">
-              <CoffeeIcon weight="duotone" className="w-7 h-7" />
+          <div className="glass flex flex-col items-center rounded-2xl px-6 py-8 text-center">
+            <div className="mb-2.5 flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">
+              <CoffeeIcon weight="duotone" className="size-6" />
             </div>
-            <p className="text-body-strong text-gray-500 dark:text-gray-400">{t('home.noActivity')}</p>
-            <p className="mt-1 text-caption text-gray-400 dark:text-gray-500 max-w-xs">{t('home.noActivityHint')}</p>
+            <p className="text-body-strong text-ink dark:text-white">{t('home.noActivity')}</p>
+            <p className="mt-1 max-w-xs text-caption text-ink-soft dark:text-slate-400">{t('home.noActivityHint')}</p>
           </div>
         ) : (
           board.map(({ location, colleagues, userCard }) => (
@@ -156,6 +154,7 @@ export function HomePage() {
             </section>
           ))
         )}
+      </div>
       </div>
 
       {profileUserId && (

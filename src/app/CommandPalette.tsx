@@ -193,7 +193,7 @@ export function CommandPalette({ open, onClose, locations, selectedLocationId, o
                 transition={{ duration: 0.14, ease: 'easeOut' }}
                 role="dialog"
                 aria-modal="true"
-                className="relative w-full max-w-lg max-h-[68vh] flex flex-col rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-gray-900 shadow-2xl overflow-hidden"
+                className="glass glass-menu relative w-full max-w-lg max-h-[68vh] flex flex-col rounded-2xl overflow-hidden"
             >
                 {/* Search */}
                 <div className="flex items-center gap-2.5 px-4 border-b border-gray-100 dark:border-white/10">

@@ -57,7 +57,7 @@ export function LocationPopup({ locationName, variant, isBusy, onConfirm, onCanc
                 exit={{ y: '100%', opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 360, damping: 32 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-md bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-5"
+                className="glass glass-menu w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-5"
             >
                 {/* Grab handle (mobile bottom-sheet affordance) */}
                 <div className="sm:hidden mx-auto mb-4 h-1.5 w-10 rounded-full bg-gray-200 dark:bg-gray-700" />

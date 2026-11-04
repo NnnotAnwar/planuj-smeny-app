@@ -7,6 +7,7 @@ import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { AdminProvider, useAdminContext } from '@/features/admin/AdminContext';
 import { NameChangeRequestsList } from '@/features/admin/components/NameChangeRequestsList';
 import { ErrorState } from '@/features/admin/components/AdminStateViews';
+import { PageHeader } from '@shared/components/PageHeader';
 
 /**
  * --- REQUESTS PAGE ---
@@ -33,17 +34,19 @@ function RequestsInner() {
 
     return (
         <div className="space-y-4 px-1 pb-10">
-            <header className="flex items-end justify-between gap-3 pt-2">
-                <div className="space-y-0.5">
-                    <p className="text-label text-emerald-500 text-left">{t('admin.administration')}</p>
-                    <h1 className="text-display text-gray-900 dark:text-white">{t('nav.requests')}</h1>
-                </div>
-                {nameRequests.length > 0 && (
-                    <span className="flex items-center gap-1.5 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm text-xs font-black text-emerald-600 dark:text-emerald-400">
-                        {t('requests.pending', { count: nameRequests.length })}
-                    </span>
-                )}
-            </header>
+            <PageHeader
+                eyebrow={t('admin.administration')}
+                title={t('nav.requests')}
+                actions={
+                    <>
+                        {nameRequests.length > 0 && (
+                            <span className="glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                {t('requests.pending', { count: nameRequests.length })}
+                            </span>
+                        )}
+                    </>
+                }
+            />
 
             <section className="space-y-2">
                 <div className="flex items-center gap-2 px-1">

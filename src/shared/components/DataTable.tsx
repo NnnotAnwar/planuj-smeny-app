@@ -52,7 +52,7 @@ const ALIGN: Record<NonNullable<Column<unknown>['align']>, string> = {
 };
 
 // Compact on phones, roomier on sm+. `hideOnMobile` columns appear from sm up.
-const cellPad = 'px-2 py-2.5 sm:px-4 sm:py-3';
+const cellPad = 'px-2 py-2 sm:px-3.5 sm:py-2.5';
 const mobileHidden = 'hidden sm:table-cell';
 
 /**
@@ -80,14 +80,14 @@ export function DataTable<T>({
   const hasFooter = !showSkeleton && columns.some((c) => c.footer !== undefined);
 
   return (
-    <div className="bg-white dark:bg-gray-900/40 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+    <div className="glass rounded-2xl overflow-hidden">
       <table className="w-full table-fixed text-left border-collapse">
         <thead>
-          <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+          <tr className="border-b border-ink/5 dark:border-white/6 bg-ink/2.5 dark:bg-white/3">
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`${cellPad} text-label text-gray-400 truncate ${ALIGN[col.align ?? 'left']} ${col.width ?? ''
+                className={`${cellPad} text-eyebrow text-ink-soft dark:text-slate-400 truncate ${ALIGN[col.align ?? 'left']} ${col.width ?? ''
                   } ${col.hideOnMobile ? mobileHidden : ''} ${col.headerClassName ?? ''}`}
               >
                 {col.header}
@@ -95,7 +95,7 @@ export function DataTable<T>({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
+        <tbody className="divide-y divide-ink/5 dark:divide-white/5">
           {showSkeleton
             ? Array.from({ length: 6 }).map((_, r) => (
                 <tr key={`skeleton-${r}`}>
@@ -115,7 +115,7 @@ export function DataTable<T>({
             <tr
               key={rowKey(row)}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className={`transition-colors hover:bg-gray-50/80 dark:hover:bg-gray-800/20 ${onRowClick ? 'cursor-pointer' : ''
+              className={`transition-colors hover:bg-white/60 dark:hover:bg-white/4 ${onRowClick ? 'cursor-pointer' : ''
                 }`}
             >
               {columns.map((col) => (
@@ -132,7 +132,7 @@ export function DataTable<T>({
         </tbody>
         {hasFooter && (
           <tfoot>
-            <tr className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40">
+            <tr className="border-t border-ink/5 dark:border-white/6 bg-ink/2.5 dark:bg-white/3">
               {columns.map((col) => (
                 <td
                   key={col.key}

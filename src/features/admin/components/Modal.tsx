@@ -101,7 +101,7 @@ export function Modal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
         >
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-slate-ink/35 backdrop-blur-sm" onClick={onClose} />
 
             <motion.div
                 ref={panelRef}
@@ -113,26 +113,26 @@ export function Modal({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97, y: 16 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                className={`relative w-full ${wide ? 'sm:max-w-2xl' : 'max-w-md'} max-h-[90dvh] flex flex-col bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 shadow-2xl overflow-hidden outline-none`}
+                className={`glass glass-menu relative w-full ${wide ? 'sm:max-w-2xl' : 'max-w-md'} max-h-[90dvh] flex flex-col rounded-t-2xl sm:rounded-2xl overflow-hidden outline-none`}
             >
-                <div className="flex items-start justify-between gap-4 p-5 border-b border-gray-50 dark:border-white/5 shrink-0">
+                <div className="flex items-start justify-between gap-4 px-4 py-3.5 border-b border-ink/5 dark:border-white/6 shrink-0">
                     <div className="min-w-0">
-                        <h2 className="text-title text-gray-900 dark:text-white truncate">{title}</h2>
+                        <h2 className="text-card-title text-ink dark:text-white truncate">{title}</h2>
                         {subtitle && (
-                            <p className="text-micro text-emerald-500 mt-0.5">{subtitle}</p>
+                            <p className="text-eyebrow text-emerald-600 dark:text-emerald-300 mt-1">{subtitle}</p>
                         )}
                     </div>
                     <button
                         onClick={onClose}
-                        className="shrink-0 p-2.5 -m-1 text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors"
+                        className="shrink-0 flex size-8 -my-1 -mr-1.5 items-center justify-center rounded-lg text-ink-soft hover:text-ink hover:bg-ink/5 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5 transition-colors"
                         aria-label={t('common.close')}
                     >
-                        <XIcon weight="bold" className="w-5 h-5" />
+                        <XIcon weight="bold" className="size-4" />
                     </button>
                 </div>
 
                 {/* Scrollable body; safe-area padding so the last field clears the home indicator. */}
-                <div className="p-5 overflow-y-auto overscroll-contain pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-5">
+                <div className="p-4 overflow-y-auto overscroll-contain pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-4">
                     {children}
                 </div>
             </motion.div>
@@ -176,12 +176,12 @@ export function ConfirmDialog({
 
     return (
         <Modal title={title} onClose={onClose}>
-            <div className="space-y-5">
+            <div className="space-y-4">
                 <div className="flex gap-3">
-                    <div className="shrink-0 w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center">
-                        <WarningIcon weight="fill" className="w-5 h-5" />
+                    <div className="shrink-0 size-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                        <WarningIcon weight="fill" className="size-4.5" />
                     </div>
-                    <p className="text-body text-gray-600 dark:text-gray-300 leading-relaxed">{message}</p>
+                    <p className="text-body text-ink-soft dark:text-slate-300 leading-relaxed">{message}</p>
                 </div>
 
                 <FormError message={error} />
