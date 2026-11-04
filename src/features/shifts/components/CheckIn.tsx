@@ -26,7 +26,9 @@ import { useOnline } from '@shared/hooks/useOnline';
  * in different places: a bottom sheet on mobile, the sidebar on desktop. The
  * mobile field stays mounted-but-hidden on desktop, so we can't infer context
  * from "is a picker subscribed" — each button passes its own guide explicitly
- * (`sheet` opens the mobile sheet; `hint` shows a toast).
+ * (`sheet` opens the mobile sheet; `hint` shows a toast). On desktop Start
+ * never opens the picker for you: the toast + blinking ring point the way and
+ * the person picks the location themselves.
  */
 export function CheckIn({ onPickLocation }: { onPickLocation?: (locationId: string) => void }) {
     const { selectedLocationId, activeShift, handleStartShift, isStarting, locations } = useShiftContext();
@@ -38,7 +40,7 @@ export function CheckIn({ onPickLocation }: { onPickLocation?: (locationId: stri
     // If a shift is already running, we don't show the check-in button.
     if (activeShift) return null;
 
-    const attemptStart = (guide: 'sheet' | 'picker') => {
+    const attemptStart = (guide: 'sheet' | 'hint') => {
         // Starting a shift needs the server — block it (with a reason) while offline.
         if (!online) {
             haptics.error();
@@ -48,7 +50,6 @@ export function CheckIn({ onPickLocation }: { onPickLocation?: (locationId: stri
         if (!selectedLocationId) {
             haptics.error();
             if (guide === 'sheet') openLocationPicker();
-            else if (onPickLocation) setPickerOpen(true);
             else toast(t('shifts.selectLocation'), 'info');
             return;
         }
@@ -104,7 +105,7 @@ export function CheckIn({ onPickLocation }: { onPickLocation?: (locationId: stri
                 />
                 <button
                     type="button"
-                    onClick={() => attemptStart('picker')}
+                    onClick={() => attemptStart('hint')}
                     disabled={isStarting}
                     className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-linear-to-b from-emerald-500 to-emerald-600 px-3.5 text-meta font-semibold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.25),0_6px_16px_-6px_var(--color-emerald-500)] transition-all hover:brightness-105 active:scale-[0.98] disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
                 >

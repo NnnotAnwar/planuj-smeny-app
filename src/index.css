@@ -74,7 +74,13 @@
  * so the edge follows its corners.
  */
 @utility glass {
-  position: relative;
+  /* `relative` anchors the ::before edge, but only as a zero-specificity
+     fallback — an explicit sticky / fixed / absolute on the same element must
+     win (the sidebar is `sticky`, popovers are `fixed`). */
+  :where(&) {
+    position: relative;
+  }
+
   background-color: var(--glass-bg, rgb(255 255 255 / 0.62));
   -webkit-backdrop-filter: blur(22px) saturate(1.6);
   backdrop-filter: blur(22px) saturate(1.6);
