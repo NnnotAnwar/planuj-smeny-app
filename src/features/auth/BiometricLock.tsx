@@ -105,7 +105,7 @@ export function BiometricLock({ enforce }: { enforce: boolean }) {
 
     return (
         <div className="fixed inset-0 z-400 flex flex-col items-center justify-center gap-6 bg-white dark:bg-gray-950 p-8 text-center pt-[env(safe-area-inset-top,0px)]">
-            <div className="w-20 h-20 rounded-3xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                 <LockKeyIcon weight="fill" className="w-10 h-10" />
             </div>
             <div>

@@ -94,7 +94,7 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
         `w-full py-1.5 rounded-lg text-caption tabular-nums transition-all ${
             active
                 ? 'bg-emerald-500 text-white shadow-md'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+                : 'hover:bg-ink/5 dark:hover:bg-white/8 text-ink dark:text-slate-300'
         }`;
 
     return (
@@ -105,11 +105,11 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
                 disabled={disabled}
                 aria-label={rest['aria-label']}
                 onClick={() => setIsOpen((v) => !v)}
-                className="flex w-full items-center justify-between gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
+                className="flex w-full items-center justify-between gap-2 rounded-xl border border-ink/10 bg-white/70 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/8 px-3 py-2 transition-all active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
             >
                 <span className="flex items-center gap-2">
-                    <ClockIcon weight="bold" className="w-4 h-4 text-emerald-500" />
-                    <span className="text-body font-black tabular-nums text-gray-900 dark:text-white">
+                    <ClockIcon weight="bold" className="size-4 text-emerald-500" />
+                    <span className="text-sm font-semibold tabular-nums text-ink dark:text-white">
                         {pad(selHour)}:{pad(selMinute)}
                     </span>
                 </span>
@@ -131,7 +131,7 @@ export function TimePicker({ value, onChange, disabled, ...rest }: TimePickerPro
                             left: pos?.left ?? 0,
                             visibility: pos ? 'visible' : 'hidden',
                         }}
-                        className="z-70 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-2xl p-3 overflow-hidden"
+                        className="glass glass-menu z-70 w-44 rounded-2xl p-2.5 overflow-hidden"
                     >
                         <div className="grid grid-cols-2 gap-2">
                             <div>

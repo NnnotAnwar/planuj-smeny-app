@@ -65,13 +65,13 @@ export function MemberSearchAdd({
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
         >
-            <SearchInput value={q} onChange={setQ} placeholder={placeholder} inputClassName="!py-1.5 text-small" />
+            <SearchInput value={q} onChange={setQ} placeholder={placeholder} />
             {open &&
                 pos &&
                 createPortal(
                     <ul
                         style={{ position: 'fixed', left: pos.left, top: pos.top, width: pos.width }}
-                        className="z-100 max-h-56 overflow-y-auto rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl py-1"
+                        className="glass glass-menu z-100 max-h-56 overflow-y-auto rounded-xl py-1"
                     >
                         {matches.map((m) => (
                             <li key={m.id}>

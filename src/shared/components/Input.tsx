@@ -14,14 +14,14 @@ import type { Icon } from '@phosphor-icons/react';
  */
 
 const BASE =
-    'w-full bg-gray-50 dark:bg-gray-800/50 border rounded-xl text-body text-gray-900 dark:text-white ' +
-    'outline-none transition-all placeholder:text-gray-400 disabled:opacity-60 disabled:cursor-not-allowed ' +
-    'focus:ring-2 focus:ring-emerald-500/20';
+    'w-full bg-white/70 dark:bg-white/5 border rounded-xl text-sm font-medium text-ink dark:text-white ' +
+    'outline-none transition-all placeholder:font-normal placeholder:text-ink-soft/70 dark:placeholder:text-slate-500 ' +
+    'disabled:opacity-60 disabled:cursor-not-allowed focus:bg-white dark:focus:bg-white/8 focus:ring-2 focus:ring-emerald-500/20';
 
 const borderClass = (invalid?: boolean) =>
     invalid
         ? 'border-red-400 dark:border-red-500 focus:border-red-500'
-        : 'border-gray-200 dark:border-gray-700 focus:border-emerald-500';
+        : 'border-ink/10 dark:border-white/10 focus:border-emerald-500';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     /** Phosphor icon shown at the left (padding is handled automatically). */
@@ -36,10 +36,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     { icon: LeadingIcon, trailing, invalid, className = '', ...rest },
     ref,
 ) {
-    const pl = LeadingIcon ? 'pl-10' : 'pl-3.5';
-    const pr = trailing ? 'pr-11' : 'pr-3.5';
+    const pl = LeadingIcon ? 'pl-9' : 'pl-3';
+    const pr = trailing ? 'pr-10' : 'pr-3';
     const field = (
-        <input ref={ref} className={`${BASE} ${borderClass(invalid)} ${pl} ${pr} py-2.5 ${className}`} {...rest} />
+        <input ref={ref} className={`${BASE} ${borderClass(invalid)} ${pl} ${pr} py-2 ${className}`} {...rest} />
     );
 
     if (!LeadingIcon && !trailing) return field;
@@ -49,7 +49,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             {LeadingIcon && (
                 <LeadingIcon
                     weight="bold"
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-ink-soft/70 pointer-events-none dark:text-slate-500"
                 />
             )}
             {field}
@@ -67,6 +67,6 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
     ref,
 ) {
     return (
-        <textarea ref={ref} className={`${BASE} ${borderClass(invalid)} px-3.5 py-2.5 ${className}`} {...rest} />
+        <textarea ref={ref} className={`${BASE} ${borderClass(invalid)} px-3 py-2 ${className}`} {...rest} />
     );
 });

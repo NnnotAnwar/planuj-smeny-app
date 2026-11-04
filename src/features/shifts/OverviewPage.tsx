@@ -23,6 +23,7 @@ import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } f
 import { formatClock, monthShort, monthKey, weekdayShort, weekdayShortLabels } from '@shared/utils/date';
 import { type ExportFormat, makeExportLabels } from '@features/timesheets/exportShifts';
 import { shareOrExport } from '@shared/utils/shareExport';
+import { PageHeader } from '@shared/components/PageHeader';
 
 /**
  * --- CONSTANTS ---
@@ -155,8 +156,8 @@ export default function OverviewPage() {
       align: 'right',
       width: 'w-20',
       hideOnMobile: true,
-      className: 'text-xs font-bold tabular-nums text-gray-600 dark:text-gray-300',
-      footer: <span className="text-xs font-black tabular-nums dark:text-white">{fmtHours(stats.totalGross)}</span>,
+      className: 'text-xs font-bold tabular-nums whitespace-nowrap text-gray-600 dark:text-gray-300',
+      footer: <span className="text-xs font-bold tabular-nums dark:text-white">{fmtHours(stats.totalGross)}</span>,
       render: (shift) => fmtDuration(shiftGrossHours(shift)),
     },
     {
@@ -166,7 +167,7 @@ export default function OverviewPage() {
       width: 'w-20',
       hideOnMobile: true,
       className: 'text-xs font-bold tabular-nums text-amber-500',
-      footer: <span className="text-xs font-black tabular-nums text-amber-500">-{fmtHours(stats.totalBreak)}</span>,
+      footer: <span className="text-xs font-bold tabular-nums text-amber-500">-{fmtHours(stats.totalBreak)}</span>,
       render: (shift) => {
         const brk = shiftBreakHours(shift);
         return brk > 0 ? `-${fmtDuration(brk)}` : '—';
@@ -177,12 +178,12 @@ export default function OverviewPage() {
       header: t('overview.colNet'),
       align: 'right',
       width: 'w-20 sm:w-24',
-      footer: <span className="text-xs font-black tabular-nums whitespace-nowrap text-emerald-600 dark:text-emerald-400">{fmtHours(stats.totalHours)}</span>,
+      footer: <span className="text-xs font-bold tabular-nums whitespace-nowrap text-emerald-600 dark:text-emerald-400">{fmtHours(stats.totalHours)}</span>,
       render: (shift) => {
         const ongoing = !shift.ended_at;
         return (
           <>
-            <span className={`block text-xs font-black tabular-nums whitespace-nowrap ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+            <span className={`block text-xs font-bold tabular-nums whitespace-nowrap ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
               {fmtDuration(shiftHours(shift))}
             </span>
             {ongoing && <span className="block text-micro text-amber-500">{t('overview.live')}</span>}
@@ -218,62 +219,62 @@ export default function OverviewPage() {
 
   return (
     <div className="space-y-4 px-1 pb-10">
-      <header className="flex items-end justify-between gap-3 pt-2">
-        <div className="space-y-0.5">
-          <p className="text-label text-emerald-500 text-left">
-            {selectedMonth ? t('overview.titleMonthly') : t('overview.titleAll')}
-          </p>
-          <h1 className="text-display text-gray-900 dark:text-white">Overview</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <button
-              onClick={() => setExportOpen((v) => !v)}
-              disabled={!stats.hasData}
-              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
-              title={t('overview.export')}
-            >
-              <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
-            </button>
-            <AnimatePresence>
-              {exportOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 4, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                    className="absolute right-0 top-full z-50 w-44 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl p-1.5 overflow-hidden"
-                  >
-                    {([
-                      { fmt: 'pdf' as const, label: 'PDF', Icon: FilePdfIcon },
-                      { fmt: 'excel' as const, label: 'Excel', Icon: FileXlsIcon },
-                      { fmt: 'csv' as const, label: 'CSV', Icon: FileCsvIcon },
-                    ]).map(({ fmt, label, Icon }) => (
-                      <button
-                        key={fmt}
-                        onClick={() => doExport(fmt)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
+      <PageHeader
+        eyebrow={selectedMonth ? t('overview.titleMonthly') : t('overview.titleAll')}
+        title={t('nav.overview')}
+        actions={
+          <>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <button
+                  onClick={() => setExportOpen((v) => !v)}
+                  disabled={!stats.hasData}
+                  className="glass flex items-center justify-center w-9 h-9 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 active:scale-90 transition-all disabled:opacity-40"
+                  title={t('overview.export')}
+                >
+                  <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
+                </button>
+                <AnimatePresence>
+                  {exportOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 4, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                        className="glass glass-menu absolute right-0 top-full z-50 w-44 rounded-2xl p-1.5 overflow-hidden"
                       >
-                        <Icon weight="bold" className="w-4 h-4 text-emerald-500" />
-                        {label}
-                      </button>
-                    ))}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-          <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
-        </div>
-      </header>
+                        {([
+                          { fmt: 'pdf' as const, label: 'PDF', Icon: FilePdfIcon },
+                          { fmt: 'excel' as const, label: 'Excel', Icon: FileXlsIcon },
+                          { fmt: 'csv' as const, label: 'CSV', Icon: FileCsvIcon },
+                        ]).map(({ fmt, label, Icon }) => (
+                          <button
+                            key={fmt}
+                            onClick={() => doExport(fmt)}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-small text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors"
+                          >
+                            <Icon weight="bold" className="w-4 h-4 text-emerald-500" />
+                            {label}
+                          </button>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+              <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
+            </div>
+          </>
+        }
+      />
 
       {isLoading && !stats.hasData ? (
         <div className="space-y-3" aria-hidden>
           {/* stat cards */}
           <div className="grid grid-cols-3 gap-2">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="bg-white dark:bg-gray-800/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+              <div key={i} className="glass p-3 rounded-2xl">
                 <Skeleton className="h-3 w-2/3 mb-2" />
                 <Skeleton className="h-6 w-1/2" />
               </div>
@@ -282,7 +283,7 @@ export default function OverviewPage() {
           {/* chart cards */}
           <div className="grid sm:grid-cols-2 gap-3">
             {[0, 1].map((i) => (
-              <div key={i} className="bg-white dark:bg-gray-800/40 p-5 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
+              <div key={i} className="glass p-4 rounded-2xl space-y-4">
                 <Skeleton className="h-3.5 w-24" />
                 {[0, 1, 2].map((j) => (
                   <Skeleton key={j} className="h-8 w-full" />
@@ -306,7 +307,7 @@ export default function OverviewPage() {
           {/* TOP STATS */}
           <div className="grid grid-cols-3 gap-2">
             {statCards.map((stat) => (
-              <div key={stat.label} className="bg-white dark:bg-gray-800/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden group">
+              <div key={stat.label} className="glass p-3 rounded-2xl relative overflow-hidden group">
                 <div className="relative z-10">
                   <p className="text-micro text-gray-400 mb-1 truncate">{stat.label}</p>
                   <p className="text-metric text-emerald-600 dark:text-emerald-400">{stat.value}</p>
@@ -319,7 +320,7 @@ export default function OverviewPage() {
           {/* CHARTS SECTION */}
           <div className="grid sm:grid-cols-2 gap-3 items-start">
             {/* BY LOCATION */}
-            <div className="bg-white dark:bg-gray-800/40 p-5 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
+            <div className="glass p-4 rounded-2xl">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-label text-gray-400 flex items-center gap-1.5">
                   <MapPinIcon weight="bold" className="w-4 h-4 text-emerald-500" /> {t('overview.byLocation')}
@@ -349,7 +350,7 @@ export default function OverviewPage() {
             </div>
 
             {/* BY WEEKDAY */}
-            <div className="bg-white dark:bg-gray-800/40 p-5 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
+            <div className="glass p-4 rounded-2xl">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-label text-gray-400 flex items-center gap-1.5">
                   <ChartBarIcon weight="bold" className="w-4 h-4 text-emerald-500" /> {t('overview.busiestDays')}

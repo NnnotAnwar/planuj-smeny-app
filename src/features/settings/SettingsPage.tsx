@@ -23,6 +23,7 @@ import { useNotificationPrefs } from '@features/notifications/notificationPrefs'
 import { useBiometricEnabled, setBiometricEnabled } from '@features/auth/biometricSetting';
 import { Select } from '@shared/components/Select';
 import { LANGUAGES } from '@shared/i18n/translations';
+import { PageHeader } from '@shared/components/PageHeader';
 
 const APP_NAME = 'Planuj Směny';
 const APP_VERSION = __APP_VERSION__;
@@ -35,7 +36,7 @@ const SUPPORT_EMAIL = 'anuarkairulla@gmail.com';
  */
 
 const cardClass =
-  'bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm';
+  'glass rounded-2xl';
 
 /** iOS-style segmented control for small, mutually exclusive choices. */
 function Segmented<T extends string>({
@@ -48,7 +49,7 @@ function Segmented<T extends string>({
   options: { value: T; label: string }[];
 }) {
   return (
-    <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
+    <div className="segmented flex w-full">
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -56,9 +57,9 @@ function Segmented<T extends string>({
             key={o.value}
             onClick={() => onChange(o.value)}
             aria-pressed={active}
-            className={`flex-1 px-3 py-1.5 rounded-lg text-small-strong transition-colors ${active
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            className={`flex-1 px-3 py-1 rounded-[9px] text-meta font-semibold transition-colors ${active
+              ? 'segment-active text-ink dark:text-white'
+              : 'text-ink-soft dark:text-slate-400 hover:text-ink dark:hover:text-white'
               }`}
           >
             {o.label}
@@ -71,16 +72,16 @@ function Segmented<T extends string>({
 
 function Setting({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="p-4 space-y-2">
-      <p className="text-body-strong text-gray-900 dark:text-white">{label}</p>
+    <div className="p-3.5 space-y-2">
+      <p className="text-meta font-semibold text-ink dark:text-white">{label}</p>
       {children}
       {hint && <p className="text-caption text-gray-400">{hint}</p>}
     </div>
   );
 }
 
-const rowClass = 'flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors';
-const rowIconClass = 'w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0';
+const rowClass = 'flex items-center gap-3 px-3.5 py-3 hover:bg-white/60 dark:hover:bg-white/5 transition-colors';
+const rowIconClass = 'size-8 rounded-lg bg-ink/5 dark:bg-white/6 flex items-center justify-center text-ink-soft dark:text-slate-400 shrink-0';
 
 /**
  * A mailto row. Deliberately NOT `target="_blank"` — on native/webview that opens
@@ -91,7 +92,7 @@ function MailRow({ icon, label, href }: { icon: React.ReactNode; label: string; 
   return (
     <a href={href} className={rowClass}>
       <div className={rowIconClass}>{icon}</div>
-      <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{label}</span>
+      <span className="flex-1 text-meta font-semibold text-ink dark:text-white">{label}</span>
       <ArrowSquareOutIcon weight="bold" className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" />
     </a>
   );
@@ -102,7 +103,7 @@ function NavRow({ icon, label, to }: { icon: React.ReactNode; label: string; to:
   return (
     <Link to={to} className={rowClass}>
       <div className={rowIconClass}>{icon}</div>
-      <span className="flex-1 text-body-strong text-gray-900 dark:text-white">{label}</span>
+      <span className="flex-1 text-meta font-semibold text-ink dark:text-white">{label}</span>
       <CaretRightIcon weight="bold" className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" />
     </Link>
   );
@@ -117,9 +118,9 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-40 ${checked ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+      className={`relative w-9 h-5 rounded-full transition-colors shrink-0 disabled:opacity-40 ${checked ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
     >
-      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-5' : ''}`} />
+      <span className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-4' : ''}`} />
     </button>
   );
 }
@@ -127,8 +128,8 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
 /** A label + toggle row for a settings card. */
 function ToggleRow({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 p-4">
-      <span className={`text-body-strong text-gray-900 dark:text-white ${disabled ? 'opacity-50' : ''}`}>{label}</span>
+    <div className="flex items-center justify-between gap-3 px-3.5 py-3">
+      <span className={`text-meta font-semibold text-ink dark:text-white ${disabled ? 'opacity-50' : ''}`}>{label}</span>
       <Toggle checked={checked} onChange={onChange} disabled={disabled} />
     </div>
   );
@@ -176,15 +177,12 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-4 px-1 pb-10">
-      <header className="pt-2 space-y-0.5">
-        <p className="text-label text-emerald-500 text-left">{t('settings.preferences')}</p>
-        <h1 className="text-display text-gray-900 dark:text-white">{t('settings.title')}</h1>
-      </header>
+      <PageHeader eyebrow={t('settings.preferences')} title={t('settings.title')} />
 
       {/* APPEARANCE — theme + colour scheme */}
       <div className="space-y-2">
-        <h3 className="px-1 text-label text-gray-400">{t('settings.appearance')}</h3>
-        <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
+        <h3 className="px-1 text-eyebrow text-ink-soft dark:text-slate-400">{t('settings.appearance')}</h3>
+        <div className={`${cardClass} overflow-hidden divide-y divide-ink/5 dark:divide-white/6`}>
           <Setting label={t('settings.theme')}>
             <Segmented
               value={theme}
@@ -198,13 +196,13 @@ export default function SettingsPage() {
           </Setting>
 
           {/* Color scheme — live mini-previews of each accent + background. */}
-          <div className="p-4">
+          <div className="p-3.5">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-body-strong text-gray-900 dark:text-white">{t('settings.colorScheme')}</p>
-              <span className="text-micro text-gray-400">{activeLabel}</span>
+              <p className="text-meta font-semibold text-ink dark:text-white">{t('settings.colorScheme')}</p>
+              <span className="text-caption text-ink-soft dark:text-slate-400">{activeLabel}</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {COMBO_LIST.map(({ key, label, accent, gradient }) => {
                 const isActive = comboKey === key;
                 const [from, via, to] = isDark ? gradient.dark : gradient.light;
@@ -215,12 +213,12 @@ export default function SettingsPage() {
                     title={label}
                     aria-pressed={isActive}
                     className={`group rounded-2xl p-1 transition-all focus:outline-none ${isActive
-                      ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900'
+                      ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-transparent'
                       : 'hover:scale-[1.02]'
                       }`}
                   >
                     <div
-                      className="relative h-20 rounded-xl overflow-hidden border border-black/5 dark:border-white/10"
+                      className="relative h-16 rounded-xl overflow-hidden border border-black/5 dark:border-white/10"
                       style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${via}, ${to})` }}
                     >
                       <div className="absolute inset-2 rounded-lg bg-white/75 dark:bg-white/10 backdrop-blur-sm p-2 flex flex-col gap-1.5">
@@ -244,15 +242,15 @@ export default function SettingsPage() {
                 );
               })}
             </div>
-            <p className="mt-3 text-caption text-gray-400">{t('settings.colorScheme.hint')}</p>
+            <p className="mt-2.5 text-caption text-ink-soft dark:text-slate-400">{t('settings.colorScheme.hint')}</p>
           </div>
         </div>
       </div>
 
       {/* GENERAL — language, time format, default location */}
       <div className="space-y-2">
-        <h3 className="px-1 text-label text-gray-400">{t('settings.preferences')}</h3>
-        <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
+        <h3 className="px-1 text-eyebrow text-ink-soft dark:text-slate-400">{t('settings.preferences')}</h3>
+        <div className={`${cardClass} overflow-hidden divide-y divide-ink/5 dark:divide-white/6`}>
           <Setting label={t('settings.language')}>
             <Segmented
               value={language}
@@ -292,43 +290,43 @@ export default function SettingsPage() {
           lock is a device feature; the toggle would be a no-op on web). */}
       {isReviewer && Capacitor.isNativePlatform() && (
         <div className="space-y-2">
-          <h3 className="px-1 text-label text-gray-400">{t('settings.security')}</h3>
-          <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
+          <h3 className="px-1 text-eyebrow text-ink-soft dark:text-slate-400">{t('settings.security')}</h3>
+          <div className={`${cardClass} overflow-hidden divide-y divide-ink/5 dark:divide-white/6`}>
             <ToggleRow
               label={t('settings.biometric.login')}
               checked={biometricEnabled}
               onChange={setBiometricEnabled}
             />
-            <p className="px-4 py-3 text-caption text-gray-400">{t('settings.biometric.hint')}</p>
+            <p className="px-3.5 py-2.5 text-caption text-ink-soft dark:text-slate-400">{t('settings.biometric.hint')}</p>
           </div>
         </div>
       )}
 
       {/* NOTIFICATIONS — push preferences (gate delivery per category) */}
       <div className="space-y-2">
-        <h3 className="px-1 text-label text-gray-400">{t('settings.notifications')}</h3>
-        <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
+        <h3 className="px-1 text-eyebrow text-ink-soft dark:text-slate-400">{t('settings.notifications')}</h3>
+        <div className={`${cardClass} overflow-hidden divide-y divide-ink/5 dark:divide-white/6`}>
           <ToggleRow label={t('settings.notif.push')} checked={prefs.push_enabled} onChange={(v) => updatePrefs({ push_enabled: v })} />
           <ToggleRow label={t('settings.notif.shifts')} checked={prefs.shifts} onChange={(v) => updatePrefs({ shifts: v })} disabled={!prefs.push_enabled} />
           <ToggleRow label={t('settings.notif.account')} checked={prefs.account} onChange={(v) => updatePrefs({ account: v })} disabled={!prefs.push_enabled} />
           {isReviewer && (
             <ToggleRow label={t('settings.notif.requests')} checked={prefs.requests} onChange={(v) => updatePrefs({ requests: v })} disabled={!prefs.push_enabled} />
           )}
-          <p className="px-4 py-3 text-caption text-gray-400">{t('settings.notif.pushHint')}</p>
+          <p className="px-3.5 py-2.5 text-caption text-ink-soft dark:text-slate-400">{t('settings.notif.pushHint')}</p>
         </div>
       </div>
 
       {/* ABOUT — app info, support & legal */}
       <div className="space-y-2">
-        <h3 className="px-1 text-label text-gray-400">{t('settings.about')}</h3>
-        <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
-          <div className="flex items-center gap-3 p-4">
-            <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
+        <h3 className="px-1 text-eyebrow text-ink-soft dark:text-slate-400">{t('settings.about')}</h3>
+        <div className={`${cardClass} overflow-hidden divide-y divide-ink/5 dark:divide-white/6`}>
+          <div className="flex items-center gap-3 px-3.5 py-3">
+            <div className="size-8 rounded-lg bg-ink/5 dark:bg-white/6 flex items-center justify-center text-ink-soft dark:text-slate-400 shrink-0">
               <InfoIcon weight="bold" className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-body-strong text-gray-900 dark:text-white">{APP_NAME}</p>
-              <p className="text-micro text-gray-400">{t('settings.version', { version: APP_VERSION, year: new Date().getFullYear() })}</p>
+              <p className="text-meta font-semibold text-ink dark:text-white">{APP_NAME}</p>
+              <p className="text-caption text-ink-soft dark:text-slate-400">{t('settings.version', { version: APP_VERSION, year: new Date().getFullYear() })}</p>
             </div>
           </div>
 
@@ -344,20 +342,20 @@ export default function SettingsPage() {
 
       {/* PRIVACY & DATA — GDPR self-service (export / delete) */}
       <div className="space-y-2">
-        <h3 className="px-1 text-label text-gray-400">{t('settings.dataPrivacy')}</h3>
-        <div className={`${cardClass} overflow-hidden divide-y divide-gray-100 dark:divide-gray-800`}>
+        <h3 className="px-1 text-eyebrow text-ink-soft dark:text-slate-400">{t('settings.dataPrivacy')}</h3>
+        <div className={`${cardClass} overflow-hidden divide-y divide-ink/5 dark:divide-white/6`}>
           <button
             type="button"
             onClick={handleExport}
             disabled={exporting}
-            className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-60"
+            className="w-full flex items-center gap-3 px-3.5 py-3 text-left hover:bg-white/60 dark:hover:bg-white/5 transition-colors disabled:opacity-60"
           >
-            <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-gray-500 dark:text-gray-400 shrink-0">
+            <div className="size-8 rounded-lg bg-ink/5 dark:bg-white/6 flex items-center justify-center text-ink-soft dark:text-slate-400 shrink-0">
               <DownloadSimpleIcon weight="bold" className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-body-strong text-gray-900 dark:text-white">{t('settings.exportData')}</p>
-              <p className="text-micro text-gray-400">{t('settings.exportDataHint')}</p>
+              <p className="text-meta font-semibold text-ink dark:text-white">{t('settings.exportData')}</p>
+              <p className="text-caption text-ink-soft dark:text-slate-400">{t('settings.exportDataHint')}</p>
             </div>
             {exporting && <span className="text-caption text-gray-400">{t('common.working')}</span>}
           </button>
@@ -365,14 +363,14 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => setConfirmDelete(true)}
-            className="w-full flex items-center gap-3 p-4 text-left hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+            className="w-full flex items-center gap-3 px-3.5 py-3 text-left hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
           >
-            <div className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500 shrink-0">
+            <div className="size-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
               <TrashIcon weight="bold" className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-body-strong text-red-600 dark:text-red-400">{t('settings.deleteAccount')}</p>
-              <p className="text-micro text-gray-400">{t('settings.deleteAccountHint')}</p>
+              <p className="text-meta font-semibold text-red-600 dark:text-red-400">{t('settings.deleteAccount')}</p>
+              <p className="text-caption text-ink-soft dark:text-slate-400">{t('settings.deleteAccountHint')}</p>
             </div>
           </button>
         </div>

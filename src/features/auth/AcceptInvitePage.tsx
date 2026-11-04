@@ -213,7 +213,7 @@ export function AcceptInvitePage() {
                     initial={{ opacity: 0, y: 20, scale: 0.97 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-                    className="relative w-full max-w-md bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-3xl shadow-2xl shadow-emerald-500/5 p-8 text-center"
+                    className="glass relative w-full max-w-md rounded-2xl p-6 text-center [--glass-shadow:var(--shadow-glass-lg)]"
                 >
                     <div className="w-14 h-14 mx-auto rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center">
                         <WarningCircleIcon weight="fill" className="w-7 h-7" />
@@ -226,7 +226,7 @@ export function AcceptInvitePage() {
                         size="lg"
                         fullWidth
                         onClick={() => navigate('/login', { replace: true })}
-                        className="mt-6 shadow-lg shadow-emerald-500/25"
+                        className="mt-5"
                     >
                         {t('invite.goSignIn')}
                     </Button>
@@ -243,9 +243,9 @@ export function AcceptInvitePage() {
                 transition={{ type: 'spring', stiffness: 260, damping: 26 }}
                 className="relative w-full max-w-md"
             >
-                <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-3xl shadow-2xl shadow-emerald-500/5 overflow-hidden">
+                <div className="glass rounded-2xl overflow-hidden [--glass-shadow:var(--shadow-glass-lg)]">
                     {/* Invite summary — clearly states where and as what */}
-                    <div className="p-6 bg-emerald-500/5 border-b border-emerald-100/60 dark:border-emerald-900/30 space-y-4">
+                    <div className="p-5 bg-emerald-500/5 border-b border-emerald-500/10 space-y-4">
                         <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                             <CheckCircleIcon weight="fill" className="w-5 h-5" />
                             <p className="text-micro">{t('invite.invited')}</p>
@@ -345,7 +345,7 @@ export function AcceptInvitePage() {
 
                         <FormError message={error} />
 
-                        <Button type="submit" size="lg" fullWidth loading={busy} className="shadow-lg shadow-emerald-500/25">
+                        <Button type="submit" size="lg" fullWidth loading={busy} >
                             {busy ? t('invite.joining') : t('invite.join', { org: info?.org ?? '' })}
                         </Button>
                     </form>

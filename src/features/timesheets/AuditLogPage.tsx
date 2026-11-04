@@ -27,6 +27,7 @@ import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Select } from '@shared/components/Select';
 import { Skeleton } from '@shared/components/Skeleton';
 import type { TranslationKey } from '@shared/i18n/translations';
+import { PageHeader } from '@shared/components/PageHeader';
 
 const PAGE = 50;
 
@@ -117,12 +118,7 @@ function AuditLogInner() {
 
     return (
         <div className="space-y-4 px-1 pb-10">
-            <header className="flex items-end justify-between gap-3 pt-2">
-                <div className="space-y-0.5">
-                    <p className="text-label text-emerald-500 text-left">{t('admin.administration')}</p>
-                    <h1 className="text-display text-gray-900 dark:text-white">{t('nav.activity')}</h1>
-                </div>
-            </header>
+            <PageHeader eyebrow={t('admin.administration')} title={t('nav.activity')} />
 
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-2">
@@ -165,7 +161,7 @@ function AuditLogInner() {
                 ) : isLoading ? (
                     <div className="space-y-2" aria-hidden>
                         {Array.from({ length: 5 }).map((_, i) => (
-                            <div key={i} className="flex items-center gap-3 bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-2xl p-4">
+                            <div key={i} className="glass flex items-center gap-3 rounded-2xl p-4">
                                 <Skeleton className="w-9 h-9 rounded-xl" />
                                 <div className="flex-1 space-y-2">
                                     <Skeleton className="h-3.5 w-2/5" />
@@ -189,7 +185,7 @@ function AuditLogInner() {
                             <button
                                 onClick={() => fetchNextPage()}
                                 disabled={isFetchingNextPage}
-                                className="w-full py-2.5 rounded-xl text-label text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
+                                className="glass w-full py-2.5 rounded-xl text-label text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
                             >
                                 {isFetchingNextPage ? t('common.loading') : t('audit.loadMore')}
                             </button>
@@ -313,7 +309,7 @@ function AuditCard({ entry, onOpenUser }: { entry: ShiftAuditLog; onOpenUser: (u
     const when = formatDateTime(entry.created_at);
 
     return (
-        <div className="flex gap-3 p-3 rounded-2xl bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 shadow-sm">
+        <div className="glass flex gap-3 p-3 rounded-2xl">
             <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${meta.badge}`}>
                 <meta.Icon weight="bold" className="w-4 h-4" />
             </div>

@@ -63,7 +63,7 @@ export function LoginPage() {
       <button
         onClick={() => setTheme(isDark ? 'light' : 'dark')}
         aria-label={t('common.toggleTheme')}
-        className="absolute top-4 right-4 z-10 p-2.5 rounded-xl bg-white/60 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-500 dark:text-gray-300 backdrop-blur-md hover:bg-white/80 dark:hover:bg-white/10 active:scale-90 transition-all"
+        className="absolute top-4 right-4 z-10 p-2 rounded-xl bg-white/60 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 text-gray-500 dark:text-gray-300 backdrop-blur-md hover:bg-white/80 dark:hover:bg-white/10 active:scale-90 transition-all"
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.span
@@ -74,7 +74,7 @@ export function LoginPage() {
             transition={{ duration: 0.2 }}
             className="block"
           >
-            {isDark ? <SunIcon weight="bold" className="w-5 h-5" /> : <MoonIcon weight="bold" className="w-5 h-5" />}
+            {isDark ? <SunIcon weight="bold" className="size-4" /> : <MoonIcon weight="bold" className="size-4" />}
           </motion.span>
         </AnimatePresence>
       </button>
@@ -85,23 +85,23 @@ export function LoginPage() {
         transition={{ type: 'spring', stiffness: 260, damping: 26 }}
         className="relative w-full max-w-md"
       >
-        <div className="bg-white/70 dark:bg-gray-900/60 backdrop-blur-xl border border-white/60 dark:border-white/10 rounded-3xl shadow-2xl shadow-emerald-500/5 p-7 sm:p-9">
+        <div className="glass rounded-2xl p-6 sm:p-8 [--glass-shadow:var(--shadow-glass-lg)]">
           {/* Brand */}
-          <div className="flex flex-col items-center text-center mb-8">
+          <div className="flex flex-col items-center text-center mb-6">
             <div className="relative">
               <div className="absolute inset-0 rounded-2xl bg-emerald-500/40 blur-xl" />
-              <div className="relative w-16 h-16 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                <span className="text-white font-black text-2xl tracking-wider">PS</span>
+              <div className="relative size-12 bg-linear-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                <span className="font-display text-white font-bold text-lg tracking-wide">PS</span>
               </div>
             </div>
-            <h1 className="text-display text-gray-900 dark:text-white mt-5">{t('auth.welcomeBack')}</h1>
-            <p className="text-label text-emerald-600 dark:text-emerald-400 mt-1.5">{t('auth.portal')}</p>
+            <h1 className="text-display text-ink dark:text-white mt-4">{t('auth.welcomeBack')}</h1>
+            <p className="text-eyebrow text-emerald-600 dark:text-emerald-300 mt-2">{t('auth.portal')}</p>
           </div>
 
           <form className="space-y-4" onSubmit={handleLogin}>
             {/* Email / Username */}
             <div>
-              <label htmlFor="login" className="text-micro text-gray-400 ml-1">{t('auth.emailOrUsername')}</label>
+              <label htmlFor="login" className="text-eyebrow text-ink-soft dark:text-slate-400 ml-1">{t('auth.emailOrUsername')}</label>
               <div className="mt-1.5">
                 <Input
                   id="login"
@@ -120,7 +120,7 @@ export function LoginPage() {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="text-micro text-gray-400 ml-1">{t('auth.password')}</label>
+              <label htmlFor="password" className="text-eyebrow text-ink-soft dark:text-slate-400 ml-1">{t('auth.password')}</label>
               <div className="mt-1.5">
                 <Input
                   id="password"
@@ -147,7 +147,7 @@ export function LoginPage() {
 
             <FormError message={errorMsg} />
 
-            <Button type="submit" size="lg" fullWidth loading={isLoading} className="shadow-lg shadow-emerald-500/25">
+            <Button type="submit" size="lg" fullWidth loading={isLoading}>
               {isLoading ? t('auth.signingIn') : t('auth.signIn')}
             </Button>
           </form>

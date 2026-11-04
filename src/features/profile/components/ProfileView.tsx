@@ -13,7 +13,7 @@ import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { ShiftStatusBadge } from './ShiftStatusBadge';
 
 const cardClass =
-  'bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm';
+  'glass rounded-2xl';
 
 interface ProfileFieldProps {
   icon: ReactNode;
@@ -54,7 +54,7 @@ export function ProfileView({
 
       {showHeader && (
         <div className={`${cardClass} p-4 flex items-center gap-4`}>
-          <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-lg font-black shrink-0">
+          <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 border-2 border-white dark:border-white/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-lg font-bold shrink-0">
             {getFullInitials(profile.first_name, profile.last_name)}
           </div>
           <div className="min-w-0">

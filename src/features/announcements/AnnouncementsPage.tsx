@@ -11,6 +11,7 @@ import {
   TrashIcon,
 } from '@phosphor-icons/react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { PageHeader } from '@shared/components/PageHeader';
 
 export function AnnouncementsPage() {
   const { user } = useAuthContext();
@@ -50,17 +51,10 @@ export function AnnouncementsPage() {
 
   return (
     <div className="space-y-4 px-1 pb-10">
-      <header className="pt-2">
-        <p className="text-label text-emerald-500">
-          {t('announcements.section')}
-        </p>
-        <h1 className="text-display text-gray-900 dark:text-white">
-          {t('announcements.heading')}
-        </h1>
-      </header>
+      <PageHeader eyebrow={t('announcements.section')} title={t('announcements.heading')} />
 
       {isManager && (
-        <div className="space-y-2 rounded-2xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+        <div className="glass space-y-2 rounded-2xl p-4">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -140,7 +134,7 @@ export function AnnouncementsPage() {
                 exit={{ opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                 onClick={() => markRead.mutate(a.id)}
-                className="cursor-pointer rounded-2xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
+                className="glass cursor-pointer rounded-2xl p-4"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">

@@ -22,7 +22,7 @@ import { Keyboard } from '@capacitor/keyboard';
  */
 
 const cardClass =
-    'bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm';
+    'glass rounded-2xl';
 
 export function ProfileEditor() {
     const {

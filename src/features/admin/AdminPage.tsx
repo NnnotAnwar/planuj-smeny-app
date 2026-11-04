@@ -8,6 +8,8 @@ import {
     PaperPlaneTiltIcon,
 } from '@phosphor-icons/react';
 import { SearchInput } from '@shared/components/SearchInput';
+import { Button } from '@shared/components/Button';
+import { PageHeader } from '@shared/components/PageHeader';
 import type { Organization, Profile } from '@/shared/types';
 
 import { useAuthContext } from '@/features/auth/AuthContext';
@@ -148,38 +150,24 @@ function AdminPanel() {
                     : false;
 
     return (
-        <div className="space-y-6 px-1 max-w-7xl mx-auto w-full">
+        <div className="space-y-4 px-1 pb-10">
             {/* --- HEADER --- */}
-            <header className="relative overflow-hidden rounded-3xl border border-emerald-100 dark:border-emerald-900/30 bg-linear-to-br from-emerald-50 via-white to-white dark:from-emerald-950/40 dark:via-gray-900/40 dark:to-gray-900/40 p-5 sm:p-6">
-                <div className="absolute -right-8 -top-10 w-40 h-40 rounded-full bg-emerald-400/10 blur-2xl" />
-                <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                    <div className="space-y-1">
-                        <p className="text-label text-emerald-500">
-                            {t('admin.systemInfra')}
-                        </p>
-                        <h1 className="text-display text-gray-900 dark:text-white sm:text-3xl">
-                            {t('admin.panelTitle')}
-                        </h1>
-                        <p className="text-small text-gray-400">
-                            {isSuperAdmin ? t('admin.fullAccess') : t('admin.managingOrg')}
-                        </p>
-                    </div>
-
-                    {canAdd && (
-                        <button
+            <PageHeader
+                eyebrow={t('admin.systemInfra')}
+                title={t('admin.panelTitle')}
+                description={isSuperAdmin ? t('admin.fullAccess') : t('admin.managingOrg')}
+                actions={
+                    canAdd && (
+                        <Button
+                            size="sm"
+                            icon={safeTab === 'employees' ? PaperPlaneTiltIcon : PlusIcon}
                             onClick={handleAdd}
-                            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-small-strong transition-all active:scale-95 shadow-lg shadow-emerald-500/25"
                         >
-                            {safeTab === 'employees' ? (
-                                <PaperPlaneTiltIcon weight="bold" className="w-4 h-4" />
-                            ) : (
-                                <PlusIcon weight="bold" className="w-4 h-4" />
-                            )}
-                            <span>{safeTab === 'employees' ? t('admin.inviteEmployee') : safeTab === 'locations' ? t('admin.addLocation') : t('admin.addOrganization')}</span>
-                        </button>
-                    )}
-                </div>
-            </header>
+                            {safeTab === 'employees' ? t('admin.inviteEmployee') : safeTab === 'locations' ? t('admin.addLocation') : t('admin.addOrganization')}
+                        </Button>
+                    )
+                }
+            />
 
             {/* --- STATS --- */}
             <div className={`grid gap-2 sm:gap-3 ${isSuperAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
@@ -189,28 +177,28 @@ function AdminPanel() {
             </div>
 
             {/* --- TABS & SEARCH --- */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex bg-gray-100 dark:bg-gray-800/50 p-1 rounded-2xl w-full md:w-auto overflow-x-auto scrollbar-hide whitespace-nowrap">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div className="segmented w-full md:w-auto overflow-x-auto scrollbar-hide whitespace-nowrap">
                     {tabs.map((tab) => {
                         const isActive = activeTab === tab.id;
                         return (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as TabType)}
-                                className={`relative flex items-center justify-center gap-2 flex-1 md:flex-none px-4 py-2 rounded-xl text-micro transition-all z-10 h-9 ${isActive
-                                        ? 'text-emerald-700 dark:text-emerald-400'
-                                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                className={`relative flex items-center justify-center gap-1.5 flex-1 md:flex-none px-3 rounded-[9px] text-meta font-semibold transition-all z-10 h-8 ${isActive
+                                        ? 'text-ink dark:text-white'
+                                        : 'text-ink-soft hover:text-ink dark:text-slate-400 dark:hover:text-white'
                                     }`}
                             >
                                 {isActive && (
                                     <motion.div
                                         layoutId="admin-active-tab"
-                                        className="absolute inset-0 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200/50 dark:border-white/5"
+                                        className="segment-active absolute inset-0 rounded-[9px]"
                                         initial={false}
                                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                     />
                                 )}
-                                <tab.icon weight={isActive ? 'fill' : 'bold'} className="w-5 h-5 sm:w-4 sm:h-4 relative z-10" />
+                                <tab.icon weight={isActive ? 'fill' : 'bold'} className={`size-4 relative z-10 ${isActive ? 'text-emerald-600 dark:text-emerald-300' : ''}`} />
                                 <span className="relative z-10 hidden sm:block">{tab.label}</span>
                             </button>
                         );
@@ -222,8 +210,6 @@ function AdminPanel() {
                     onChange={setSearchQuery}
                     placeholder={t('admin.search', { what: safeTab === 'employees' ? t('admin.nounEmployees') : safeTab === 'locations' ? t('admin.nounLocations') : t('admin.nounOrganizations') })}
                     className="w-full md:w-64"
-                    inputClassName="bg-white dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 focus:border-emerald-500/50 rounded-xl py-2 pl-9 pr-4 text-sm outline-none transition-all dark:text-white"
-                    iconClassName="left-3 top-2.5"
                 />
             </div>
 

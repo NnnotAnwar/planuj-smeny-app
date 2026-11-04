@@ -31,6 +31,22 @@
   --color-ink-soft: #66637f;
   --color-slate-ink: #1e1b33;
 
+  /* Neutral greys re-tinted to the same ink family, so every existing
+     `gray-*` across the app (text, hairlines, dark surfaces) sits in one
+     palette with the glass layer instead of drifting blue-grey. 900 = ink,
+     500 = ink-soft. */
+  --color-gray-50: #f7f6fb;
+  --color-gray-100: #efeef6;
+  --color-gray-200: #e3e1ee;
+  --color-gray-300: #cdcadc;
+  --color-gray-400: #8e8ba5;
+  --color-gray-500: #66637f;
+  --color-gray-600: #4e4b66;
+  --color-gray-700: #3a3752;
+  --color-gray-800: #26243b;
+  --color-gray-900: #1b1a2e;
+  --color-gray-950: #0f0e1c;
+
   --shadow-glass: 0 1px 2px rgb(27 26 46 / 0.04), 0 12px 32px -14px color-mix(in srgb, var(--color-emerald-600) 26%, transparent);
   --shadow-glass-lg: 0 1px 2px rgb(27 26 46 / 0.05), 0 28px 56px -24px color-mix(in srgb, var(--color-emerald-600) 34%, transparent);
 
@@ -111,6 +127,33 @@
 }
 
 /*
+ * Segmented control: a recessed track (`segmented`) holding pill options; the
+ * chosen one lifts out as a small white chip (`segment-active`). Shared by the
+ * Schedule tabs, Admin tabs and Settings so every switcher looks the same.
+ */
+@utility segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 0.75rem;
+  background-color: color-mix(in srgb, var(--color-ink) 6%, transparent);
+
+  :where(.dark) & {
+    background-color: rgb(255 255 255 / 0.06);
+  }
+}
+
+@utility segment-active {
+  background-color: white;
+  box-shadow: 0 1px 2px rgb(27 26 46 / 0.08), 0 0 0 1px rgb(27 26 46 / 0.04);
+
+  :where(.dark) & {
+    background-color: rgb(255 255 255 / 0.12);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+}
+
+/*
  * --- TYPOGRAPHY SYSTEM ---
  * Single source of truth for font size / weight / tracking across the app.
  * These set size + weight + tracking ONLY — color (incl. dark: variants) is
@@ -118,25 +161,26 @@
  * Prefer these tokens over arbitrary `text-[Npx]` / ad-hoc size+weight combos.
  */
 @layer components {
-  /* Headings */
-  .text-display    { @apply text-2xl font-black tracking-tight leading-tight; }
-  .text-title      { @apply text-lg  font-black tracking-tight leading-tight; }
-  .text-heading    { @apply text-sm  font-black tracking-tight; }
+  /* Headings — display face (Satoshi), bold not black: the glass layer reads
+     premium through precision, not weight. */
+  .text-display    { @apply font-display text-[22px] font-bold tracking-[-0.03em] leading-[1.1] xl:text-[26px]; }
+  .text-title      { @apply font-display text-base font-bold tracking-[-0.015em] leading-tight; }
+  .text-heading    { @apply font-display text-sm font-bold tracking-[-0.01em]; }
 
   /* Body */
   .text-body         { @apply text-sm font-medium; }
-  .text-body-strong  { @apply text-sm font-bold; }
+  .text-body-strong  { @apply text-sm font-semibold; }
   .text-small        { @apply text-xs font-medium; }
-  .text-small-strong { @apply text-xs font-bold; }
+  .text-small-strong { @apply text-xs font-semibold; }
 
   /* Labels & captions (tiny) */
-  .text-label   { @apply text-[11px] font-black uppercase tracking-widest leading-tight; }
+  .text-label   { @apply text-[10px] font-semibold uppercase tracking-[0.14em] leading-tight; }
   .text-caption { @apply text-[11px] font-medium leading-tight; }
-  .text-micro   { @apply text-[10px] font-black uppercase tracking-widest leading-none; }
+  .text-micro   { @apply text-[10px] font-bold uppercase tracking-[0.08em] leading-none; }
 
   /* Numeric metrics */
-  .text-metric    { @apply text-lg font-black tabular-nums tracking-tight; }
-  .text-metric-sm { @apply text-sm font-black tabular-nums; }
+  .text-metric    { @apply text-lg font-semibold tabular-nums tracking-[-0.02em]; }
+  .text-metric-sm { @apply text-sm font-semibold tabular-nums; }
 
   /* Premium glass layer — display words (Satoshi) + precise numbers (Inter tnum) */
   .text-greeting   { @apply font-display text-[22px] font-bold tracking-[-0.03em] leading-[1.1] xl:text-[26px]; }
