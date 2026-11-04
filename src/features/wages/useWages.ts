@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/toast/toastStore';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type User } from '@shared/types';
 import { wageService } from './wageService';
 import { type MemberWageInput } from './types';
@@ -11,6 +12,7 @@ import { type MemberWageInput } from './types';
  * rates — RLS and the separate queries keep pay private.
  */
 export function useWages(user: User | null) {
+  const t = useTranslation();
   const qc = useQueryClient();
   const enabled = !!user;
   const isManager = enabled && (user.role.rank ?? 0) >= 20;
@@ -35,9 +37,9 @@ export function useWages(user: User | null) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['wages', 'org', user?.organization_id ?? 'anon'] });
       qc.invalidateQueries({ queryKey: ['wages', 'mine'] });
-      toast('Rate saved.', 'success');
+      toast(t('wage.saved'), 'success');
     },
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not save the rate.', 'error'),
+    onError: () => toast(t('wage.error'), 'error'),
   });
 
   return { mine, org, setRate, isManager };

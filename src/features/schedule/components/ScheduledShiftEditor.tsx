@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckIcon, ClockIcon, WarningIcon } from '@phosphor-icons/react';
+import { CheckIcon, ClockIcon, WarningIcon, CalendarStarIcon, PlusIcon, XIcon, HeartIcon } from '@phosphor-icons/react';
 import { Modal } from '@features/admin/components/Modal';
 import { TimePicker } from '@shared/components/TimePicker';
 import { DatePicker } from '@shared/components/DatePicker';
@@ -10,6 +10,11 @@ import { FormError } from '@shared/components/FormError';
 import type { Location, Profile, ScheduledShift } from '@shared/types';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { buildShiftDates } from '@features/timesheets/shiftTimes';
+import type { Availability } from '@features/availability/types';
+import { availabilityWindow } from '@features/availability/availabilityLogic';
+import type { ShiftTemplate, ShiftTemplateInput } from '@features/schedule/templates/types';
+import { HolidayWarningBody, HOLIDAY_WARNING_KEY } from '@features/schedule/holidays/HolidayWarning';
+import { useDismissibleWarning } from '@shared/hooks/useDismissibleWarning';
 
 /**
  * --- DAY EDITOR ---
@@ -17,7 +22,11 @@ import { buildShiftDates } from '@features/timesheets/shiftTimes';
  * unticking an assigned member unassigns them. Each member has their own
  * schedule mode: all-day by default, or exact times; tapping the time badge
  * flips back to all-day in one tap. Members already busy elsewhere that day
- * are flagged inline.
+ * are flagged inline, as is each member's availability for the day.
+ *
+ * Templates ("Morning 7–15") stamp their times onto everyone ticked, and the
+ * current times can be saved as a new one. Planning onto a public holiday asks
+ * once first (inline confirm step, silenceable per device).
  */
 
 export interface DayEditorRow {
@@ -84,6 +93,11 @@ export function ScheduledShiftEditor({
     defaultLocationId,
     onClose,
     onSubmit,
+    holidayName,
+    availabilityFor,
+    templates,
+    onSaveTemplate,
+    onRemoveTemplate,
 }: {
     members: Profile[];
     locations: Location[];
@@ -96,8 +110,21 @@ export function ScheduledShiftEditor({
     defaultLocationId?: string | null;
     onClose: () => void;
     onSubmit: (values: DayEditorResult) => Promise<void>;
+    /** Localized public-holiday name for a day, or null. */
+    holidayName?: (date: string) => string | null;
+    /** A member's availability entry for the day being edited. */
+    availabilityFor?: (memberId: string, date: string) => Availability | undefined;
+    templates?: ShiftTemplate[];
+    onSaveTemplate?: (input: ShiftTemplateInput) => Promise<unknown>;
+    onRemoveTemplate?: (id: string) => void;
 }) {
     const t = useTranslation();
+    const holidayWarn = useDismissibleWarning(HOLIDAY_WARNING_KEY);
+    // Holiday confirm step: shown once per save attempt on a holiday date.
+    const [holidayAsk, setHolidayAsk] = useState(false);
+    const [dontShowHoliday, setDontShowHoliday] = useState(false);
+    // "Save as template" inline name field.
+    const [tplName, setTplName] = useState<string | null>(null);
     const pickable = locations.filter((l) => !l.archived_at);
 
     const [locationId, setLocationId] = useState(defaultLocationId ?? pickable[0]?.id ?? '');
@@ -118,7 +145,9 @@ export function ScheduledShiftEditor({
     if (key !== prevKey) {
         setPrevKey(key);
         setRows(seedRows(existing));
+        setHolidayAsk(false);
     }
+    const holiday = holidayName?.(date) ?? null;
 
     const rowOf = (id: string): RowState => rows.get(id) ?? { selected: false, withTime: false, start: '08:00', end: '16:00' };
     const patchRow = (id: string, patch: Partial<RowState>) =>
@@ -135,6 +164,31 @@ export function ScheduledShiftEditor({
         }
         const { startDate, endDate } = buildShiftDates(date, r.start, r.end);
         return { starts_at: startDate.toISOString(), ends_at: endDate.toISOString(), all_day: false };
+    };
+
+    const selectedIds = members.filter((m) => rowOf(m.id).selected).map((m) => m.id);
+
+    /** Stamp a template's times onto everyone ticked. */
+    const applyTemplate = (tpl: ShiftTemplate) => {
+        if (selectedIds.length === 0) return setError(t('tpl.tickFirst'));
+        setError(null);
+        setRows((prev) => {
+            const next = new Map(prev);
+            for (const id of selectedIds) {
+                next.set(id, { ...rowOf(id), withTime: true, start: tpl.start_time.slice(0, 5), end: tpl.end_time.slice(0, 5) });
+            }
+            return next;
+        });
+    };
+
+    /** Save the first ticked member's exact times as a named template. */
+    const saveTemplate = async () => {
+        const name = tplName?.trim();
+        const source = selectedIds.map(rowOf).find((r) => r.withTime);
+        if (!name || !onSaveTemplate) return;
+        if (!source) return setError(t('tpl.tickFirst'));
+        await onSaveTemplate({ name, start_time: source.start, end_time: source.end });
+        setTplName(null);
     };
 
     const handleSubmit = async () => {
@@ -160,6 +214,13 @@ export function ScheduledShiftEditor({
             onClose();
             return;
         }
+
+        // Adding people on a public holiday: confirm once (unless silenced).
+        if (holiday && added.length > 0 && !holidayWarn.dismissed && !holidayAsk) {
+            setHolidayAsk(true);
+            return;
+        }
+        if (holidayAsk && dontShowHoliday) holidayWarn.dismissForever();
 
         setBusyState(true);
         try {
@@ -192,6 +253,77 @@ export function ScheduledShiftEditor({
                         <DatePicker value={date} onChange={setDate} aria-label={t('shiftEditor.shiftDate')} />
                     </div>
                 </div>
+
+                {holiday && (
+                    <p className="-mt-1 inline-flex items-center gap-1.5 rounded-lg bg-rose-500/10 px-2 py-1 text-meta font-semibold text-rose-700 dark:text-rose-300">
+                        <CalendarStarIcon weight="fill" className="size-3.5" />
+                        {t('holiday.label')} · {holiday}
+                    </p>
+                )}
+
+                {/* TEMPLATES — one tap sets the times for everyone ticked. */}
+                {templates && (templates.length > 0 || onSaveTemplate) && (
+                    <div className="space-y-1.5">
+                        <label className="text-label text-gray-400">{t('tpl.title')}</label>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            {templates.map((tpl) => (
+                                <span key={tpl.id} className="group inline-flex items-center rounded-lg bg-emerald-500/10 ring-1 ring-emerald-500/15 dark:bg-emerald-400/10">
+                                    <button
+                                        type="button"
+                                        onClick={() => applyTemplate(tpl)}
+                                        className="px-2 py-1 text-meta font-semibold text-emerald-800 dark:text-emerald-200"
+                                    >
+                                        {tpl.name}{' '}
+                                        <span className="font-medium tabular-nums text-emerald-700/70 dark:text-emerald-300/70">
+                                            {tpl.start_time.slice(0, 5)}–{tpl.end_time.slice(0, 5)}
+                                        </span>
+                                    </button>
+                                    {onRemoveTemplate && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onRemoveTemplate(tpl.id)}
+                                            title={t('tpl.remove')}
+                                            aria-label={`${t('tpl.remove')}: ${tpl.name}`}
+                                            className="mr-1 rounded p-0.5 text-emerald-700/60 hover:bg-emerald-500/15 hover:text-red-600 dark:text-emerald-300/60"
+                                        >
+                                            <XIcon weight="bold" className="size-3" />
+                                        </button>
+                                    )}
+                                </span>
+                            ))}
+                            {onSaveTemplate &&
+                                (tplName === null ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setTplName('')}
+                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-meta font-semibold text-ink-soft ring-1 ring-dashed ring-ink/20 hover:text-ink dark:text-slate-400 dark:ring-white/20 dark:hover:text-white"
+                                    >
+                                        <PlusIcon weight="bold" className="size-3" />
+                                        {t('tpl.save')}
+                                    </button>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1">
+                                        <input
+                                            autoFocus
+                                            value={tplName}
+                                            onChange={(e) => setTplName(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') void saveTemplate();
+                                                if (e.key === 'Escape') setTplName(null);
+                                            }}
+                                            placeholder={t('tpl.namePh')}
+                                            maxLength={40}
+                                            className="w-40 rounded-lg border border-ink/10 bg-white/80 px-2 py-1 text-meta text-ink outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                                        />
+                                        <Button size="sm" onClick={() => void saveTemplate()} disabled={!tplName.trim()}>
+                                            {t('common.save')}
+                                        </Button>
+                                    </span>
+                                ))}
+                        </div>
+                        <p className="text-caption text-ink-soft dark:text-slate-400">{t('tpl.hint')}</p>
+                    </div>
+                )}
 
                 {/* WHO — tick to assign (all-day by default), untick to unassign.
                     The badge flips each member between all-day and exact times. */}
@@ -230,6 +362,19 @@ export function ScheduledShiftEditor({
                                                 <span className={`block truncate text-body ${r.selected ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-600 dark:text-gray-300'}`}>
                                                     {memberName(m)}
                                                 </span>
+                                                {!busyText && (() => {
+                                                    const av = availabilityFor?.(m.id, date);
+                                                    if (!av) return null;
+                                                    const cant = av.kind === 'unavailable';
+                                                    return (
+                                                        <span className={`flex items-center gap-1 text-caption ${cant ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                                            {cant ? <WarningIcon weight="fill" className="size-3 shrink-0" /> : <HeartIcon weight="fill" className="size-3 shrink-0" />}
+                                                            <span className="truncate">
+                                                                {[cant ? t('avail.memberCant') : t('avail.memberPrefers'), availabilityWindow(av), av.note].filter(Boolean).join(' · ')}
+                                                            </span>
+                                                        </span>
+                                                    );
+                                                })()}
                                                 {busyText && (
                                                     <span className="flex items-center gap-1 text-micro normal-case tracking-normal text-amber-600 dark:text-amber-400">
                                                         <WarningIcon weight="fill" className="w-3 h-3 shrink-0" />
@@ -278,12 +423,16 @@ export function ScheduledShiftEditor({
 
                 <FormError message={error} />
 
+                {holidayAsk && holiday && (
+                    <HolidayWarningBody date={date} name={holiday} dontShow={dontShowHoliday} onDontShowChange={setDontShowHoliday} />
+                )}
+
                 <div className="flex gap-2 pt-1">
                     <Button variant="secondary" fullWidth onClick={onClose} disabled={busyState}>
                         {t('common.cancel')}
                     </Button>
                     <Button variant="primary" fullWidth loading={busyState} onClick={handleSubmit}>
-                        {busyState ? t('common.saving') : t('shiftEditor.saveChanges')}
+                        {busyState ? t('common.saving') : holidayAsk ? t('holiday.assignAnyway') : t('shiftEditor.saveChanges')}
                     </Button>
                 </div>
             </div>

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/toast/toastStore';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type User } from '@shared/types';
 import { coverageService } from './coverageService';
 import { type CoverageRequirementInput } from './types';
@@ -12,6 +13,7 @@ import { type CoverageRequirementInput } from './types';
  * Managers set/remove rules.
  */
 export function useCoverage(user: User | null) {
+  const t = useTranslation();
   const qc = useQueryClient();
   const enabled = !!user;
   const orgId = user?.organization_id ?? 'anon';
@@ -41,13 +43,13 @@ export function useCoverage(user: User | null) {
       return coverageService.set(user, input);
     },
     onSuccess: invalidate,
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not save the rule.', 'error'),
+    onError: () => toast(t('coverage.error'), 'error'),
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => coverageService.remove(id),
     onSuccess: invalidate,
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not remove the rule.', 'error'),
+    onError: () => toast(t('coverage.error'), 'error'),
   });
 
   return { list, bySlot, requiredFor, set, remove };

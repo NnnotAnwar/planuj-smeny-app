@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/toast/toastStore';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type User } from '@shared/types';
 import { openShiftService } from './openShiftService';
 import { type OpenShiftInput } from './types';
@@ -11,6 +12,7 @@ import { type OpenShiftInput } from './types';
  * succeeds while the row is still unclaimed).
  */
 export function useOpenShifts(user: User | null) {
+  const t = useTranslation();
   const qc = useQueryClient();
   const enabled = !!user;
   const orgId = user?.organization_id ?? 'anon';
@@ -31,9 +33,9 @@ export function useOpenShifts(user: User | null) {
     },
     onSuccess: () => {
       invalidate();
-      toast('Open shift posted.', 'success');
+      toast(t('open.posted'), 'success');
     },
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not post the open shift.', 'error'),
+    onError: () => toast(t('open.error'), 'error'),
   });
 
   const claim = useMutation({
@@ -43,21 +45,21 @@ export function useOpenShifts(user: User | null) {
     },
     onSuccess: () => {
       invalidate();
-      toast('Shift claimed — it\'s yours.', 'success');
+      toast(t('open.claimed'), 'success');
     },
-    onError: () => toast('Too late — someone already claimed this shift.', 'error'),
+    onError: () => toast(t('open.tooLate'), 'error'),
   });
 
   const release = useMutation({
     mutationFn: (id: string) => openShiftService.release(id),
     onSuccess: invalidate,
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not release the shift.', 'error'),
+    onError: () => toast(t('open.error'), 'error'),
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => openShiftService.remove(id),
     onSuccess: invalidate,
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not remove the open shift.', 'error'),
+    onError: () => toast(t('open.error'), 'error'),
   });
 
   return { list, create, claim, release, remove };

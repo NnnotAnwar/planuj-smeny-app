@@ -4,6 +4,8 @@ import { XIcon, LightningIcon, EraserIcon } from '@phosphor-icons/react';
 import type { ScheduledShift } from '@shared/types';
 import { weekdayShortLabels, formatTime } from '@shared/utils/date';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import type { Availability } from '@features/availability/types';
+import { availabilityWindow } from '@features/availability/availabilityLogic';
 
 /** Compact 24h HH:MM for the dense grid cells — no AM/PM suffix to wrap
  *  (the calendar view and exports still honour the 12h/24h preference). */
@@ -64,7 +66,16 @@ interface RosterGridProps {
     leaveFor?: (memberId: string, date: string) => string | undefined;
     /** Tapping a member's name opens their profile. */
     onOpenProfile?: (memberId: string) => void;
+    /** Localized public-holiday name for a day, or null. */
+    holidayFor?: (date: string) => string | null;
+    /** Minimum headcount for a day here (0 = no rule) — short days get flagged. */
+    requiredOn?: (date: string) => number;
+    /** A member's availability entry for a day (can't / would like to work). */
+    availabilityFor?: (memberId: string, date: string) => Availability | undefined;
 }
+
+/** Diagonal hatch for "can't work" cells — reads as blocked without shouting. */
+const HATCH = 'bg-[repeating-linear-gradient(135deg,transparent_0_3px,rgb(27_26_46/0.1)_3px_5px)] dark:bg-[repeating-linear-gradient(135deg,transparent_0_3px,rgb(255_255_255/0.12)_3px_5px)]';
 
 /** Mini week visual for the fill menu: 7 boxes, pattern days filled. */
 function WeekPreview({ days, tone }: { days: number[]; tone: 'sky' | 'emerald' }) {
@@ -79,7 +90,7 @@ function WeekPreview({ days, tone }: { days: number[]; tone: 'sky' | 'emerald' }
     );
 }
 
-export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow, leaveFor, onOpenProfile }: RosterGridProps) {
+export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow, leaveFor, onOpenProfile, holidayFor, requiredOn, availabilityFor }: RosterGridProps) {
     const t = useTranslation();
     const [fillMenu, setFillMenu] = useState<{ id: string; name: string; left: number; top: number } | null>(null);
 
@@ -125,6 +136,22 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
         return map;
     }, [shifts]);
 
+    // Distinct people planned per day here — compared against the coverage rule.
+    const headcount = useMemo(() => {
+        const map = new Map<string, Set<string>>();
+        for (const s of shifts) {
+            const day = isoDate(new Date(s.starts_at));
+            map.set(day, (map.get(day) ?? new Set()).add(s.user_id));
+        }
+        return map;
+    }, [shifts]);
+
+    const availText = (a: Availability) => {
+        const label = a.kind === 'unavailable' ? t('avail.memberCant') : t('avail.memberPrefers');
+        const win = availabilityWindow(a);
+        return [label, win, a.note].filter(Boolean).join(' · ');
+    };
+
     const NAME_W = 'w-32 min-w-32 max-w-32 sm:w-40 sm:min-w-40 sm:max-w-40';
     // Blank columns pad the shorter band so day columns line up across bands.
     const blanksFor = (count: number) => Array.from({ length: Math.max(0, maxCols - count) });
@@ -141,11 +168,17 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                             <thead>
                                 <tr className="bg-gray-50/80 dark:bg-gray-800/40">
                                     <th className={`sticky left-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-r border-gray-100 dark:border-gray-700 px-3 py-1 text-left ${NAME_W}`} />
-                                    {days.map((d) => (
+                                    {days.map((d) => {
+                                        const holiday = holidayFor?.(d.key) ?? null;
+                                        const need = requiredOn?.(d.key) ?? 0;
+                                        const have = headcount.get(d.key)?.size ?? 0;
+                                        const short = need > 0 && have < need;
+                                        return (
                                         <th
                                             key={d.key}
-                                            className={`border-b border-l border-gray-100 dark:border-gray-800 px-0 pt-1.5 pb-1 ${
-                                                d.weekend ? 'bg-amber-100/60 dark:bg-amber-900/15' : ''
+                                            title={[holiday && `${t('holiday.label')}: ${holiday}`, short && t('coverage.short', { have, need })].filter(Boolean).join('\n') || undefined}
+                                            className={`relative border-b border-l border-gray-100 dark:border-gray-800 px-0 pt-1.5 pb-1 ${
+                                                holiday ? 'bg-rose-100/70 dark:bg-rose-900/20' : d.weekend ? 'bg-amber-100/60 dark:bg-amber-900/15' : ''
                                             }`}
                                         >
                                             <span className="block text-[9px] uppercase tracking-wide text-gray-400 leading-none">{d.label}</span>
@@ -153,13 +186,17 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                 className={`mt-0.5 inline-flex items-center justify-center text-[11px] tabular-nums font-bold leading-none ${
                                                     d.key === todayKey
                                                         ? 'w-4.5 h-4.5 rounded-full bg-emerald-600 text-white'
-                                                        : 'text-gray-600 dark:text-gray-300'
+                                                        : holiday
+                                                          ? 'text-rose-600 dark:text-rose-400'
+                                                          : 'text-gray-600 dark:text-gray-300'
                                                 }`}
                                             >
                                                 {d.num}
                                             </span>
+                                            {short && <span aria-hidden className="absolute bottom-0.5 left-1/2 -translate-x-1/2 size-1.5 rounded-full bg-rose-500" />}
                                         </th>
-                                    ))}
+                                        );
+                                    })}
                                     {blanksFor(days.length).map((_, i) => (
                                         <th key={`b${i}`} className="border-b border-gray-100 dark:border-gray-800" />
                                     ))}
@@ -225,17 +262,21 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                 const allDay = has && items.every((s) => s.all_day);
                                                 const leave = !has ? leaveFor?.(row.id, d.key) : undefined;
                                                 const tappable = canManage && row.editable && !!onCellTap && !leave;
+                                                const holiday = holidayFor?.(d.key) ?? null;
+                                                const avail = !leave ? availabilityFor?.(row.id, d.key) : undefined;
+                                                const conflict = has && avail?.kind === 'unavailable';
                                                 return (
                                                     <td
                                                         key={d.key}
                                                         onClick={tappable ? () => onCellTap!(row.id, d.key) : undefined}
                                                         title={
-                                                            has && !allDay
-                                                                ? items.map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`).join(', ')
-                                                                : undefined
+                                                            [
+                                                                has && !allDay ? items.map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`).join(', ') : '',
+                                                                avail ? availText(avail) : '',
+                                                            ].filter(Boolean).join('\n') || undefined
                                                         }
                                                         className={`border-b border-l border-gray-100 dark:border-gray-800 h-9 px-0 align-middle select-none ${zebra} ${
-                                                            d.weekend ? 'bg-amber-100/60 dark:bg-amber-900/15' : ''
+                                                            holiday ? 'bg-rose-100/50 dark:bg-rose-900/15' : d.weekend ? 'bg-amber-100/60 dark:bg-amber-900/15' : ''
                                                         } ${tappable ? 'cursor-pointer hover:bg-emerald-100/70 dark:hover:bg-emerald-900/25 transition-colors' : ''}`}
                                                     >
                                                         {leave && (
@@ -246,13 +287,19 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                                 {leave}
                                                             </span>
                                                         )}
+                                                        {!has && avail?.kind === 'unavailable' && (
+                                                            <span aria-hidden className={`inline-block w-5.5 h-5.5 rounded-lg ring-1 ring-ink/10 dark:ring-white/10 ${HATCH}`} />
+                                                        )}
+                                                        {!has && avail?.kind === 'preferred' && (
+                                                            <span aria-hidden className="inline-block size-1.5 rounded-full bg-emerald-400" />
+                                                        )}
                                                         {has &&
                                                             (allDay ? (
-                                                                <span className={`inline-block w-5.5 h-5.5 rounded-lg bg-emerald-500 text-white text-[11px] font-bold leading-5.5 shadow-sm shadow-emerald-500/30 ${items.some((s) => !s.published) ? 'opacity-50 ring-1 ring-emerald-600 ring-dashed' : ''}`}>
+                                                                <span className={`inline-block w-5.5 h-5.5 rounded-lg bg-emerald-500 text-white text-[11px] font-bold leading-5.5 shadow-sm shadow-emerald-500/30 ${items.some((s) => !s.published) ? 'opacity-50 ring-1 ring-emerald-600 ring-dashed' : ''} ${conflict ? 'ring-2! ring-amber-400!' : ''}`}>
                                                                     {code || '✓'}
                                                                 </span>
                                                             ) : (
-                                                                <span className={`inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-0.5 py-0.5 leading-[1.15] tabular-nums ${items.some((s) => !s.published) ? 'opacity-50' : ''}`}>
+                                                                <span className={`inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-0.5 py-0.5 leading-[1.15] tabular-nums ${items.some((s) => !s.published) ? 'opacity-50' : ''} ${conflict ? 'ring-2 ring-amber-400' : ''}`}>
                                                                     {hm(items[0].starts_at)}
                                                                     <br />
                                                                     {hm(items[0].ends_at)}

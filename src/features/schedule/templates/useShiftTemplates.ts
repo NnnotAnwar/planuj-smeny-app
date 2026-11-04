@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/toast/toastStore';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type User } from '@shared/types';
 import { shiftTemplateService } from './shiftTemplateService';
 import { type ShiftTemplateInput } from './types';
@@ -10,6 +11,7 @@ import { type ShiftTemplateInput } from './types';
  * `list.data` to offer "apply template"; managers add/edit/remove them.
  */
 export function useShiftTemplates(user: User | null) {
+  const t = useTranslation();
   const qc = useQueryClient();
   const enabled = !!user;
   const orgId = user?.organization_id ?? 'anon';
@@ -30,25 +32,25 @@ export function useShiftTemplates(user: User | null) {
     },
     onSuccess: () => {
       invalidate();
-      toast('Template saved.', 'success');
+      toast(t('tpl.saved'), 'success');
     },
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not save the template.', 'error'),
+    onError: () => toast(t('tpl.error'), 'error'),
   });
 
   const update = useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: Partial<ShiftTemplateInput> }) =>
       shiftTemplateService.update(id, patch),
     onSuccess: invalidate,
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not update the template.', 'error'),
+    onError: () => toast(t('tpl.error'), 'error'),
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => shiftTemplateService.remove(id),
     onSuccess: () => {
       invalidate();
-      toast('Template removed.', 'success');
+      toast(t('tpl.removed'), 'success');
     },
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not remove the template.', 'error'),
+    onError: () => toast(t('tpl.error'), 'error'),
   });
 
   return { list, create, update, remove };

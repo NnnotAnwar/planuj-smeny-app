@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/toast/toastStore';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type User } from '@shared/types';
 import { shiftConfirmationService } from './shiftConfirmationService';
 import { shiftConfirmationKeys } from './shiftConfirmationKeys';
@@ -15,6 +16,7 @@ import { shiftConfirmationKeys } from './shiftConfirmationKeys';
  * Managers get the org query; staff don't (it would be empty for them anyway).
  */
 export function useShiftConfirmations(user: User | null) {
+  const t = useTranslation();
   const qc = useQueryClient();
   const enabled = !!user;
   const isManager = enabled && (user.role.rank ?? 0) >= 20;
@@ -47,13 +49,13 @@ export function useShiftConfirmations(user: User | null) {
       return shiftConfirmationService.confirm(user, scheduledShiftId);
     },
     onSuccess: invalidate,
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not confirm the shift.', 'error'),
+    onError: () => toast(t('confirm.error'), 'error'),
   });
 
   const unconfirm = useMutation({
     mutationFn: (scheduledShiftId: string) => shiftConfirmationService.unconfirm(scheduledShiftId),
     onSuccess: invalidate,
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not withdraw the confirmation.', 'error'),
+    onError: () => toast(t('confirm.undoError'), 'error'),
   });
 
   return { mine, orgConfirmations, confirmedIds, confirm, unconfirm, isManager };

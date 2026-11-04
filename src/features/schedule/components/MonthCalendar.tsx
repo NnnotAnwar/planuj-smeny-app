@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { PlusIcon } from '@phosphor-icons/react';
+import { PlusIcon, CheckIcon } from '@phosphor-icons/react';
 import type { ScheduledShift } from '@shared/types';
 import { weekdayShortLabels, formatTime, formatDateLong } from '@shared/utils/date';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * --- MONTH CALENDAR ---
@@ -24,9 +25,16 @@ interface MonthCalendarProps {
     canManage: boolean;
     /** Managers: tapping a day opens the day editor. */
     onDayClick?: (date: string) => void;
+    /** Localized public-holiday name for a day, or null. */
+    holidayFor?: (date: string) => string | null;
+    /** Minimum headcount for a day (0 = no rule) — days below it get flagged. */
+    requiredOn?: (date: string) => number;
+    /** Whether the assigned member has acknowledged this (published) shift. */
+    isConfirmed?: (s: ScheduledShift) => boolean;
 }
 
-export function MonthCalendar({ monthKey, shifts, chipLabel, canManage, onDayClick }: MonthCalendarProps) {
+export function MonthCalendar({ monthKey, shifts, chipLabel, canManage, onDayClick, holidayFor, requiredOn, isConfirmed }: MonthCalendarProps) {
+    const t = useTranslation();
     const [year, month] = monthKey.split('-').map(Number);
     // Read-only (member) mobile view: the tapped day whose details show below.
     const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -92,13 +100,18 @@ export function MonthCalendar({ monthKey, shifts, chipLabel, canManage, onDayCli
                         const isToday = key === todayKey;
                         const isSelected = key === selectedDay;
                         const tappable = inMonth && (canManage ? !!onDayClick : items.length > 0);
+                        const holiday = inMonth ? (holidayFor?.(key) ?? null) : null;
+                        const need = inMonth ? (requiredOn?.(key) ?? 0) : 0;
+                        const have = new Set(items.map((s) => s.user_id)).size;
+                        const short = need > 0 && have < need;
                         return (
                             <div
                                 key={key}
                                 onClick={tappable ? () => handleDayTap(key, inMonth, items.length > 0) : undefined}
+                                title={holiday ? `${t('holiday.label')}: ${holiday}` : undefined}
                                 className={`group relative min-h-12 sm:min-h-20 border-r border-gray-50 dark:border-gray-800/60 last:border-r-0 p-0.5 sm:p-1 flex flex-col gap-0.5 ${
                                     inMonth ? '' : 'bg-gray-50/60 dark:bg-gray-900/40'
-                                } ${isSelected ? 'bg-emerald-50/70 dark:bg-emerald-900/15' : ''} ${
+                                } ${holiday ? 'bg-rose-500/6 dark:bg-rose-400/8' : ''} ${isSelected ? 'bg-emerald-50/70 dark:bg-emerald-900/15' : ''} ${
                                     tappable ? 'cursor-pointer hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10 transition-colors' : ''
                                 }`}
                             >
@@ -109,15 +122,31 @@ export function MonthCalendar({ monthKey, shifts, chipLabel, canManage, onDayCli
                                                 ? 'text-gray-300 dark:text-gray-700'
                                                 : isToday
                                                   ? 'w-4.5 h-4.5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold'
-                                                  : 'text-gray-400'
+                                                  : holiday
+                                                    ? 'text-rose-600 dark:text-rose-400 font-bold'
+                                                    : 'text-gray-400'
                                         }`}
                                     >
                                         {day.getDate()}
                                     </span>
+                                    {short && (
+                                        <span
+                                            title={t('coverage.short', { have, need })}
+                                            className="rounded px-1 text-[10px] font-bold leading-4 tabular-nums text-rose-600 bg-rose-500/10 dark:text-rose-300"
+                                        >
+                                            {have}/{need}
+                                        </span>
+                                    )}
                                     {canManage && inMonth && (
                                         <PlusIcon weight="bold" className="hidden sm:block w-3 h-3 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     )}
                                 </div>
+
+                                {holiday && (
+                                    <span className="hidden sm:block truncate px-0.5 text-[10px] font-semibold leading-tight text-rose-600 dark:text-rose-400">
+                                        {holiday}
+                                    </span>
+                                )}
 
                                 {/* PHONE: dots — full details live in the panel below / day editor. */}
                                 {items.length > 0 && (
@@ -140,7 +169,12 @@ export function MonthCalendar({ monthKey, shifts, chipLabel, canManage, onDayCli
                                             key={s.id}
                                             className={`w-full rounded-lg bg-emerald-100/80 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 px-1 py-0.5 leading-tight ${s.published ? '' : 'opacity-50'}`}
                                         >
-                                            <span className="block truncate text-[11px] font-semibold tabular-nums">{chipText(s)}</span>
+                                            <span className="flex items-center gap-0.5 text-[11px] font-semibold tabular-nums">
+                                                <span className="truncate">{chipText(s)}</span>
+                                                {s.published && isConfirmed?.(s) && (
+                                                    <CheckIcon weight="bold" className="size-2.5 shrink-0" aria-label={t('confirm.done')} />
+                                                )}
+                                            </span>
                                         </span>
                                     ))}
                                 </div>

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/toast/toastStore';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type User } from '@shared/types';
 import { locationSettingsService } from './locationSettingsService';
 import { type LocationSettings, type LocationSettingsInput } from './types';
@@ -12,6 +13,7 @@ import { type LocationSettings, type LocationSettingsInput } from './types';
  * save them.
  */
 export function useLocationSettings(user: User | null) {
+  const t = useTranslation();
   const qc = useQueryClient();
   const enabled = !!user;
   const orgId = user?.organization_id ?? 'anon';
@@ -36,9 +38,9 @@ export function useLocationSettings(user: User | null) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: key });
-      toast('Location settings saved.', 'success');
+      toast(t('locset.saved'), 'success');
     },
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not save settings.', 'error'),
+    onError: () => toast(t('locset.error'), 'error'),
   });
 
   return { list, byLocation, save };

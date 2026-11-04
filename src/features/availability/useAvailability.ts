@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/toast/toastStore';
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type User } from '@shared/types';
 import { availabilityService } from './availabilityService';
 import { availabilityKeys } from './availabilityKeys';
@@ -13,6 +14,7 @@ import { type AvailabilityInput } from './types';
  *   • `create` / `update` / `remove` — the member's mutations
  */
 export function useAvailability(user: User | null) {
+  const t = useTranslation();
   const qc = useQueryClient();
   const enabled = !!user;
   const isManager = enabled && (user.role.rank ?? 0) >= 20;
@@ -41,25 +43,25 @@ export function useAvailability(user: User | null) {
     },
     onSuccess: () => {
       invalidate();
-      toast('Availability saved.', 'success');
+      toast(t('avail.saved'), 'success');
     },
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not save availability.', 'error'),
+    onError: () => toast(t('avail.error'), 'error'),
   });
 
   const update = useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: Partial<AvailabilityInput> }) =>
       availabilityService.update(id, patch),
     onSuccess: invalidate,
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not update availability.', 'error'),
+    onError: () => toast(t('avail.error'), 'error'),
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => availabilityService.remove(id),
     onSuccess: () => {
       invalidate();
-      toast('Availability removed.', 'success');
+      toast(t('avail.removed'), 'success');
     },
-    onError: (e: unknown) => toast(e instanceof Error ? e.message : 'Could not remove availability.', 'error'),
+    onError: () => toast(t('avail.error'), 'error'),
   });
 
   return { mine, org, create, update, remove, isManager };
