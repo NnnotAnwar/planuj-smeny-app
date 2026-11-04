@@ -19,6 +19,8 @@ import { useTheme, COMBO_LIST } from '@app/providers/ThemeContext';
 import { usePreferences } from '@shared/preferences/PreferencesContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useAuthContext } from '@features/auth/AuthContext';
+import { useDismissibleWarning } from '@shared/hooks/useDismissibleWarning';
+import { HOLIDAY_WARNING_KEY } from '@features/schedule/holidays/HolidayWarning';
 import { useNotificationPrefs } from '@features/notifications/notificationPrefs';
 import { useBiometricEnabled, setBiometricEnabled } from '@features/auth/biometricSetting';
 import { Select } from '@shared/components/Select';
@@ -144,6 +146,9 @@ export default function SettingsPage() {
   const { prefs, update: updatePrefs } = useNotificationPrefs();
   const biometricEnabled = useBiometricEnabled();
   const isReviewer = (user?.role.rank ?? 0) >= 30;
+  // Managers who ticked "don't show again" on the holiday warning can bring it back.
+  const holidayWarn = useDismissibleWarning(HOLIDAY_WARNING_KEY);
+  const canPlan = (user?.role.rank ?? 0) >= 20;
   const isDark = resolvedTheme === 'dark';
 
   // GDPR self-service: export personal data / delete account.
@@ -283,6 +288,18 @@ export default function SettingsPage() {
               ))}
             </Select>
           </Setting>
+          {canPlan && holidayWarn.dismissed && (
+            <button
+              type="button"
+              onClick={() => {
+                holidayWarn.reset();
+                toast(t('holiday.resetDone'), 'success');
+              }}
+              className={`${rowClass} w-full text-left`}
+            >
+              <span className="flex-1 text-meta font-semibold text-ink dark:text-white">{t('holiday.resetWarnings')}</span>
+            </button>
+          )}
         </div>
       </div>
 

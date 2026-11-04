@@ -8,14 +8,14 @@ import { type MemberWageInput } from './types';
 /**
  * --- useWages ---
  * Pay rates: `mine` (the member's own rate, for a pay estimate) and `org`
- * (managers only). `setRate` is a manager action. Members never load peers'
+ * (admins only — pay is an admin matter). `setRate` is an admin action. Members never load peers'
  * rates — RLS and the separate queries keep pay private.
  */
 export function useWages(user: User | null) {
   const t = useTranslation();
   const qc = useQueryClient();
   const enabled = !!user;
-  const isManager = enabled && (user.role.rank ?? 0) >= 20;
+  const isAdmin = enabled && (user.role.rank ?? 0) >= 30;
 
   const mine = useQuery({
     queryKey: ['wages', 'mine', user?.id ?? 'anon'],
@@ -26,7 +26,7 @@ export function useWages(user: User | null) {
   const org = useQuery({
     queryKey: ['wages', 'org', user?.organization_id ?? 'anon'],
     queryFn: () => wageService.getForOrg(user!.organization_id),
-    enabled: isManager,
+    enabled: isAdmin,
   });
 
   const setRate = useMutation({
@@ -42,5 +42,5 @@ export function useWages(user: User | null) {
     onError: () => toast(t('wage.error'), 'error'),
   });
 
-  return { mine, org, setRate, isManager };
+  return { mine, org, setRate, isAdmin };
 }

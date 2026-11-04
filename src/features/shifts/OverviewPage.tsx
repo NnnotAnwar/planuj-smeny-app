@@ -11,6 +11,7 @@ import {
   FilePdfIcon,
   FileXlsIcon,
   FileCsvIcon,
+  CoinsIcon,
 } from '@phosphor-icons/react';
 import { useShiftContext } from './ShiftContext';
 import { useAuthContext } from '@features/auth/AuthContext';
@@ -24,6 +25,8 @@ import { formatClock, monthShort, monthKey, weekdayShort, weekdayShortLabels } f
 import { type ExportFormat, makeExportLabels } from '@features/timesheets/exportShifts';
 import { shareOrExport } from '@shared/utils/shareExport';
 import { PageHeader } from '@shared/components/PageHeader';
+import { useWages } from '@features/wages/useWages';
+import { estimatePay } from '@features/wages/types';
 
 /**
  * --- CONSTANTS ---
@@ -49,6 +52,8 @@ export default function OverviewPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [exportOpen, setExportOpen] = useState(false);
+  const { mine: myWage } = useWages(user);
+  const myRate = myWage.data ?? null;
 
   const locationName = useMemo(() => {
     const map = new Map(locations.map((l) => [l.id, l.name]));
@@ -216,6 +221,15 @@ export default function OverviewPage() {
     { label: t('overview.shifts'), value: String(stats.count), icon: StackIcon },
     { label: t('overview.avgShift'), value: fmtHours(stats.avg), icon: ChartBarIcon },
   ];
+  // Pay estimate — only when an admin has set the member's hourly rate.
+  if (myRate) {
+    const pay = estimatePay(stats.totalHours, myRate.hourly_rate);
+    statCards.push({
+      label: t('wage.estPay'),
+      value: new Intl.NumberFormat(undefined, { style: 'currency', currency: myRate.currency, maximumFractionDigits: 0 }).format(pay),
+      icon: CoinsIcon,
+    });
+  }
 
   return (
     <div className="space-y-4 px-1 pb-10">
@@ -305,7 +319,7 @@ export default function OverviewPage() {
       ) : (
         <>
           {/* TOP STATS */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className={`grid gap-2 ${statCards.length > 3 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
             {statCards.map((stat) => (
               <div key={stat.label} className="glass p-3 rounded-2xl relative overflow-hidden group">
                 <div className="relative z-10">

@@ -608,7 +608,6 @@ export const en = {
     'wage.saved': 'Rate saved.',
     'wage.error': 'Could not save the rate.',
     'wage.estPay': 'Est. pay',
-    'wage.estHint': 'Estimate at {rate}/h before tax.',
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -1195,7 +1194,6 @@ export const cs: Record<TranslationKey, string> = {
     'wage.saved': 'Sazba uložena.',
     'wage.error': 'Sazbu se nepodařilo uložit.',
     'wage.estPay': 'Odhad výdělku',
-    'wage.estHint': 'Odhad při {rate}/h před zdaněním.',
 };
 
 export const translations = { en, cs };
