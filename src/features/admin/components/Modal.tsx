@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { XIcon, WarningIcon } from '@phosphor-icons/react';
 import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
 import { FormError } from '@shared/components/FormError';
@@ -16,6 +17,11 @@ import { Keyboard } from '@capacitor/keyboard';
  * independently (so a tall form + the on-screen keyboard can't push the action
  * buttons off-screen), the background scroll is locked while open, Escape and
  * backdrop close it, focus is trapped inside, and it's announced as a dialog.
+ *
+ * Rendered into <body> through a portal: a frosted (`glass`) ancestor has a
+ * backdrop-filter, which makes it the containing block for `position: fixed`
+ * — without the portal a modal opened from inside a card would be trapped in
+ * that card instead of covering the screen.
  */
 export function Modal({
     title,
@@ -94,7 +100,7 @@ export function Modal({
         };
     }, [onClose]);
 
-    return (
+    return createPortal(
         <motion.div
             className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
             initial={{ opacity: 0 }}
@@ -136,7 +142,8 @@ export function Modal({
                     {children}
                 </div>
             </motion.div>
-        </motion.div>
+        </motion.div>,
+        document.body,
     );
 }
 
