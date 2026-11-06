@@ -5,7 +5,7 @@ and out by location in real time; managers and admins oversee organizations,
 locations, people and requests — on the web or as a native Android/iOS app.
 
 > **Status: active development (beta).** Features and UI change frequently.
-> _Version 1.9.0 — “Adamov” · last updated: July 5, 2026._ · See the [Roadmap](ROADMAP.md).
+> _Version 1.10.0 — “Beroun” · last updated: November 6, 2026._ · See the [Roadmap](ROADMAP.md).
 
 ---
 
@@ -246,7 +246,7 @@ Create Database Webhooks (INSERT) on `shift_audit_log` and
   and the build on every PR.
 - **Versioning:** semver tags (`vX.Y.Z`) + GitHub Releases per release. Notable
   releases also carry a **codename** — a Czech town, advancing A→Z
-  (v1.9.0 = _Adamov_).
+  (v1.9.0 = _Adamov_, v1.10.0 = _Beroun_).
 - **Scheduled jobs (pg_cron):** auto-end open shifts at Europe/Prague midnight;
   late-for-shift alerts every 5 minutes.
 

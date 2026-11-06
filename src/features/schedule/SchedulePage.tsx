@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { PlusIcon, FilePdfIcon, FileXlsIcon, DownloadSimpleIcon, CaretDownIcon, MapPinIcon, CalendarBlankIcon, TableIcon, EraserIcon, CopySimpleIcon, PaperPlaneTiltIcon } from '@phosphor-icons/react';
+import { PlusIcon, FilePdfIcon, FileXlsIcon, DownloadSimpleIcon, CaretDownIcon, MapPinIcon, CalendarBlankIcon, TableIcon, EraserIcon, CopySimpleIcon, PaperPlaneTiltIcon, UsersThreeIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
-import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { useTranslation, usePreferences } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
 import { SearchInput } from '@shared/components/SearchInput';
 import { MonthPicker } from '@shared/components/MonthPicker';
@@ -26,6 +26,23 @@ import { TimeOffCard } from './components/TimeOffCard';
 import { toast } from '@shared/toast/toastStore';
 import { exportSchedule, type ScheduleExportSection } from './exportSchedule';
 import { PageHeader } from '@shared/components/PageHeader';
+import { can } from '@shared/auth/permissions';
+import { useDismissibleWarning } from '@shared/hooks/useDismissibleWarning';
+import { useHolidays } from './holidays/useHolidays';
+import { HolidayWarningDialog, HOLIDAY_WARNING_KEY } from './holidays/HolidayWarning';
+import { useAvailability } from '@features/availability/useAvailability';
+import { availabilityOn } from '@features/availability/availabilityLogic';
+import { AvailabilityCard } from '@features/availability/AvailabilityCard';
+import { useCoverage } from './coverage/useCoverage';
+import { CoverageDialog } from './coverage/CoverageDialog';
+import { useShiftConfirmations } from './confirmation/useShiftConfirmations';
+import { UpcomingShifts } from './confirmation/UpcomingShifts';
+import { useShiftTemplates } from './templates/useShiftTemplates';
+import { OpenShiftsCard } from './openShifts/OpenShiftsCard';
+import { tplTime } from './templates/templateTime';
+import { TemplateBrush } from './templates/TemplateBrush';
+import { TemplatesDialog } from './templates/TemplatesDialog';
+import { buildShiftDates } from '@features/timesheets/shiftTimes';
 
 /**
  * --- SCHEDULE PAGE (rota) ---
@@ -47,10 +64,12 @@ export default function SchedulePage() {
     const t = useTranslation();
     const qc = useQueryClient();
 
-    const canManage = (user?.role.rank ?? 0) >= 20;
+    // Managers OBSERVE the team rota; admins PLAN it (see permissions.ts).
+    const canObserve = can(user, 'team.view');
+    const canManage = can(user, 'rota.edit');
 
     const [selectedMonth, setSelectedMonth] = useState(() => monthKeyOf(new Date()));
-    const [activeTab, setActiveTab] = useState<'mine' | 'team'>(canManage ? 'team' : 'mine');
+    const [activeTab, setActiveTab] = useState<'mine' | 'team'>(canObserve ? 'team' : 'mine');
     // Filter the location calendars down to just the caller's team.
     const [teamOnly, setTeamOnly] = useState(false);
     // Free-text person filter (narrows grid rows and calendar chips).
@@ -90,14 +109,14 @@ export default function SchedulePage() {
     const membersQ = useQuery({
         queryKey: ['schedule-members'],
         queryFn: () => timesheetService.getMembers(),
-        enabled: canManage,
+        enabled: canObserve,
     });
 
     // Who belongs to each location's rota (curated by managers).
     const rosterQ = useQuery({
         queryKey: ['location-roster'],
         queryFn: () => scheduleService.getRoster(),
-        enabled: canManage,
+        enabled: canObserve,
     });
     const rosterAddM = useMutation({
         mutationFn: ({ locationId, userId }: { locationId: string; userId: string }) =>
@@ -118,6 +137,35 @@ export default function SchedulePage() {
         enabled: !!user,
     });
     const timeOff = useMemo(() => timeOffQ.data ?? [], [timeOffQ.data]);
+
+    // --- v1.10 planning aids: holidays, availability, coverage, confirmations, templates ---
+    const { language } = usePreferences();
+    const { holidayName } = useHolidays(monthFrom, monthTo);
+    const holidayFor = (date: string) => holidayName(date, language === 'cs' ? 'cs' : 'en');
+    const holidayWarn = useDismissibleWarning(HOLIDAY_WARNING_KEY);
+    const [holidayAsk, setHolidayAsk] = useState<{ date: string; name: string; run: () => void } | null>(null);
+    const availability = useAvailability(user);
+    const availabilityFor = (memberId: string, date: string) => availabilityOn(availability.org.data ?? [], memberId, date);
+    const coverage = useCoverage(user);
+    const dowOf = (date: string) => {
+        const [y, m, d] = date.split('-').map(Number);
+        return new Date(y, m - 1, d).getDay();
+    };
+    const requiredOn = (locId: string | null) => (date: string) => (locId ? coverage.requiredFor(locId, dowOf(date)) : 0);
+    const [coverageFor, setCoverageFor] = useState<{ id: string; name: string } | null>(null);
+    const [now] = useState(() => Date.now());
+    const confirmations = useShiftConfirmations(user);
+    const orgConfirmed = useMemo(
+        () => new Set((confirmations.orgConfirmations.data ?? []).map((c) => c.scheduled_shift_id)),
+        [confirmations.orgConfirmations.data],
+    );
+    const templates = useShiftTemplates(canManage ? user : null);
+    const templateList = useMemo(() => templates.list.data ?? [], [templates.list.data]);
+    // Roster grid "brush": what a tap on an empty cell puts down (null = all day).
+    const [brushId, setBrushId] = useState<string | null>(null);
+    const brush = templateList.find((tpl) => tpl.id === brushId) ?? null;
+    const [managingTemplates, setManagingTemplates] = useState(false);
+
 
     /** Approved leave covering a local day, if any. */
     const leaveOn = (userId: string, date: string): TimeOff | undefined =>
@@ -172,7 +220,7 @@ export default function SchedulePage() {
     });
 
     const shifts = useMemo(() => scheduleQ.data ?? [], [scheduleQ.data]);
-    const teamView = canManage && activeTab === 'team';
+    const teamView = canObserve && activeTab === 'team';
     const draftCount = useMemo(() => shifts.filter((s) => !s.published).length, [shifts]);
 
     // "My team only" + free-text person filter narrow what the calendars show.
@@ -301,8 +349,25 @@ export default function SchedulePage() {
         }
         const sameDay = shifts.filter((s) => s.user_id === memberId && sameLocalDay(s.starts_at, date));
         const here = sameDay.filter((s) => s.location_id === locId);
+        // Tapping an existing shift removes it at once — Undo in the toast puts it back.
         if (here.length > 0) {
-            quickM.mutate(() => scheduleService.removeMany(here.map((s) => s.id)));
+            quickM.mutate(() => scheduleService.removeMany(here.map((s) => s.id)), {
+                onSuccess: () =>
+                    toast(t('schedule.shiftRemoved'), 'success', {
+                        action: {
+                            label: t('common.undo'),
+                            onClick: () =>
+                                quickM.mutate(() =>
+                                    scheduleService.createMany(
+                                        user.organization_id,
+                                        user.id,
+                                        here.map((s) => ({ user_id: s.user_id, starts_at: s.starts_at, ends_at: s.ends_at, all_day: s.all_day })),
+                                        { location_id: locId, note: here[0].note ?? null },
+                                    ),
+                                ),
+                        },
+                    }),
+            });
             return;
         }
         if (sameDay.length > 0) {
@@ -311,17 +376,27 @@ export default function SchedulePage() {
             toast(t('schedule.busyAt', { where: `${locationName(s.location_id)} · ${when}` }), 'info');
             return;
         }
-        const [y, m, d] = date.split('-').map(Number);
-        const start = new Date(y, m - 1, d);
-        const end = new Date(y, m - 1, d + 1);
-        quickM.mutate(() =>
-            scheduleService.createMany(
-                user.organization_id,
-                user.id,
-                [{ user_id: memberId, starts_at: start.toISOString(), ends_at: end.toISOString(), all_day: true }],
-                { location_id: locId, note: null },
-            ),
-        );
+        // An empty cell gets whatever the brush holds: all day, or a template's times.
+        const row = brush
+            ? (() => {
+                  const { startDate, endDate } = buildShiftDates(date, tplTime(brush.start_time), tplTime(brush.end_time));
+                  return { user_id: memberId, starts_at: startDate.toISOString(), ends_at: endDate.toISOString(), all_day: false };
+              })()
+            : (() => {
+                  const [y, m, d] = date.split('-').map(Number);
+                  return {
+                      user_id: memberId,
+                      starts_at: new Date(y, m - 1, d).toISOString(),
+                      ends_at: new Date(y, m - 1, d + 1).toISOString(),
+                      all_day: true,
+                  };
+              })();
+        const run = () =>
+            quickM.mutate(() => scheduleService.createMany(user.organization_id, user.id, [row], { location_id: locId, note: null }));
+        // Planning onto a public holiday asks once first (silenceable per device).
+        const holiday = holidayFor(date);
+        if (holiday && !holidayWarn.dismissed) setHolidayAsk({ date, name: holiday, run });
+        else run();
     };
 
     /** Restaurant-style month fill: weeks alternate SHORT (Wed+Thu) and LONG
@@ -521,7 +596,7 @@ export default function SchedulePage() {
         <div className="space-y-4 px-1 pb-10">
             {/* HEADER — controls mirror the Overview page (export dropdown + month picker). */}
             <PageHeader
-                eyebrow={canManage ? t('schedule.roster') : t('schedule.mine')}
+                eyebrow={canObserve ? t('schedule.roster') : t('schedule.mine')}
                 title={t('nav.schedule')}
                 actions={
                     <>
@@ -569,8 +644,8 @@ export default function SchedulePage() {
                 }
             />
 
-            {/* Tabs (managers) + quick add */}
-            {canManage && (
+            {/* Tabs (managers observe, admins also plan) + quick add */}
+            {canObserve && (
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2 min-w-0">
                         <div className="segmented">
@@ -636,7 +711,7 @@ export default function SchedulePage() {
                             />
                         )}
                     </div>
-                    {teamView && (
+                    {teamView && canManage && (
                         <div className="flex flex-wrap items-center gap-2">
                             {draftCount > 0 && (
                                 <Button size="sm" icon={PaperPlaneTiltIcon} loading={publishM.isPending} onClick={() => publishM.mutate()}>
@@ -664,7 +739,7 @@ export default function SchedulePage() {
             )}
 
             {/* MY TEAM — self-service: take free members / release your own. */}
-            {teamView && user && (
+            {teamView && canManage && user && (
                 <MyTeam members={membersQ.data ?? []} userId={user.id} userRank={user.role.rank ?? 0} />
             )}
 
@@ -675,9 +750,12 @@ export default function SchedulePage() {
                     members={plannableMembers}
                     selfId={user.id}
                     orgId={user.organization_id}
-                    managerMode={teamView}
+                    managerMode={teamView && canManage}
                 />
             )}
+
+            {/* OPEN SHIFTS — post (managers) / claim (members). */}
+            {user && <OpenShiftsCard user={user} locations={locations} canManage={teamView && canManage} />}
 
             {scheduleQ.isLoading ? (
                 <div className="space-y-3" aria-hidden>
@@ -687,6 +765,14 @@ export default function SchedulePage() {
                 </div>
             ) : teamView ? (
                 <div className="space-y-3">
+                    {viewMode === 'grid' && canManage && (
+                        <TemplateBrush
+                            templates={templateList}
+                            value={brush?.id ?? null}
+                            onChange={setBrushId}
+                            onManage={() => setManagingTemplates(true)}
+                        />
+                    )}
                     {sections.map((sec) => {
                         const key = sec.id ?? 'none';
                         const isOpen = !collapsed.has(key);
@@ -704,8 +790,22 @@ export default function SchedulePage() {
                                         </span>
                                         <span className="flex-1 min-w-0">
                                             <span className="block text-body-strong text-gray-900 dark:text-white truncate">{sec.name}</span>
-                                            <span className="block text-caption text-gray-400">
+                                            <span className="flex items-center gap-1.5 text-caption text-gray-400">
                                                 {sec.items.length} {t('schedule.shiftsCount')}
+                                                {(() => {
+                                                    const due = sec.items.filter((s) => s.published && new Date(s.starts_at).getTime() > now);
+                                                    if (due.length === 0) return null;
+                                                    const done = due.filter((s) => orgConfirmed.has(s.id)).length;
+                                                    return (
+                                                        <span
+                                                            className={`rounded-full px-1.5 text-[10px] font-semibold leading-4 ${
+                                                                done === due.length ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300' : 'bg-amber-500/12 text-amber-700 dark:text-amber-300'
+                                                            }`}
+                                                        >
+                                                            {t('confirm.progress', { done, total: due.length })}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </span>
                                         </span>
                                         <CaretDownIcon
@@ -713,7 +813,18 @@ export default function SchedulePage() {
                                             className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
                                         />
                                     </button>
-                                    {sec.items.length > 0 && (
+                                    {sec.id && canManage && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setCoverageFor({ id: sec.id!, name: sec.name })}
+                                            title={t('coverage.title')}
+                                            aria-label={`${t('coverage.title')}: ${sec.name}`}
+                                            className="shrink-0 p-2 rounded-xl text-gray-400 hover:text-emerald-600 hover:bg-emerald-500/10 transition-colors"
+                                        >
+                                            <UsersThreeIcon weight="bold" className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    {sec.items.length > 0 && canManage && (
                                         <button
                                             type="button"
                                             onClick={() => clearLocation(sec.name, sec.items)}
@@ -745,14 +856,17 @@ export default function SchedulePage() {
                                                                 const e = leaveOn(memberId, date);
                                                                 return e ? t(`timeoff.short_${e.kind}` as 'timeoff.short_vacation') : undefined;
                                                             }}
-                                                            canManage
+                                                            canManage={canManage}
                                                             onCellTap={(memberId, date) => cellTap(sec.id)(memberId, date)}
                                                             onQuickFill={quickFill(sec.id)}
                                                             onRemoveRow={removeMember(sec.id, sec.items)}
                                                             onOpenProfile={setProfileUserId}
+                                                            holidayFor={holidayFor}
+                                                            requiredOn={requiredOn(sec.id)}
+                                                            availabilityFor={availabilityFor}
                                                         />
                                                     )}
-                                                    {sec.id && addable.length > 0 && (
+                                                    {sec.id && canManage && addable.length > 0 && (
                                                         <div className="flex items-center gap-2 px-4 py-2.5 border-t border-gray-50 dark:border-gray-800/60">
                                                             <MemberSearchAdd
                                                                 candidates={addable}
@@ -769,8 +883,11 @@ export default function SchedulePage() {
                                             monthKey={selectedMonth}
                                             shifts={sec.items}
                                             chipLabel={memberShort}
-                                            canManage
-                                            onDayClick={(date) => openDay(date, sec.id)}
+                                            canManage={canManage}
+                                            onDayClick={canManage ? (date) => openDay(date, sec.id) : undefined}
+                                            holidayFor={holidayFor}
+                                            requiredOn={requiredOn(sec.id)}
+                                            isConfirmed={(s) => orgConfirmed.has(s.id)}
                                         />
                                     ))}
                             </section>
@@ -778,17 +895,23 @@ export default function SchedulePage() {
                     })}
                 </div>
             ) : (
-                <section className={cardClass}>
-                    <MonthCalendar
-                        monthKey={selectedMonth}
-                        shifts={myShifts}
-                        chipLabel={(s) => locationName(s.location_id)}
-                        canManage={false}
-                    />
-                    {myShifts.length === 0 && (
-                        <p className="px-4 pb-4 text-center text-caption text-gray-400">{t('schedule.noShiftsMonth')}</p>
-                    )}
-                </section>
+                <div className="space-y-3">
+                    <section className={cardClass}>
+                        <MonthCalendar
+                            monthKey={selectedMonth}
+                            shifts={myShifts}
+                            chipLabel={(s) => locationName(s.location_id)}
+                            canManage={false}
+                            holidayFor={holidayFor}
+                            isConfirmed={(s) => confirmations.confirmedIds.has(s.id)}
+                        />
+                        {myShifts.length === 0 && (
+                            <p className="px-4 pb-4 text-center text-caption text-gray-400">{t('schedule.noShiftsMonth')}</p>
+                        )}
+                    </section>
+                    <UpcomingShifts user={user} shifts={myShifts} locationName={locationName} />
+                    <AvailabilityCard user={user} />
+                </div>
             )}
 
             <AnimatePresence>
@@ -801,6 +924,11 @@ export default function SchedulePage() {
                         defaultLocationId={editing.locationId}
                         onClose={() => setEditing(null)}
                         onSubmit={(values) => applyDayM.mutateAsync(values)}
+                        holidayName={holidayFor}
+                        availabilityFor={availabilityFor}
+                        templates={templateList}
+                        onSaveTemplate={(input) => templates.create.mutateAsync(input)}
+                        onRemoveTemplate={(id) => templates.remove.mutate(id)}
                     />
                 )}
                 {confirming && (
@@ -812,6 +940,22 @@ export default function SchedulePage() {
                     />
                 )}
                 {profileUserId && <UserProfileModal userId={profileUserId} onClose={() => setProfileUserId(null)} />}
+                {holidayAsk && (
+                    <HolidayWarningDialog
+                        date={holidayAsk.date}
+                        name={holidayAsk.name}
+                        onClose={() => setHolidayAsk(null)}
+                        onConfirm={(dontShowAgain) => {
+                            if (dontShowAgain) holidayWarn.dismissForever();
+                            holidayAsk.run();
+                            setHolidayAsk(null);
+                        }}
+                    />
+                )}
+                {managingTemplates && user && <TemplatesDialog user={user} onClose={() => setManagingTemplates(false)} />}
+                {coverageFor && user && (
+                    <CoverageDialog user={user} locationId={coverageFor.id} locationName={coverageFor.name} onClose={() => setCoverageFor(null)} />
+                )}
             </AnimatePresence>
         </div>
     );

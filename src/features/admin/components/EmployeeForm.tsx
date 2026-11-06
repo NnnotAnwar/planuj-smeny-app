@@ -3,12 +3,15 @@ import { Modal } from './Modal';
 import { Field, TextInput, SelectInput, FormError, FormActions } from './FormControls';
 import { useAdminContext } from '../AdminContext';
 import { useAuthContext } from '@/features/auth/AuthContext';
-import { assignableRoles as getAssignableRoles } from '@shared/auth/permissions';
+import { assignableRoles as getAssignableRoles, canManageMember } from '@shared/auth/permissions';
+import { Input } from '@shared/components/Input';
 import type { Profile } from '@/shared/types';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { useWages } from '@features/wages/useWages';
 
 /**
- * Edit an employee's name and role.
+ * Edit an employee's name, role and (for people below you) hourly rate. The
+ * rate is private: RLS lets only the member and the people above them read it.
  *
  * Note: creating an employee is intentionally not here — accounts are created
  * through sign-up/invitation (Supabase Auth), not from the admin client. This
@@ -24,6 +27,17 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
     const [role, setRole] = useState(employee.role.name);
     const [organizationId, setOrganizationId] = useState(employee.organization_id);
     const [managerId, setManagerId] = useState(employee.manager_id ?? '');
+    // Hourly rate — admins only, for someone strictly below them (RLS enforces the same).
+    const canSetRate = !!user && canManageMember(user, employee) && user.id !== employee.id;
+    const wages = useWages(canSetRate ? user : null);
+    const currentRate = wages.org.data?.find((w) => w.user_id === employee.id);
+    const [rate, setRate] = useState(currentRate ? String(currentRate.hourly_rate) : '');
+    // The rates query may land after the form opens — seed the field once.
+    const [rateSeeded, setRateSeeded] = useState(!wages.org.isLoading);
+    if (!rateSeeded && !wages.org.isLoading) {
+        setRateSeeded(true);
+        setRate(currentRate ? String(currentRate.hourly_rate) : '');
+    }
     const [isBusy, setIsBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -52,6 +66,10 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
                 manager_id: managerId || null,
                 ...(isSuperAdmin ? { organization_id: organizationId } : {}),
             });
+            const nextRate = rate.trim() === '' ? null : Number(rate.replace(',', '.'));
+            if (canSetRate && nextRate !== null && Number.isFinite(nextRate) && nextRate >= 0 && nextRate !== currentRate?.hourly_rate) {
+                await wages.setRate.mutateAsync({ user_id: employee.id, hourly_rate: Math.round(nextRate * 100) / 100 });
+            }
             onClose();
         } catch (err) {
             setError(err instanceof Error ? err.message : t('admin.employeeUpdateError'));
@@ -92,6 +110,24 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
                         ))}
                     </SelectInput>
                 </Field>
+
+                {canSetRate && (
+                    <div className="space-y-1">
+                        <Field label={t('wage.rate')}>
+                            <Input
+                                type="number"
+                                inputMode="decimal"
+                                min={0}
+                                step={1}
+                                value={rate}
+                                onChange={(e) => setRate(e.target.value)}
+                                placeholder="0"
+                                trailing={<span className="pr-1 text-meta text-ink-soft dark:text-slate-400">{currentRate?.currency ?? 'CZK'}/h</span>}
+                            />
+                        </Field>
+                        <p className="text-caption text-ink-soft dark:text-slate-400">{t('wage.rateHint')}</p>
+                    </div>
+                )}
 
                 {showOrgSelect && (
                     <Field label={t('profile.field.organization')}>

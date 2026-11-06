@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarBlankIcon,
@@ -10,7 +10,11 @@ import {
   FilePdfIcon,
   FileXlsIcon,
   FileCsvIcon,
+  CoinsIcon,
+  ArrowUpRightIcon,
+  ArrowDownRightIcon,
 } from '@phosphor-icons/react';
+import { useQuery } from '@tanstack/react-query';
 import { useShiftContext } from './ShiftContext';
 import { useAuthContext } from '@features/auth/AuthContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
@@ -18,12 +22,17 @@ import { type Shift } from '@shared/types';
 import { DataTable, type Column } from '@shared/components/DataTable';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { Skeleton } from '@shared/components/Skeleton';
-import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours } from './shiftStats';
-import { formatClock, monthShort, monthKey, weekdayShort, weekdayShortLabels } from '@shared/utils/date';
+import { shiftHours, fmtHours, fmtDuration, shiftGrossHours, shiftBreakHours, hoursByDay, monthHours, prevMonthKey } from './shiftStats';
+import { scheduleService } from '@features/schedule/scheduleService';
+import { MonthPlanCard } from './components/MonthPlanCard';
+import { MonthPaceChart } from './components/MonthPaceChart';
+import { formatClock, monthShort, monthKey, weekdayShort } from '@shared/utils/date';
 import { type ExportFormat, makeExportLabels } from '@features/timesheets/exportShifts';
 import { shareOrExport } from '@shared/utils/shareExport';
 import { PageHeader } from '@shared/components/PageHeader';
 import { Button } from '@shared/components/Button';
+import { useWages } from '@features/wages/useWages';
+import { estimatePay } from '@features/wages/types';
 
 /**
  * --- CONSTANTS ---
@@ -49,6 +58,8 @@ export default function OverviewPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [exportOpen, setExportOpen] = useState(false);
+  const { mine: myWage } = useWages(user);
+  const myRate = myWage.data ?? null;
 
   // A running shift keeps counting: re-derive the stats once a minute while
   // one is open (otherwise the numbers froze at the moment the page loaded).
@@ -79,7 +90,6 @@ export default function OverviewPage() {
     let completedHours = 0;
     let completed = 0;
     const byLocation = new Map<string, number>();
-    const byWeekday = new Array(7).fill(0) as number[];
 
     for (const s of shifts) {
       const h = shiftHours(s, now);
@@ -89,9 +99,7 @@ export default function OverviewPage() {
         completed += 1;
         completedHours += h;
       }
-      const started = new Date(s.started_at);
       byLocation.set(s.location_id, (byLocation.get(s.location_id) ?? 0) + h);
-      byWeekday[(started.getDay() + 6) % 7] += h;
     }
 
     const locationBreakdown = Array.from(byLocation.entries())
@@ -114,12 +122,45 @@ export default function OverviewPage() {
       avg,
       count: shifts.length,
       locationBreakdown,
-      byWeekday,
       hasData: shifts.length > 0,
     };
   }, [userShifts, selectedMonth, now]);
 
-  const maxWeekday = Math.max(...stats.byWeekday, 0.1);
+  // --- Month-only insights: the rota plan, hours per day, vs last month ---
+  const isCurrentMonth = selectedMonth === monthKey(new Date(now).toISOString());
+  const monthBounds = useMemo(() => {
+    if (!selectedMonth) return null;
+    const [y, m] = selectedMonth.split('-').map(Number);
+    return { start: new Date(y, m - 1, 1).toISOString(), end: new Date(y, m, 1).toISOString() };
+  }, [selectedMonth]);
+  // Same key + range as the Schedule page, so the two share one cached fetch.
+  const rotaQ = useQuery({
+    queryKey: ['schedule', selectedMonth],
+    queryFn: () => scheduleService.getRange(monthBounds!.start, monthBounds!.end),
+    enabled: !!user && !!monthBounds,
+  });
+  const myPlanned = useMemo(
+    () => (rotaQ.data ?? []).filter((s) => s.user_id === user?.id && s.published),
+    [rotaQ.data, user?.id],
+  );
+  const daily = useMemo(() => (selectedMonth ? hoursByDay(userShifts, selectedMonth, now) : null), [userShifts, selectedMonth, now]);
+  // Last month's days, for the pace chart's reference line (null = nothing to compare).
+  const prevDaily = useMemo(() => {
+    if (!selectedMonth) return null;
+    const prev = prevMonthKey(selectedMonth);
+    return userShifts.some((s) => monthKey(s.started_at) === prev) ? hoursByDay(userShifts, prev, now) : null;
+  }, [userShifts, selectedMonth, now]);
+  const lastDayIndex = daily ? (isCurrentMonth ? new Date(now).getDate() - 1 : daily.length - 1) : 0;
+
+  // Vs last month — for the month still running, against the same days of
+  // last month (a half month vs a whole one would always look like a drop).
+  const comparison = useMemo(() => {
+    if (!selectedMonth) return null;
+    const prev = prevMonthKey(selectedMonth);
+    if (!userShifts.some((s) => monthKey(s.started_at) === prev)) return null;
+    const upto = isCurrentMonth ? new Date(now).getDate() : undefined;
+    return { delta: stats.totalHours - monthHours(userShifts, prev, now, upto), samePeriod: isCurrentMonth };
+  }, [selectedMonth, userShifts, now, isCurrentMonth, stats.totalHours]);
 
   // Shift history rendered through the shared DataTable so it matches the admin
   // tables exactly (one compact monolithic table on every breakpoint).
@@ -227,17 +268,77 @@ export default function OverviewPage() {
     setExportOpen(false);
   };
 
-  const statCards = [
-    { label: t('overview.workTime'), value: fmtHours(stats.totalHours), icon: TimerIcon },
+  const deltaLine: ReactNode = comparison && (() => {
+    const d = Math.round(comparison.delta * 10) / 10;
+    const tone = d > 0 ? 'text-emerald-700 dark:text-emerald-300' : d < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-ink-soft dark:text-slate-400';
+    const Arrow = d > 0 ? ArrowUpRightIcon : ArrowDownRightIcon;
+    const signed = `${d > 0 ? '+' : '−'}${fmtHours(Math.abs(d))}`;
+    const full = d === 0 ? t('overview.vsPrevSame') : t('overview.vsPrev', { delta: signed });
+    return (
+      <span
+        className={`mt-1 flex items-center gap-0.5 truncate text-caption font-semibold ${tone}`}
+        title={[full, comparison.samePeriod && t('overview.vsPrevSameDays')].filter(Boolean).join(' — ')}
+      >
+        {d !== 0 && <Arrow weight="bold" className="size-3 shrink-0" />}
+        {/* Phones: just the number (the card is narrow); full sentence from sm. */}
+        <span className="truncate sm:hidden">{d === 0 ? '±0h' : signed}</span>
+        <span className="hidden truncate sm:inline">{full}</span>
+      </span>
+    );
+  })();
+
+  const statCards: { label: string; value: string; icon: typeof TimerIcon; sub?: ReactNode }[] = [
+    { label: t('overview.workTime'), value: fmtHours(stats.totalHours), icon: TimerIcon, sub: deltaLine },
     { label: t('overview.shifts'), value: String(stats.count), icon: StackIcon },
     { label: t('overview.avgShift'), value: fmtHours(stats.avg), icon: ChartBarIcon },
   ];
+  // Pay estimate — only when an admin has set the member's hourly rate.
+  if (myRate) {
+    const pay = estimatePay(stats.totalHours, myRate.hourly_rate);
+    statCards.push({
+      label: t('wage.estPay'),
+      value: new Intl.NumberFormat(undefined, { style: 'currency', currency: myRate.currency, maximumFractionDigits: 0 }).format(pay),
+      icon: CoinsIcon,
+    });
+  }
+
+  // Share of time per location — only worth a card when there's more than one.
+  const locationCard = (
+    <div className="glass p-4 rounded-2xl">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-label text-ink-soft dark:text-slate-400 flex items-center gap-1.5">
+          <MapPinIcon weight="bold" className="size-3.5 text-emerald-600 dark:text-emerald-300" /> {t('overview.byLocation')}
+        </h2>
+        <span className="text-micro text-ink-soft dark:text-slate-400">{t('overview.shareOfTime')}</span>
+      </div>
+      <div className="space-y-3.5">
+        {stats.locationBreakdown.map((l) => (
+          <div key={l.id}>
+            <div className="flex items-end justify-between mb-1.5">
+              <div className="flex min-w-0 flex-col">
+                <span className="text-small-strong text-ink dark:text-slate-200 truncate">{locationName(l.id)}</span>
+                <span className="text-caption text-ink-soft dark:text-slate-400 tabular-nums">{t('overview.worked', { hours: fmtHours(l.hours) })}</span>
+              </div>
+              <span className="text-metric-sm text-emerald-700 dark:text-emerald-300">{l.percent}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-ink/6 dark:bg-white/8 overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${l.share}%` }}
+                className="h-full bg-linear-to-r from-emerald-500 to-emerald-400 rounded-full"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-4 px-1 pb-10">
       <PageHeader
         eyebrow={selectedMonth ? t('overview.titleMonthly') : t('overview.titleAll')}
-        title={t('nav.overview')}
+        title={t('nav.myHours')}
         actions={
           <>
             <div className="flex items-center gap-2">
@@ -325,7 +426,7 @@ export default function OverviewPage() {
       ) : (
         <>
           {/* TOP STATS */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className={`grid gap-2 ${statCards.length > 3 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
             {statCards.map((stat) => (
               <div key={stat.label} className="glass min-w-0 rounded-2xl p-3">
                 <p className="flex items-center gap-1 truncate text-eyebrow text-ink-soft dark:text-slate-400">
@@ -333,81 +434,20 @@ export default function OverviewPage() {
                   <span className="truncate">{stat.label}</span>
                 </p>
                 <p className="mt-1.5 truncate text-metric text-emerald-700 dark:text-emerald-300">{stat.value}</p>
+                {stat.sub}
               </div>
             ))}
           </div>
 
-          {/* CHARTS SECTION */}
-          <div className="grid sm:grid-cols-2 gap-3">
-            {/* BY LOCATION */}
-            <div className="glass p-4 rounded-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-label text-ink-soft dark:text-slate-400 flex items-center gap-1.5">
-                  <MapPinIcon weight="bold" className="size-3.5 text-emerald-600 dark:text-emerald-300" /> {t('overview.byLocation')}
-                </h2>
-                <span className="text-micro text-ink-soft dark:text-slate-400">{t('overview.shareOfTime')}</span>
-              </div>
-              <div className="space-y-3.5">
-                {stats.locationBreakdown.map((l) => (
-                  <div key={l.id} className="group">
-                    <div className="flex items-end justify-between mb-1.5">
-                      <div className="flex flex-col">
-                        <span className="text-small-strong text-gray-800 dark:text-gray-200 truncate">{locationName(l.id)}</span>
-                        <span className="text-caption text-gray-400 tabular-nums">{t('overview.worked', { hours: fmtHours(l.hours) })}</span>
-                      </div>
-                      <span className="text-metric-sm text-emerald-700 dark:text-emerald-300">{l.percent}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-ink/6 dark:bg-white/8 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${l.share}%` }}
-                        className="h-full bg-linear-to-r from-emerald-500 to-emerald-400 rounded-full"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* MONTH INSIGHTS — the rota plan (+ locations when there's more than one), then hours by day. */}
+          {selectedMonth && (
+            <div className={`grid gap-3 ${stats.locationBreakdown.length > 1 ? 'sm:grid-cols-2' : ''}`}>
+              <MonthPlanCard planned={myPlanned} worked={stats.count} now={now} />
+              {stats.locationBreakdown.length > 1 && locationCard}
             </div>
-
-            {/* BY WEEKDAY — a track per day, filled to its share of the busiest. */}
-            <div className="glass flex flex-col p-4 rounded-2xl">
-              <h2 className="mb-3 text-label text-ink-soft dark:text-slate-400 flex items-center gap-1.5">
-                <ChartBarIcon weight="bold" className="size-3.5 text-emerald-600 dark:text-emerald-300" /> {t('overview.busiestDays')}
-              </h2>
-              <div className="mt-auto grid grid-cols-7 gap-1.5">
-                {stats.byWeekday.map((h, i) => {
-                  const isMax = h === maxWeekday && h > 0;
-                  const pct = (h / maxWeekday) * 100;
-                  return (
-                    <div key={i} className="flex flex-col items-center gap-1">
-                      <span
-                        className={`h-3.5 text-[10px] font-semibold leading-none tabular-nums ${
-                          isMax ? 'text-emerald-700 dark:text-emerald-300' : 'text-ink-soft dark:text-slate-400'
-                        }`}
-                      >
-                        {h > 0 ? fmtHours(h) : ''}
-                      </span>
-                      <div className="relative flex h-20 w-full max-w-5 items-end overflow-hidden rounded-md bg-ink/5 sm:h-24 dark:bg-white/6">
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${pct}%` }}
-                          className={`w-full rounded-md ${
-                            isMax
-                              ? 'bg-linear-to-t from-emerald-600 to-emerald-400 shadow-[0_0_12px_-2px_var(--color-emerald-500)]'
-                              : 'bg-emerald-500/35 dark:bg-emerald-400/35'
-                          }`}
-                          style={{ minHeight: h > 0 ? 3 : 0 }}
-                        />
-                      </div>
-                      <span className={`text-micro ${isMax ? 'text-emerald-700 dark:text-emerald-300' : 'text-ink-soft dark:text-slate-400'}`}>
-                        {weekdayShortLabels()[i]}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          )}
+          {!selectedMonth && stats.locationBreakdown.length > 1 && locationCard}
+          {selectedMonth && daily && <MonthPaceChart monthKey={selectedMonth} daily={daily} prevDaily={prevDaily} lastDayIndex={lastDayIndex} />}
 
           {/* HISTORY */}
           <div className="mt-2">

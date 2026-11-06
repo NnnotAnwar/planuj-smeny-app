@@ -138,3 +138,9 @@ export function weekdayShortLabels(): string[] {
   // 2024-01-01 is a Monday; walk seven days for stable Mon-first labels.
   return Array.from({ length: 7 }, (_, i) => weekdayShort(new Date(2024, 0, 1 + i)));
 }
+
+/** Full weekday name for a JS day-of-week number (0 = Sunday … 6 = Saturday). */
+export function weekdayLong(dayOfWeek: number): string {
+  // 7 Jan 2024 was a Sunday, so adding the day number lands on that weekday.
+  return new Date(2024, 0, 7 + dayOfWeek).toLocaleDateString(locale, { weekday: 'long' });
+}

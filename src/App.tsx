@@ -111,13 +111,13 @@ export default function App() {
                         <Route path="schedule" element={<SchedulePage />} />
                         <Route element={<RoleGuard />}>
                           <Route path="admin" element={<AdminPage />} />
-                          {/* Requests is admin-only (rank >= 30); the page self-guards too. */}
-                          <Route path="requests" element={<RequestsPage />} />
-                          {/* Timesheets is for managers+ (rank >= 20). */}
+                          {/* Timesheets: managers+ view (rank >= 20); admins edit. */}
                           <Route path="timesheets" element={<TimesheetsPage />} />
                           {/* Activity Log is admin-only (rank >= 30); the page self-guards too. */}
                           <Route path="activity" element={<AuditLogPage />} />
                         </Route>
+                        {/* Requests: everyone files and tracks theirs; admins decide, managers observe. */}
+                        <Route path="requests" element={<RequestsPage />} />
                         <Route path="settings" element={<SettingsPage />} />
                         <Route path="profile" element={<ProfilePage />} />
                         <Route path="profile/:userId" element={<ProfilePage />} />

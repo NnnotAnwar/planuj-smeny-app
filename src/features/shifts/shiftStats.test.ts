@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { shiftGrossHours, shiftHours, shiftBreakHours, calculateNetHours, fmtHours, fmtDuration } from './shiftStats';
+import { shiftGrossHours, shiftHours, shiftBreakHours, calculateNetHours, fmtHours, fmtDuration, prevMonthKey, hoursByDay, monthHours } from './shiftStats';
 
 describe('shiftGrossHours', () => {
     it('computes raw hours for a completed shift', () => {
@@ -66,5 +66,37 @@ describe('fmtDuration', () => {
 
     it('drops the hour part under an hour', () => {
         expect(fmtDuration(0.5)).toBe('30m');
+    });
+});
+
+describe('prevMonthKey', () => {
+    it('steps back a month, across the year boundary', () => {
+        expect(prevMonthKey('2026-11')).toBe('2026-10');
+        expect(prevMonthKey('2026-01')).toBe('2025-12');
+    });
+});
+
+describe('hoursByDay / monthHours', () => {
+    // Local-time ISO strings so the day bucket doesn't depend on the test TZ.
+    const at = (y: number, mo: number, d: number, h: number) => new Date(y, mo - 1, d, h).toISOString();
+    const shifts = [
+        { started_at: at(2026, 11, 1, 8), ended_at: at(2026, 11, 1, 12) }, // 4h on the 1st
+        { started_at: at(2026, 11, 3, 8), ended_at: at(2026, 11, 3, 14) }, // 6h on the 3rd
+        { started_at: at(2026, 11, 3, 20), ended_at: at(2026, 11, 4, 1) }, // 5h, past midnight → still the 3rd
+        { started_at: at(2026, 10, 31, 8), ended_at: at(2026, 10, 31, 12) }, // other month
+    ];
+
+    it('buckets net hours by local start day', () => {
+        const days = hoursByDay(shifts, '2026-11');
+        expect(days).toHaveLength(30);
+        expect(days[0]).toBe(4);
+        expect(days[2]).toBe(11);
+        expect(days[3]).toBe(0);
+    });
+
+    it('sums a month, optionally only up to a day', () => {
+        expect(monthHours(shifts, '2026-11')).toBe(15);
+        expect(monthHours(shifts, '2026-11', Date.now(), 2)).toBe(4);
+        expect(monthHours(shifts, '2026-10')).toBe(4);
     });
 });

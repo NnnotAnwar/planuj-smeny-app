@@ -12,6 +12,7 @@ import { FormError } from '@shared/components/FormError';
 import { toast } from '@shared/toast/toastStore';
 import { formatDateShort } from '@shared/utils/date';
 import { scheduleService } from '../scheduleService';
+import { KIND_KEYS, leaveErr, todayStr } from '../timeOffShared';
 
 /**
  * --- TIME OFF CARD ---
@@ -20,27 +21,8 @@ import { scheduleService } from '../scheduleService';
  * members file requests and see their status / withdraw pending ones.
  */
 
-const KIND_KEYS = {
-    vacation: 'timeoff.vacation',
-    sick: 'timeoff.sick',
-    other: 'timeoff.other',
-} as const;
-
-const todayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
-
-type Translate = (key: Parameters<ReturnType<typeof useTranslation>>[0]) => string;
-
-/** Localize service errors (TIMEOFF_OVERLAP = leave already covers those days). */
-const leaveErr = (err: unknown, t: Translate): string => {
-    const msg = err instanceof Error ? err.message : '';
-    if (msg === 'TIMEOFF_OVERLAP') return t('timeoff.overlap');
-    return msg || t('common.actionFailed');
-};
-
-function RequestModal({
+/** The "request / add leave" dialog — also used by the Requests page. */
+export function TimeOffRequestModal({
     members,
     selfId,
     orgId,
@@ -259,7 +241,7 @@ export function TimeOffCard({
             )}
 
             {open && (
-                <RequestModal
+                <TimeOffRequestModal
                     members={members}
                     selfId={selfId}
                     orgId={orgId}

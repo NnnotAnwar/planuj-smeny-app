@@ -13,10 +13,41 @@ import type { User, Profile, Role } from '@shared/types';
  */
 
 export const RANK = {
-    MANAGER: 20, // can view the admin panel
-    ADMIN: 30, // can invite + manage members below them
+    MANAGER: 20, // observer: sees the team's rota, timesheets, team page and requests
+    ADMIN: 30, // acts: plans the rota, edits timesheets, decides requests, manages members
     OWNER: 40, // "Head Admin" — can also manage locations
 } as const;
+
+/**
+ * --- CAPABILITIES ---
+ * What a user may do, named by area rather than by rank. Today each one maps
+ * to a minimum rank (managers OBSERVE, admins ACT — Supervisor is only a
+ * badge); the plan is custom roles where a Head Admin grants these per role,
+ * Discord-style. Screens ask `can(user, 'rota.edit')`, so that switch only
+ * changes this table, never the UI.
+ */
+export type Capability =
+    | 'team.view' // see the team rota, timesheets, team page and requests (read-only)
+    | 'rota.edit' // plan / publish the rota, templates, coverage, open shifts, teams
+    | 'requests.decide' // approve or decline time off and name changes
+    | 'announcements.post' // post, edit, pin and delete announcements
+    | 'members.manage' // invite and edit members ranked below you
+    | 'locations.manage'; // create, edit and archive locations
+
+const CAPABILITY_MIN_RANK: Record<Capability, number> = {
+    'team.view': RANK.MANAGER,
+    'rota.edit': RANK.ADMIN,
+    'requests.decide': RANK.ADMIN,
+    'announcements.post': RANK.ADMIN,
+    'members.manage': RANK.ADMIN,
+    'locations.manage': RANK.OWNER,
+};
+
+/** Whether `user` holds a capability (Superadmin holds them all). */
+export function can(user: Pick<User, 'role'> | null | undefined, cap: Capability): boolean {
+    if (!user) return false;
+    return isSuperAdmin(user) || user.role.rank >= CAPABILITY_MIN_RANK[cap];
+}
 
 export function isSuperAdmin(user: Pick<User, 'role'>): boolean {
     return user.role.name === 'Superadmin';
@@ -29,17 +60,17 @@ export function isSuperAdmin(user: Pick<User, 'role'>): boolean {
  * /admin route guard and the nav item — replaces the legacy `is_admin` flag.
  */
 export function canViewAdminPanel(user: Pick<User, 'role'>): boolean {
-    return user.role.rank >= RANK.MANAGER;
+    return can(user, 'team.view');
 }
 
 /** Admin level or above: may invite and manage lower-ranked members. */
 export function canManageEmployees(user: Pick<User, 'role'>): boolean {
-    return user.role.rank >= RANK.ADMIN;
+    return can(user, 'members.manage');
 }
 
 /** Head Admin (owner) or above: may create/edit/delete locations. */
 export function canManageLocations(user: Pick<User, 'role'>): boolean {
-    return user.role.rank >= RANK.OWNER;
+    return can(user, 'locations.manage');
 }
 
 /** Roles this user may assign/invite: strictly below their own rank. */

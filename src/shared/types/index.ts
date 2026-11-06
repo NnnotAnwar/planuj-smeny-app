@@ -125,6 +125,9 @@ export const TimeOffSchema = z.object({
   note: z.string().nullable().optional(),
   status: z.enum(['pending', 'approved', 'declined']),
   reviewed_by: z.string().nullable().optional(),
+  /** Reason given with a decision (shown to the member). */
+  review_note: z.string().nullable().optional(),
+  reviewed_at: z.string().nullable().optional(),
   created_at: z.string(),
   profiles: ShiftProfileSchema.optional().nullable(),
 });

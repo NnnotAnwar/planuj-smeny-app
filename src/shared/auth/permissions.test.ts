@@ -6,6 +6,7 @@ import {
     canViewAdminPanel,
     assignableRoles,
     canManageMember,
+    can,
     RANK,
 } from './permissions';
 import type { Role, User } from '@/shared/types';
@@ -77,5 +78,36 @@ describe('canManageMember', () => {
     it('forbids a Manager (view-only) from managing anyone', () => {
         const manager = mkUser(20, 'mgr');
         expect(canManageMember(manager, { id: 'emp', role: { name: 'Employee', is_admin: false, rank: 0 } })).toBe(false);
+    });
+});
+
+describe('can (capabilities): managers observe, admins act', () => {
+    it('gives Employee and Supervisor (a badge only) no extra capabilities', () => {
+        for (const rank of [0, 10]) {
+            expect(can(mkUser(rank), 'team.view')).toBe(false);
+            expect(can(mkUser(rank), 'rota.edit')).toBe(false);
+        }
+    });
+
+    it('lets a Manager view the team but not act', () => {
+        const m = mkUser(RANK.MANAGER);
+        expect(can(m, 'team.view')).toBe(true);
+        expect(can(m, 'rota.edit')).toBe(false);
+        expect(can(m, 'requests.decide')).toBe(false);
+        expect(can(m, 'announcements.post')).toBe(false);
+    });
+
+    it('lets an Admin act; locations stay with the Head Admin', () => {
+        const a = mkUser(RANK.ADMIN);
+        expect(can(a, 'rota.edit')).toBe(true);
+        expect(can(a, 'requests.decide')).toBe(true);
+        expect(can(a, 'announcements.post')).toBe(true);
+        expect(can(a, 'locations.manage')).toBe(false);
+        expect(can(mkUser(RANK.OWNER), 'locations.manage')).toBe(true);
+    });
+
+    it('treats Superadmin as holding everything and a missing user as nothing', () => {
+        expect(can(mkUser(100, 'u1', 'Superadmin'), 'locations.manage')).toBe(true);
+        expect(can(null, 'team.view')).toBe(false);
     });
 });
