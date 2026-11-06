@@ -13,6 +13,7 @@ import { shiftConfirmationKeys } from './shiftConfirmationKeys';
  *     (so a card can show its state with `confirmedIds.has(shift.id)`)
  *   • `orgConfirmations` — every confirmation in the org (managers only)
  *   • `confirm` / `unconfirm` — toggle the current member's acknowledgement
+ *   • `confirmAll` — acknowledge a batch in one tap (a whole month's rota)
  * Managers get the org query; staff don't (it would be empty for them anyway).
  */
 export function useShiftConfirmations(user: User | null) {
@@ -52,11 +53,23 @@ export function useShiftConfirmations(user: User | null) {
     onError: () => toast(t('confirm.error'), 'error'),
   });
 
+  const confirmAll = useMutation({
+    mutationFn: (scheduledShiftIds: string[]) => {
+      if (!user) throw new Error('You must be signed in.');
+      return shiftConfirmationService.confirmMany(user, scheduledShiftIds);
+    },
+    onSuccess: (_data, ids) => {
+      invalidate();
+      toast(t('confirm.allDone', { n: ids.length }), 'success');
+    },
+    onError: () => toast(t('confirm.error'), 'error'),
+  });
+
   const unconfirm = useMutation({
     mutationFn: (scheduledShiftId: string) => shiftConfirmationService.unconfirm(scheduledShiftId),
     onSuccess: invalidate,
     onError: () => toast(t('confirm.undoError'), 'error'),
   });
 
-  return { mine, orgConfirmations, confirmedIds, confirm, unconfirm, isManager };
+  return { mine, orgConfirmations, confirmedIds, confirm, confirmAll, unconfirm, isManager };
 }

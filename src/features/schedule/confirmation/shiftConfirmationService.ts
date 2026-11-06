@@ -48,6 +48,24 @@ export const shiftConfirmationService = {
     return ShiftConfirmationSchema.parse(data);
   },
 
+  /**
+   * Acknowledge several published shifts in one request ("Confirm all").
+   * ON CONFLICT DO NOTHING, so an already-confirmed id is simply skipped —
+   * there's no UPDATE policy to fall back on, and none is needed.
+   */
+  async confirmMany(user: User, scheduledShiftIds: string[]): Promise<void> {
+    if (scheduledShiftIds.length === 0) return;
+    const { error } = await supabase.from('shift_confirmations').upsert(
+      scheduledShiftIds.map((id) => ({
+        scheduled_shift_id: id,
+        user_id: user.id,
+        organization_id: user.organization_id,
+      })),
+      { onConflict: 'scheduled_shift_id', ignoreDuplicates: true },
+    );
+    if (error) throw error;
+  },
+
   /** Withdraw a confirmation. */
   async unconfirm(scheduledShiftId: string): Promise<void> {
     const { error } = await supabase

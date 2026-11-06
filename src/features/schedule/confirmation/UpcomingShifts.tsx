@@ -8,8 +8,9 @@ import { useShiftConfirmations } from './useShiftConfirmations';
 /**
  * --- UPCOMING SHIFTS (member) ---
  * The member's next published shifts as a compact list, each with a one-tap
- * "Confirm" so the manager knows the rota was seen. Tapping a confirmed row's
- * badge withdraws it (mis-taps happen).
+ * "Confirm" so the manager knows the rota was seen — and a "Confirm all" so a
+ * full month is one tap, not sixteen. Tapping a confirmed row's badge
+ * withdraws it (mis-taps happen).
  */
 export function UpcomingShifts({
     user,
@@ -22,24 +23,38 @@ export function UpcomingShifts({
     locationName: (id: string | null) => string;
 }) {
     const t = useTranslation();
-    const { confirmedIds, confirm, unconfirm } = useShiftConfirmations(user);
+    const { confirmedIds, confirm, confirmAll, unconfirm } = useShiftConfirmations(user);
 
     // Snapshot of "now" for this mount — the list doesn't need to tick live.
     const [now] = useState(() => Date.now());
-    const upcoming = shifts
+    const allUpcoming = shifts
         .filter((s) => s.published && new Date(s.ends_at).getTime() > now)
-        .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
-        .slice(0, 8);
-    const pending = upcoming.filter((s) => !confirmedIds.has(s.id)).length;
+        .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+    const upcoming = allUpcoming.slice(0, 8);
+    // "Confirm all" covers every upcoming shift, not just the eight listed.
+    const pendingIds = allUpcoming.filter((s) => !confirmedIds.has(s.id)).map((s) => s.id);
+    const pending = pendingIds.length;
 
     return (
         <section className="glass rounded-2xl p-3">
             <header className="mb-2 flex items-center justify-between gap-2 px-1">
                 <h2 className="text-card-title text-ink dark:text-white">{t('confirm.upcoming')}</h2>
-                {pending > 0 && (
-                    <span className="rounded-full bg-amber-500/12 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
-                        {t('confirm.toConfirm', { n: pending })}
-                    </span>
+                {pending > 1 ? (
+                    <button
+                        type="button"
+                        onClick={() => confirmAll.mutate(pendingIds)}
+                        disabled={confirmAll.isPending}
+                        className="flex shrink-0 items-center gap-1 rounded-lg bg-linear-to-b from-emerald-600 to-emerald-700 px-2.5 py-1 text-meta font-semibold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.22)] transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+                    >
+                        <CheckIcon weight="bold" className="size-3.5" />
+                        {t('confirm.all', { n: pending })}
+                    </button>
+                ) : (
+                    pending === 1 && (
+                        <span className="rounded-full bg-amber-500/12 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                            {t('confirm.toConfirm', { n: pending })}
+                        </span>
+                    )
                 )}
             </header>
 
@@ -50,7 +65,10 @@ export function UpcomingShifts({
                     {upcoming.map((s) => {
                         const d = new Date(s.starts_at);
                         const done = confirmedIds.has(s.id);
-                        const busy = (confirm.isPending && confirm.variables === s.id) || (unconfirm.isPending && unconfirm.variables === s.id);
+                        const busy =
+                            (confirm.isPending && confirm.variables === s.id) ||
+                            (unconfirm.isPending && unconfirm.variables === s.id) ||
+                            (confirmAll.isPending && !done);
                         return (
                             <li key={s.id} className="flex items-center gap-2.5 rounded-xl bg-white/55 p-1.5 ring-1 ring-ink/5 dark:bg-white/4 dark:ring-white/6">
                                 <span className="flex h-9 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-ink/5 dark:bg-white/6">
