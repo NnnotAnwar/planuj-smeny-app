@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarBlankIcon,
@@ -6,7 +6,6 @@ import {
   TimerIcon,
   StackIcon,
   ChartBarIcon,
-  TrendUpIcon,
   DownloadSimpleIcon,
   FilePdfIcon,
   FileXlsIcon,
@@ -25,6 +24,7 @@ import { formatClock, monthShort, monthKey, weekdayShort, weekdayShortLabels } f
 import { type ExportFormat, makeExportLabels } from '@features/timesheets/exportShifts';
 import { shareOrExport } from '@shared/utils/shareExport';
 import { PageHeader } from '@shared/components/PageHeader';
+import { Button } from '@shared/components/Button';
 import { useWages } from '@features/wages/useWages';
 import { estimatePay } from '@features/wages/types';
 
@@ -55,6 +55,16 @@ export default function OverviewPage() {
   const { mine: myWage } = useWages(user);
   const myRate = myWage.data ?? null;
 
+  // A running shift keeps counting: re-derive the stats once a minute while
+  // one is open (otherwise the numbers froze at the moment the page loaded).
+  const hasOpenShift = userShifts.some((s) => !s.ended_at);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!hasOpenShift) return;
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, [hasOpenShift]);
+
   const locationName = useMemo(() => {
     const map = new Map(locations.map((l) => [l.id, l.name]));
     return (id: string) => map.get(id) ?? t('common.unknown');
@@ -71,13 +81,19 @@ export default function OverviewPage() {
 
     let totalHours = 0;
     let totalGross = 0;
+    let completedHours = 0;
+    let completed = 0;
     const byLocation = new Map<string, number>();
     const byWeekday = new Array(7).fill(0) as number[];
 
     for (const s of shifts) {
-      const h = shiftHours(s);
+      const h = shiftHours(s, now);
       totalHours += h;
-      totalGross += shiftGrossHours(s);
+      totalGross += shiftGrossHours(s, now);
+      if (s.ended_at) {
+        completed += 1;
+        completedHours += h;
+      }
       const started = new Date(s.started_at);
       byLocation.set(s.location_id, (byLocation.get(s.location_id) ?? 0) + h);
       byWeekday[(started.getDay() + 6) % 7] += h;
@@ -92,8 +108,8 @@ export default function OverviewPage() {
       .sort((a, b) => b.hours - a.hours)
       .slice(0, 5);
 
-    const completed = shifts.filter((s) => s.ended_at).length;
-    const avg = completed > 0 ? totalHours / shifts.length : 0;
+    // Average of FINISHED shifts — a shift still running isn't a whole shift yet.
+    const avg = completed > 0 ? completedHours / completed : 0;
 
     return {
       shifts,
@@ -106,7 +122,7 @@ export default function OverviewPage() {
       byWeekday,
       hasData: shifts.length > 0,
     };
-  }, [userShifts, selectedMonth]);
+  }, [userShifts, selectedMonth, now]);
 
   const maxWeekday = Math.max(...stats.byWeekday, 0.1);
 
@@ -138,12 +154,12 @@ export default function OverviewPage() {
       // On mobile the Gross/Break columns are hidden to fit; surface them here.
       footer: (
         <span className="sm:hidden text-caption text-gray-500 dark:text-gray-400 tabular-nums">
-          {fmtHours(stats.totalGross)} · −{fmtHours(stats.totalBreak)}
+          {fmtDuration(stats.totalGross)} · −{fmtDuration(stats.totalBreak)}
         </span>
       ),
       render: (shift) => {
-        const gross = shiftGrossHours(shift);
-        const brk = shiftBreakHours(shift);
+        const gross = shiftGrossHours(shift, now);
+        const brk = shiftBreakHours(shift, now);
         return (
           <div className="flex flex-col min-w-0">
             <span className="text-small-strong text-gray-700 dark:text-gray-200 truncate">{locationName(shift.location_id)}</span>
@@ -159,11 +175,11 @@ export default function OverviewPage() {
       key: 'gross',
       header: t('overview.colGross'),
       align: 'right',
-      width: 'w-20',
+      width: 'w-24',
       hideOnMobile: true,
       className: 'text-xs font-bold tabular-nums whitespace-nowrap text-gray-600 dark:text-gray-300',
-      footer: <span className="text-xs font-bold tabular-nums dark:text-white">{fmtHours(stats.totalGross)}</span>,
-      render: (shift) => fmtDuration(shiftGrossHours(shift)),
+      footer: <span className="text-xs font-bold tabular-nums whitespace-nowrap dark:text-white">{fmtDuration(stats.totalGross)}</span>,
+      render: (shift) => fmtDuration(shiftGrossHours(shift, now)),
     },
     {
       key: 'break',
@@ -171,11 +187,11 @@ export default function OverviewPage() {
       align: 'right',
       width: 'w-20',
       hideOnMobile: true,
-      className: 'text-xs font-bold tabular-nums text-amber-500',
-      footer: <span className="text-xs font-bold tabular-nums text-amber-500">-{fmtHours(stats.totalBreak)}</span>,
+      className: 'text-xs font-bold tabular-nums whitespace-nowrap text-amber-600 dark:text-amber-400',
+      footer: <span className="text-xs font-bold tabular-nums whitespace-nowrap text-amber-600 dark:text-amber-400">−{fmtDuration(stats.totalBreak)}</span>,
       render: (shift) => {
-        const brk = shiftBreakHours(shift);
-        return brk > 0 ? `-${fmtDuration(brk)}` : '—';
+        const brk = shiftBreakHours(shift, now);
+        return brk > 0 ? `−${fmtDuration(brk)}` : '—';
       },
     },
     {
@@ -183,15 +199,15 @@ export default function OverviewPage() {
       header: t('overview.colNet'),
       align: 'right',
       width: 'w-20 sm:w-24',
-      footer: <span className="text-xs font-bold tabular-nums whitespace-nowrap text-emerald-600 dark:text-emerald-400">{fmtHours(stats.totalHours)}</span>,
+      footer: <span className="text-xs font-bold tabular-nums whitespace-nowrap text-emerald-700 dark:text-emerald-300">{fmtDuration(stats.totalHours)}</span>,
       render: (shift) => {
         const ongoing = !shift.ended_at;
         return (
           <>
-            <span className={`block text-xs font-bold tabular-nums whitespace-nowrap ${ongoing ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
-              {fmtDuration(shiftHours(shift))}
+            <span className={`block text-xs font-bold tabular-nums whitespace-nowrap ${ongoing ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-300'}`}>
+              {fmtDuration(shiftHours(shift, now))}
             </span>
-            {ongoing && <span className="block text-micro text-amber-500">{t('overview.live')}</span>}
+            {ongoing && <span className="block text-micro text-amber-600 dark:text-amber-400">{t('overview.live')}</span>}
           </>
         );
       },
@@ -307,41 +323,45 @@ export default function OverviewPage() {
           </div>
         </div>
       ) : !stats.hasData ? (
-        <div className="flex flex-col items-center justify-center text-center py-20 gap-3">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500">
-            <CalendarBlankIcon weight="bold" className="w-7 h-7" />
+        <div className="glass flex flex-col items-center rounded-2xl px-6 py-8 text-center">
+          <div className="mb-2.5 flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">
+            <CalendarBlankIcon weight="duotone" className="size-6" />
           </div>
-          <div>
-            <h2 className="text-heading text-gray-900 dark:text-white">{t('overview.noData')}</h2>
-            <p className="text-body text-gray-400 mt-1">{t('overview.noDataHint')}</p>
-          </div>
+          <p className="text-body-strong text-ink dark:text-white">{t('overview.noData')}</p>
+          <p className="mt-1 max-w-xs text-caption text-ink-soft dark:text-slate-400">{t('overview.noDataHint')}</p>
+          {/* A filtered month with nothing in it — offer the one-tap way out. */}
+          {selectedMonth && userShifts.length > 0 && (
+            <Button size="sm" variant="tonal" className="mt-3" onClick={() => setSelectedMonth(null)}>
+              {t('overview.showAllTime')}
+            </Button>
+          )}
         </div>
       ) : (
         <>
           {/* TOP STATS */}
           <div className={`grid gap-2 ${statCards.length > 3 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
             {statCards.map((stat) => (
-              <div key={stat.label} className="glass p-3 rounded-2xl relative overflow-hidden group">
-                <div className="relative z-10">
-                  <p className="text-micro text-gray-400 mb-1 truncate">{stat.label}</p>
-                  <p className="text-metric text-emerald-600 dark:text-emerald-400">{stat.value}</p>
-                </div>
-                <stat.icon className="absolute -right-1 -bottom-1 w-12 h-12 text-emerald-500/5 group-hover:text-emerald-500/10 transition-colors" weight="bold" />
+              <div key={stat.label} className="glass min-w-0 rounded-2xl p-3">
+                <p className="flex items-center gap-1 truncate text-eyebrow text-ink-soft dark:text-slate-400">
+                  <stat.icon weight="bold" className="hidden size-3.5 shrink-0 text-emerald-600 sm:block dark:text-emerald-300" />
+                  <span className="truncate">{stat.label}</span>
+                </p>
+                <p className="mt-1.5 truncate text-metric text-emerald-700 dark:text-emerald-300">{stat.value}</p>
               </div>
             ))}
           </div>
 
           {/* CHARTS SECTION */}
-          <div className="grid sm:grid-cols-2 gap-3 items-start">
+          <div className="grid sm:grid-cols-2 gap-3">
             {/* BY LOCATION */}
             <div className="glass p-4 rounded-2xl">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-label text-gray-400 flex items-center gap-1.5">
-                  <MapPinIcon weight="bold" className="w-4 h-4 text-emerald-500" /> {t('overview.byLocation')}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-label text-ink-soft dark:text-slate-400 flex items-center gap-1.5">
+                  <MapPinIcon weight="bold" className="size-3.5 text-emerald-600 dark:text-emerald-300" /> {t('overview.byLocation')}
                 </h2>
-                <span className="text-micro text-gray-400">{t('overview.shareOfTime')}</span>
+                <span className="text-micro text-ink-soft dark:text-slate-400">{t('overview.shareOfTime')}</span>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3.5">
                 {stats.locationBreakdown.map((l) => (
                   <div key={l.id} className="group">
                     <div className="flex items-end justify-between mb-1.5">
@@ -349,9 +369,9 @@ export default function OverviewPage() {
                         <span className="text-small-strong text-gray-800 dark:text-gray-200 truncate">{locationName(l.id)}</span>
                         <span className="text-caption text-gray-400 tabular-nums">{t('overview.worked', { hours: fmtHours(l.hours) })}</span>
                       </div>
-                      <span className="text-metric-sm text-emerald-600 dark:text-emerald-400">{l.percent}%</span>
+                      <span className="text-metric-sm text-emerald-700 dark:text-emerald-300">{l.percent}%</span>
                     </div>
-                    <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800/60 overflow-hidden">
+                    <div className="h-2 rounded-full bg-ink/6 dark:bg-white/8 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${l.share}%` }}
@@ -363,58 +383,37 @@ export default function OverviewPage() {
               </div>
             </div>
 
-            {/* BY WEEKDAY */}
-            <div className="glass p-4 rounded-2xl">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-label text-gray-400 flex items-center gap-1.5">
-                  <ChartBarIcon weight="bold" className="w-4 h-4 text-emerald-500" /> {t('overview.busiestDays')}
-                </h2>
-                <TrendUpIcon className="w-4 h-4 text-gray-300" />
-              </div>
-              {/* Value labels */}
-              <div className="flex justify-between gap-2 h-6 mb-1">
-                {stats.byWeekday.map((h, i) => {
-                  const isMax = h === maxWeekday && h > 0;
-                  return (
-                    <div key={i} className="flex-1 text-center">
-                      {h > 0 && (
-                        <span className={`text-micro tabular-nums ${isMax ? 'text-emerald-500' : 'text-gray-400'}`}>
-                          {Math.round(h)}H
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Bars - fixed height area, grow from bottom */}
-              <div className="flex items-end justify-between gap-2 h-28">
+            {/* BY WEEKDAY — a track per day, filled to its share of the busiest. */}
+            <div className="glass flex flex-col p-4 rounded-2xl">
+              <h2 className="mb-3 text-label text-ink-soft dark:text-slate-400 flex items-center gap-1.5">
+                <ChartBarIcon weight="bold" className="size-3.5 text-emerald-600 dark:text-emerald-300" /> {t('overview.busiestDays')}
+              </h2>
+              <div className="mt-auto grid grid-cols-7 gap-1.5">
                 {stats.byWeekday.map((h, i) => {
                   const isMax = h === maxWeekday && h > 0;
                   const pct = (h / maxWeekday) * 100;
                   return (
-                    <div key={i} className="flex-1 flex justify-center h-full items-end">
-                      <motion.div
-                        initial={{ height: 0 }}
-                        animate={{ height: `${pct}%` }}
-                        className={`w-full max-w-4 rounded-t-md transition-all ${isMax
-                            ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                            : h > 0 ? 'bg-gray-200 dark:bg-gray-700 group-hover:bg-emerald-500/40' : 'bg-gray-50 dark:bg-gray-800/40'
+                    <div key={i} className="flex flex-col items-center gap-1">
+                      <span
+                        className={`h-3.5 text-[10px] font-semibold leading-none tabular-nums ${
+                          isMax ? 'text-emerald-700 dark:text-emerald-300' : 'text-ink-soft dark:text-slate-400'
+                        }`}
+                      >
+                        {h > 0 ? fmtHours(h) : ''}
+                      </span>
+                      <div className="relative flex h-20 w-full max-w-5 items-end overflow-hidden rounded-md bg-ink/5 sm:h-24 dark:bg-white/6">
+                        <motion.div
+                          initial={{ height: 0 }}
+                          animate={{ height: `${pct}%` }}
+                          className={`w-full rounded-md ${
+                            isMax
+                              ? 'bg-linear-to-t from-emerald-600 to-emerald-400 shadow-[0_0_12px_-2px_var(--color-emerald-500)]'
+                              : 'bg-emerald-500/35 dark:bg-emerald-400/35'
                           }`}
-                        style={{ minHeight: h > 0 ? '4px' : '2px' }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Day labels */}
-              <div className="flex justify-between gap-2 mt-1">
-                {stats.byWeekday.map((h, i) => {
-                  const isMax = h === maxWeekday && h > 0;
-                  return (
-                    <div key={i} className="flex-1 text-center">
-                      <span className={`text-micro ${isMax ? 'text-emerald-500' : 'text-gray-400'}`}>
+                          style={{ minHeight: h > 0 ? 3 : 0 }}
+                        />
+                      </div>
+                      <span className={`text-micro ${isMax ? 'text-emerald-700 dark:text-emerald-300' : 'text-ink-soft dark:text-slate-400'}`}>
                         {weekdayShortLabels()[i]}
                       </span>
                     </div>
@@ -430,14 +429,12 @@ export default function OverviewPage() {
               <h2 className="text-heading dark:text-white">
                 {selectedMonth ? t('overview.historyMonthly') : t('overview.historyAll')}
               </h2>
-              <span className="text-micro text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-lg">
+              <span className="rounded-full bg-ink/5 px-2 py-0.5 text-micro text-ink-soft dark:bg-white/8 dark:text-slate-400">
                 {t('overview.entries', { count: stats.shifts.length })}
               </span>
             </div>
-            <p className="px-1 mb-3 text-caption leading-relaxed text-gray-400">
-              {t('overview.netExplain')}{' '}
-              <span className="whitespace-nowrap">−30&nbsp;min from 6&nbsp;h</span>,{' '}
-              <span className="whitespace-nowrap">−1&nbsp;h from 12&nbsp;h</span>.
+            <p className="px-1 mb-3 text-caption leading-relaxed text-ink-soft dark:text-slate-400">
+              {t('overview.netExplain')} {t('overview.netRule')}
             </p>
 
             <DataTable rows={stats.shifts} rowKey={(s) => s.id} columns={historyColumns} />
