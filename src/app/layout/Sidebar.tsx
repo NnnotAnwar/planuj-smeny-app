@@ -416,9 +416,11 @@ function CollapsedRail({
 
       {divider}
 
-      <div className={RAIL_BTN}>
-        <NotificationsBell />
-      </div>
+      <RailTip label={t('notif.title')}>
+        <span className="flex">
+          <NotificationsBell variant="rail" />
+        </span>
+      </RailTip>
       {user && (
         <RailTip label={`${user.first_name || user.username} · ${t('nav.profile')}`}>
           <Link to="/profile" aria-label={t('nav.profile')} className={`${RAIL_BTN} ${RAIL_IDLE}`}>

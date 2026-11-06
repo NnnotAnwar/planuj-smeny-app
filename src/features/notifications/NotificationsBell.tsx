@@ -158,7 +158,7 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
  *   panel commits the "seen" watermark so the badge clears.
  * - Notifications can be dismissed individually or all at once (per device).
  */
-export function NotificationsBell() {
+export function NotificationsBell({ variant = 'header' }: { variant?: 'header' | 'rail' } = {}) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
@@ -234,9 +234,14 @@ export function NotificationsBell() {
                 onClick={() => (open ? close() : setOpen(true))}
                 aria-label={t('notif.title')}
                 aria-expanded={open}
-                className="relative -mr-2 p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-emerald-500/5 dark:hover:bg-white/5 transition-all cursor-pointer active:scale-90"
+                className={
+                    variant === 'rail'
+                        ? // Collapsed sidebar: same 36px square and idle colours as the other rail icons.
+                          'relative flex size-9 items-center justify-center rounded-xl text-ink-soft transition-colors hover:bg-white/60 active:scale-90 dark:text-slate-400 dark:hover:bg-white/5'
+                        : 'relative -mr-2 p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-emerald-500/5 dark:hover:bg-white/5 transition-all cursor-pointer active:scale-90'
+                }
             >
-                <BellIcon weight="bold" className="w-7 h-7 md:w-5 md:h-5" />
+                <BellIcon weight="bold" className={variant === 'rail' ? 'size-4.5' : 'w-7 h-7 md:w-5 md:h-5'} />
                 {!open && unread > 0 && (
                     <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-micro font-bold flex items-center justify-center leading-none">
                         {unread > 9 ? '9+' : unread}
