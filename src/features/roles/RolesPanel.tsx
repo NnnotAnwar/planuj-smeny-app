@@ -45,8 +45,8 @@ export function RolesPanel({
 
     return (
         <div className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <div className="flex items-center justify-between gap-2 px-1">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                     {organizations && organizations.length > 1 && (
                         <div className="w-44 shrink-0">
                         <Select size="sm" aria-label={t('roles.org')} value={orgId} onChange={(e) => { setOrgId(e.target.value); setEditing(null); }}>
@@ -58,12 +58,13 @@ export function RolesPanel({
                         </Select>
                         </div>
                     )}
-                    <p className="text-meta text-ink-soft dark:text-slate-400">{t('roles.lead')}</p>
+                    <p className="hidden text-meta text-ink-soft sm:block dark:text-slate-400">{t('roles.lead')}</p>
                 </div>
-                <Button size="sm" icon={PlusIcon} onClick={() => setEditing('new')}>
+                <Button size="sm" icon={PlusIcon} onClick={() => setEditing('new')} className="shrink-0">
                     {t('roles.new')}
                 </Button>
             </div>
+            <p className="px-1 text-caption text-ink-soft sm:hidden dark:text-slate-400">{t('roles.lead')}</p>
 
             {list.isLoading ? (
                 <div className="space-y-2" aria-hidden>
@@ -91,7 +92,7 @@ export function RolesPanel({
                                             </span>
                                         )}
                                     </span>
-                                    <span className="block truncate text-caption text-ink-soft dark:text-slate-400">
+                                    <span className="line-clamp-2 text-caption text-ink-soft sm:line-clamp-1 dark:text-slate-400">
                                         {t(`roles.levelName.${r.base_role}` as TranslationKey)} · {summary(r)}
                                     </span>
                                 </span>

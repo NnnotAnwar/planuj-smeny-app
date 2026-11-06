@@ -133,12 +133,13 @@ export function RoleEditor({
                             <tbody>
                                 {AREAS.map((area) => (
                                     <tr key={area} className="border-t border-ink/6 dark:border-white/6">
-                                        <td className="px-3 py-1.5">
+                                        <td className="px-3 py-1 sm:py-1.5" title={t(`roles.areaHint.${area}` as TranslationKey)}>
                                             <span className="block font-semibold text-ink dark:text-white">{t(`roles.area.${area}` as TranslationKey)}</span>
-                                            <span className="block text-caption text-ink-soft dark:text-slate-400">{t(`roles.areaHint.${area}` as TranslationKey)}</span>
+                                            {/* Phones keep the matrix short — the hint lives in the tooltip there. */}
+                                            <span className="hidden text-caption text-ink-soft sm:block dark:text-slate-400">{t(`roles.areaHint.${area}` as TranslationKey)}</span>
                                         </td>
                                         {ACTIONS.map((a) => (
-                                            <td key={a} className="px-1 py-1.5">{cell(area, a)}</td>
+                                            <td key={a} className="px-1 py-1 sm:py-1.5">{cell(area, a)}</td>
                                         ))}
                                     </tr>
                                 ))}
