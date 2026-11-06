@@ -16,7 +16,7 @@ import type { ShiftTemplate, ShiftTemplateInput } from '@features/schedule/templ
 import { HolidayWarningBody, HOLIDAY_WARNING_KEY } from '@features/schedule/holidays/HolidayWarning';
 import { MAX_TEMPLATES, templateFor, tplTime } from '@features/schedule/templates/templateTime';
 import { useDismissibleWarning } from '@shared/hooks/useDismissibleWarning';
-import { isOutsideHours, type OpeningHours } from '@features/locations/settings/openingHours';
+import { isOutsideHours, isHoursShift, fullDayShift, type OpeningHours } from '@features/locations/settings/openingHours';
 
 /**
  * --- DAY EDITOR ---
@@ -55,12 +55,6 @@ const isoToTime = (iso: string) => {
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-/** Local [00:00, next-day 00:00) bounds for an all-day assignment. */
-function dayBounds(date: string): { start: Date; end: Date } {
-    const [y, m, d] = date.split('-').map(Number);
-    return { start: new Date(y, m - 1, d), end: new Date(y, m - 1, d + 1) };
-}
-
 const memberName = (m: Profile) => [m.first_name, m.last_name].filter(Boolean).join(' ') || m.username;
 
 interface RowState {
@@ -76,14 +70,17 @@ export interface DayContext {
     busy: Map<string, string>;
 }
 
-const seedRows = (existing: ScheduledShift[]): Map<string, RowState> => {
+/** Seed rows from the day's assignments. A shift that is exactly the
+ *  location's opening hours counts as the full day (the letter), not as times. */
+const seedRows = (existing: ScheduledShift[], hours: OpeningHours | null): Map<string, RowState> => {
     const map = new Map<string, RowState>();
     for (const e of existing) {
+        const fullDay = e.all_day || isHoursShift(e.starts_at, e.ends_at, e.all_day, hours);
         map.set(e.user_id, {
             selected: true,
-            withTime: !e.all_day,
-            start: e.all_day ? '08:00' : isoToTime(e.starts_at),
-            end: e.all_day ? '16:00' : isoToTime(e.ends_at),
+            withTime: !fullDay,
+            start: fullDay ? '08:00' : isoToTime(e.starts_at),
+            end: fullDay ? '16:00' : isoToTime(e.ends_at),
         });
     }
     return map;
@@ -140,21 +137,23 @@ export function ScheduledShiftEditor({
 
     const { existing, busy } = getDayContext(date, locationId || null);
     const existingByUser = new Map(existing.map((e) => [e.user_id, e]));
+    // The location's opening hours: what "full day" means here, and the window
+    // shifts get checked against.
+    const hours = hoursFor?.(locationId || null) ?? null;
+    const hoursText = hours ? `${hours.open}–${hours.close}` : '';
 
     // Per-member row state, seeded from the day's assignments. Changing the
     // date or location re-seeds from that day's context (adjust-during-render
     // pattern), so stale ticks from the previously shown day can't linger.
-    const [rows, setRows] = useState<Map<string, RowState>>(() => seedRows(existing));
+    const [rows, setRows] = useState<Map<string, RowState>>(() => seedRows(existing, hours));
     const [prevKey, setPrevKey] = useState(`${date}|${locationId}`);
     const key = `${date}|${locationId}`;
     if (key !== prevKey) {
         setPrevKey(key);
-        setRows(seedRows(existing));
+        setRows(seedRows(existing, hours));
         setHolidayAsk(false);
     }
     const holiday = holidayName?.(date) ?? null;
-    const hours = hoursFor?.(locationId || null) ?? null;
-    const hoursText = hours ? `${hours.open}–${hours.close}` : '';
 
     const rowOf = (id: string): RowState => rows.get(id) ?? { selected: false, withTime: false, start: '08:00', end: '16:00' };
     const patchRow = (id: string, patch: Partial<RowState>) =>
@@ -165,10 +164,7 @@ export function ScheduledShiftEditor({
         });
 
     const toISO = (r: RowState) => {
-        if (!r.withTime) {
-            const b = dayBounds(date);
-            return { starts_at: b.start.toISOString(), ends_at: b.end.toISOString(), all_day: true };
-        }
+        if (!r.withTime) return fullDayShift(date, hours);
         const { startDate, endDate } = buildShiftDates(date, r.start, r.end);
         return { starts_at: startDate.toISOString(), ends_at: endDate.toISOString(), all_day: false };
     };
@@ -207,7 +203,8 @@ export function ScheduledShiftEditor({
                 const next = toISO(r);
                 const changed =
                     prev.all_day !== next.all_day ||
-                    (!next.all_day && (isoToTime(prev.starts_at) !== r.start || isoToTime(prev.ends_at) !== r.end));
+                    Date.parse(prev.starts_at) !== Date.parse(next.starts_at) ||
+                    Date.parse(prev.ends_at) !== Date.parse(next.ends_at);
                 if (changed) updated.push({ shift: prev, ...next });
             }
         }
@@ -266,21 +263,10 @@ export function ScheduledShiftEditor({
                 )}
 
                 {/* TEMPLATES — one tap sets the times for everyone ticked. */}
-                {((templates && templates.length > 0) || hours) && (
+                {templates && templates.length > 0 && (
                     <div className="space-y-1.5">
                         <label className="text-label text-gray-400">{t('tpl.title')}</label>
                         <div className="flex flex-wrap items-center gap-1.5">
-                            {hours && (
-                                <button
-                                    type="button"
-                                    onClick={() => applyTimes(hours.open, hours.close)}
-                                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-meta font-semibold text-emerald-800 ring-1 ring-emerald-500/15 dark:bg-emerald-400/10 dark:text-emerald-200"
-                                >
-                                    <StorefrontIcon weight="bold" className="size-3.5" />
-                                    {t('locset.hours')}{' '}
-                                    <span className="font-medium tabular-nums text-emerald-700/70 dark:text-emerald-300/70">{hoursText}</span>
-                                </button>
-                            )}
                             {(templates ?? []).map((tpl) => (
                                 <span key={tpl.id} className="group inline-flex items-center rounded-lg bg-emerald-500/10 ring-1 ring-emerald-500/15 dark:bg-emerald-400/10">
                                     <button
@@ -374,7 +360,7 @@ export function ScheduledShiftEditor({
                                             <button
                                                 type="button"
                                                 onClick={() => patchRow(m.id, { withTime: !r.withTime })}
-                                                title={r.withTime ? t('schedule.allDay') : t('schedule.setTime')}
+                                                title={r.withTime ? (hours ? `${t('locset.hours')} ${hoursText}` : t('schedule.allDay')) : t('schedule.setTime')}
                                                 className={`shrink-0 flex items-center gap-1 rounded-lg px-2 py-1 text-micro font-bold tabular-nums normal-case tracking-normal transition-colors ${
                                                     r.withTime
                                                         ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/70'
@@ -382,7 +368,7 @@ export function ScheduledShiftEditor({
                                                 }`}
                                             >
                                                 <ClockIcon weight="bold" className="w-3 h-3" />
-                                                {r.withTime ? `${r.start}–${r.end}` : t('schedule.allDay')}
+                                                {r.withTime ? `${r.start}–${r.end}` : hours ? hoursText : t('schedule.allDay')}
                                             </button>
                                         )}
                                     </div>
@@ -404,25 +390,8 @@ export function ScheduledShiftEditor({
                                                 ) : null;
                                             })()}
                                             {/* This person's time from a template, or save theirs as one. */}
-                                            {(templates?.length || onSaveTemplate || hours) && (
+                                            {(templates?.length || onSaveTemplate) && (
                                                 <div className="col-span-2 flex flex-wrap items-center gap-1">
-                                                    {hours && (() => {
-                                                        const on = r.start === hours.open && r.end === hours.close;
-                                                        return (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => patchRow(m.id, { start: hours.open, end: hours.close })}
-                                                                aria-pressed={on}
-                                                                className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold transition-colors ${
-                                                                    on
-                                                                        ? 'bg-emerald-600 text-white'
-                                                                        : 'bg-emerald-500/10 text-emerald-800 hover:bg-emerald-500/15 dark:text-emerald-200'
-                                                                }`}
-                                                            >
-                                                                {t('locset.hours')}
-                                                            </button>
-                                                        );
-                                                    })()}
                                                     {(templates ?? []).map((tpl) => {
                                                         const on = tplTime(tpl.start_time) === r.start && tplTime(tpl.end_time) === r.end;
                                                         return (

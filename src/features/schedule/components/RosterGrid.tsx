@@ -74,6 +74,8 @@ interface RosterGridProps {
     availabilityFor?: (memberId: string, date: string) => Availability | undefined;
     /** A planned shift falls outside this location's opening hours. */
     outsideHours?: (shift: ScheduledShift) => boolean;
+    /** Shows as the location letter: all-day, or exactly the location's opening hours. */
+    isLetter?: (shift: ScheduledShift) => boolean;
 }
 
 /** Diagonal hatch for "can't work" cells — reads as blocked without shouting. */
@@ -92,7 +94,7 @@ function WeekPreview({ days, tone }: { days: number[]; tone: 'sky' | 'emerald' }
     );
 }
 
-export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow, leaveFor, onOpenProfile, holidayFor, requiredOn, availabilityFor, outsideHours }: RosterGridProps) {
+export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow, leaveFor, onOpenProfile, holidayFor, requiredOn, availabilityFor, outsideHours, isLetter }: RosterGridProps) {
     const t = useTranslation();
     const [fillMenu, setFillMenu] = useState<{ id: string; name: string; left: number; top: number } | null>(null);
 
@@ -261,7 +263,7 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                             {days.map((d) => {
                                                 const items = memberDays?.get(d.key) ?? [];
                                                 const has = items.length > 0;
-                                                const allDay = has && items.every((s) => s.all_day);
+                                                const allDay = has && items.every((s) => s.all_day || !!isLetter?.(s));
                                                 const leave = !has ? leaveFor?.(row.id, d.key) : undefined;
                                                 const tappable = canManage && row.editable && !!onCellTap && !leave;
                                                 const holiday = holidayFor?.(d.key) ?? null;
@@ -274,7 +276,7 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                         onClick={tappable ? () => onCellTap!(row.id, d.key) : undefined}
                                                         title={
                                                             [
-                                                                has && !allDay ? items.map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`).join(', ') : '',
+                                                                has && items.some((s) => !s.all_day) ? items.filter((s) => !s.all_day).map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`).join(', ') : '',
                                                                 avail ? availText(avail) : '',
                                                                 outside ? t('locset.outsideShort') : '',
                                                             ].filter(Boolean).join('\n') || undefined

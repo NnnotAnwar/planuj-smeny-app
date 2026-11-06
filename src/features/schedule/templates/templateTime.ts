@@ -4,9 +4,6 @@ import type { ShiftTemplate } from './types';
  *  buttons across the rota, so the list has to stay short. */
 export const MAX_TEMPLATES = 8;
 
-/** Brush value for "each location's opening hours" (not a stored template). */
-export const HOURS_BRUSH = '@hours';
-
 /** HH:MM of a template's stored time (HH:MM[:SS]). */
 export const tplTime = (t: string) => t.slice(0, 5);
 
