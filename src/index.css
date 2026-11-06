@@ -243,6 +243,15 @@ body {
     }                                                                                                                                                                     
 }
 
+/* On phones the Start / End-shift dock sits above the tab bar; lift toasts
+   over it while it's on screen so a message never hides the button it's
+   about. Unlayered, so it outranks the utility classes on .toast-stack. */
+@media (width < 48rem) {
+  body:has([data-mobile-dock]) .toast-stack {
+    bottom: calc(10rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
