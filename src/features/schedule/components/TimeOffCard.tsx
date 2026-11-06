@@ -57,9 +57,10 @@ export function TimeOffRequestModal({
                 starts_on: from,
                 ends_on: to,
                 note: note.trim() || null,
-                // A manager entering leave (for anyone incl. self) approves it directly.
-                approved: managerMode,
-                reviewed_by: managerMode ? selfId : null,
+                // A manager entering leave for someone approves it directly; their
+                // own leave is a request like anyone's (someone else approves).
+                approved: managerMode && userId !== selfId,
+                reviewed_by: managerMode && userId !== selfId ? selfId : null,
             });
             qc.invalidateQueries({ queryKey: ['time-off'] });
             // Approved leave deletes the member's rota shifts on those days (DB trigger).
@@ -204,7 +205,7 @@ export function TimeOffCard({
                                 {range(e)}
                                 {e.note ? <span className="text-gray-400"> · {e.note}</span> : null}
                             </span>
-                            {e.status === 'pending' && managerMode ? (
+                            {e.status === 'pending' && managerMode && e.user_id !== selfId ? (
                                 <span className="flex items-center gap-1 shrink-0">
                                     <button
                                         onClick={() => reviewM.mutate({ id: e.id, approve: true })}

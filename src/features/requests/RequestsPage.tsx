@@ -10,7 +10,7 @@ import { Skeleton } from '@shared/components/Skeleton';
 import { TimeOffRequestModal } from '@features/schedule/components/TimeOffCard';
 import { RequestCard } from './RequestCard';
 import { MemberRequestModal } from './MemberRequestModal';
-import { useRequests, canDecideOn, markRequestsSeen } from './useRequests';
+import { useRequests, canDecideOn, markRequestsSeen, isMine } from './useRequests';
 
 /**
  * --- REQUESTS (the shared inbox) ---
@@ -38,10 +38,12 @@ export function RequestsPage() {
     }, [tab, user, mine.length]);
 
     if (!user) return null;
+    // The tab count is what others wait on — your own pending ones don't count.
+    const waiting = toReview.filter((i) => !isMine(i, user.id)).length;
 
     const tabs: { id: Tab; label: string }[] = canObserve
         ? [
-              { id: 'review', label: `${t('requests.toReview')}${toReview.length ? ` (${toReview.length})` : ''}` },
+              { id: 'review', label: `${t('requests.toReview')}${waiting ? ` (${waiting})` : ''}` },
               { id: 'history', label: t('requests.history') },
               { id: 'mine', label: t('requests.mine') },
           ]
@@ -96,6 +98,7 @@ export function RequestsPage() {
                                 item={item}
                                 conflicts={conflictsFor(item)}
                                 canDecide={canDecideOn(user, item)}
+                                own={isMine(item, user.id)}
                                 observer={canObserve}
                                 busy={busyKey === item.key}
                                 onDecide={(approve, note) => decide.mutate({ item, approve, note })}

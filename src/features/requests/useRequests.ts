@@ -1,7 +1,7 @@
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthContext } from '@/features/auth/AuthContext';
-import { can, isSuperAdmin, RANK } from '@shared/auth/permissions';
+import { can } from '@shared/auth/permissions';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { toast } from '@shared/toast/toastStore';
 import type { NameChangeRequest, TimeOff, User } from '@shared/types';
@@ -116,13 +116,13 @@ export const requestKeys = {
     member: ['requests', 'member'] as const,
 };
 
-/** Whether `user` may decide on `item` (mirrors can_review_request in the DB). */
+/** Whether `user` may decide on `item` (mirrors can_review_request in the DB):
+ *  never on your own request — someone else always approves. */
 export function canDecideOn(user: User | null, item: RequestItem): boolean {
     if (!user) return false;
     if (item.canReview !== undefined) return item.canReview; // the server knows (anonymous, role rights)
     if (!can(user, 'requests.decide')) return false;
-    const involved = item.userId === user.id || item.takerId === user.id;
-    return !involved || isSuperAdmin(user) || user.role.rank >= RANK.OWNER;
+    return item.userId !== user.id && item.takerId !== user.id;
 }
 
 function useRequestQueries(user: User | null) {
@@ -159,9 +159,10 @@ export function useRequests() {
         const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
         const decidedAt = (i: RequestItem) => new Date(i.reviewedAt ?? i.createdAt).getTime();
         return {
-            // Oldest first: a fair queue.
+            // Oldest first: a fair queue. Your own pending ones show too
+            // (without buttons) so the queue is the whole picture.
             toReview: items
-                .filter((i) => i.status === 'pending' && !isMine(i, me))
+                .filter((i) => i.status === 'pending')
                 .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
             history: items
                 .filter((i) => i.status !== 'pending' && decidedAt(i) >= monthAgo)
