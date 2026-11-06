@@ -1,4 +1,5 @@
 import { useAuthContext } from '@/features/auth/AuthContext';
+import { can } from '@shared/auth/permissions';
 import { Skeleton } from '@shared/components/Skeleton';
 import { useAnnouncements } from './useAnnouncements';
 import { formatDateShort } from '@shared/utils/date';
@@ -23,7 +24,8 @@ export function AnnouncementsPage() {
   const [body, setBody] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const isManager = (user?.role.rank ?? 0) >= 20;
+  // Posting, editing, pinning and deleting is an admin action (managers only read).
+  const isManager = can(user, 'announcements.post');
 
   const resetForm = () => {
     setEditingId(null);

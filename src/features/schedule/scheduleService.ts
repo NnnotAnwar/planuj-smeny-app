@@ -172,10 +172,15 @@ export const scheduleService = {
         if (error) throw new Error(error.code === '23P01' ? 'TIMEOFF_OVERLAP' : error.message);
     },
 
-    async reviewTimeOff(id: string, approve: boolean, reviewerId: string): Promise<void> {
+    async reviewTimeOff(id: string, approve: boolean, reviewerId: string, note?: string | null): Promise<void> {
         const { error } = await supabase
             .from('time_off')
-            .update({ status: approve ? 'approved' : 'declined', reviewed_by: reviewerId })
+            .update({
+                status: approve ? 'approved' : 'declined',
+                reviewed_by: reviewerId,
+                review_note: note?.trim() || null,
+                reviewed_at: new Date().toISOString(),
+            })
             .eq('id', id);
         if (error) throw new Error(error.code === '23P01' ? 'TIMEOFF_OVERLAP' : error.message);
     },

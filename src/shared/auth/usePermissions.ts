@@ -7,6 +7,8 @@ import {
     canManageEmployees,
     canManageLocations,
     canManageMember,
+    can,
+    type Capability,
 } from './permissions';
 
 /**
@@ -29,6 +31,8 @@ export function usePermissions() {
             canManageLocations: !!user && canManageLocations(user),
             canManageMember: (target: Pick<Profile, 'id' | 'role'>) =>
                 !!user && canManageMember(user, target),
+            /** Capability check for the current user — see permissions.ts. */
+            can: (cap: Capability) => can(user, cap),
         }),
         [user],
     );

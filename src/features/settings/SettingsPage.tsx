@@ -19,6 +19,7 @@ import { useTheme, COMBO_LIST } from '@app/providers/ThemeContext';
 import { usePreferences } from '@shared/preferences/PreferencesContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useAuthContext } from '@features/auth/AuthContext';
+import { can } from '@shared/auth/permissions';
 import { useDismissibleWarning } from '@shared/hooks/useDismissibleWarning';
 import { HOLIDAY_WARNING_KEY } from '@features/schedule/holidays/HolidayWarning';
 import { useNotificationPrefs } from '@features/notifications/notificationPrefs';
@@ -148,7 +149,7 @@ export default function SettingsPage() {
   const isReviewer = (user?.role.rank ?? 0) >= 30;
   // Managers who ticked "don't show again" on the holiday warning can bring it back.
   const holidayWarn = useDismissibleWarning(HOLIDAY_WARNING_KEY);
-  const canPlan = (user?.role.rank ?? 0) >= 20;
+  const canPlan = can(user, 'rota.edit');
   const isDark = resolvedTheme === 'dark';
 
   // GDPR self-service: export personal data / delete account.

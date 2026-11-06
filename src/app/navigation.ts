@@ -14,7 +14,7 @@ import {
 
 import { usePermissions } from '@shared/auth/usePermissions';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
-import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
+import { useRequestsBadge } from '@features/requests/useRequests';
 import { useUnreadAnnouncementCount } from '@features/announcements/useUnreadAnnouncementCount';
 import type { TranslationKey } from '@shared/i18n/translations';
 
@@ -77,9 +77,10 @@ export const NAV_ITEMS: readonly NavItemDef[] = [
     { id: 'schedule', labelKey: 'nav.schedule', icon: CalendarBlankIcon, route: '/schedule', section: 'work', mobileSlot: { staff: 2, manager: 2 } },
     { id: 'overview', labelKey: 'nav.myHours', icon: ChartBarIcon, route: '/overview', section: 'work', mobileSlot: { staff: 3 } },
     { id: 'announcements', labelKey: 'nav.announcements', icon: MegaphoneIcon, route: '/announcements', section: 'work', mobileSlot: { staff: 4 }, badge: 'unreadAnnouncements' },
+    { id: 'requests', labelKey: 'nav.requests', icon: UserCircleGearIcon, route: '/requests', section: 'work', badge: 'pendingRequests' },
     { id: 'timesheets', labelKey: 'nav.timesheets', icon: ClockUserIcon, route: '/timesheets', section: 'manage', visible: (c) => c.canViewAdminPanel, mobileSlot: { manager: 3 } },
     { id: 'admin', labelKey: 'nav.team', icon: ShieldCheckIcon, route: '/admin', section: 'manage', visible: (c) => c.canViewAdminPanel, mobileSlot: { manager: 4 } },
-    { id: 'requests', labelKey: 'nav.requests', icon: UserCircleGearIcon, route: '/requests', section: 'manage', visible: (c) => c.canManageEmployees, badge: 'pendingRequests' },
+    
     { id: 'activity', labelKey: 'nav.activity', icon: ClockCounterClockwiseIcon, route: '/activity', section: 'manage', visible: (c) => c.canManageEmployees },
     { id: 'settings', labelKey: 'nav.settings', icon: GearIcon, route: '/settings', section: 'system' },
 ];
@@ -103,8 +104,8 @@ export interface ResolvedNavItem {
  */
 export function useNavItems(): ResolvedNavItem[] {
     const { canViewAdminPanel, canManageEmployees } = usePermissions();
-    // Name changes awaiting an admin (time off joins once Requests becomes the shared inbox).
-    const pendingRequests = usePendingNameRequestCount();
+    // Deciders: requests waiting for them; everyone else: unseen decisions on their own.
+    const pendingRequests = useRequestsBadge();
     const unreadAnnouncements = useUnreadAnnouncementCount();
     const t = useTranslation();
 

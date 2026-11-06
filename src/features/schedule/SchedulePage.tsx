@@ -26,6 +26,7 @@ import { TimeOffCard } from './components/TimeOffCard';
 import { toast } from '@shared/toast/toastStore';
 import { exportSchedule, type ScheduleExportSection } from './exportSchedule';
 import { PageHeader } from '@shared/components/PageHeader';
+import { can } from '@shared/auth/permissions';
 import { useDismissibleWarning } from '@shared/hooks/useDismissibleWarning';
 import { useHolidays } from './holidays/useHolidays';
 import { HolidayWarningDialog, HOLIDAY_WARNING_KEY } from './holidays/HolidayWarning';
@@ -63,10 +64,12 @@ export default function SchedulePage() {
     const t = useTranslation();
     const qc = useQueryClient();
 
-    const canManage = (user?.role.rank ?? 0) >= 20;
+    // Managers OBSERVE the team rota; admins PLAN it (see permissions.ts).
+    const canObserve = can(user, 'team.view');
+    const canManage = can(user, 'rota.edit');
 
     const [selectedMonth, setSelectedMonth] = useState(() => monthKeyOf(new Date()));
-    const [activeTab, setActiveTab] = useState<'mine' | 'team'>(canManage ? 'team' : 'mine');
+    const [activeTab, setActiveTab] = useState<'mine' | 'team'>(canObserve ? 'team' : 'mine');
     // Filter the location calendars down to just the caller's team.
     const [teamOnly, setTeamOnly] = useState(false);
     // Free-text person filter (narrows grid rows and calendar chips).
@@ -106,14 +109,14 @@ export default function SchedulePage() {
     const membersQ = useQuery({
         queryKey: ['schedule-members'],
         queryFn: () => timesheetService.getMembers(),
-        enabled: canManage,
+        enabled: canObserve,
     });
 
     // Who belongs to each location's rota (curated by managers).
     const rosterQ = useQuery({
         queryKey: ['location-roster'],
         queryFn: () => scheduleService.getRoster(),
-        enabled: canManage,
+        enabled: canObserve,
     });
     const rosterAddM = useMutation({
         mutationFn: ({ locationId, userId }: { locationId: string; userId: string }) =>
@@ -217,7 +220,7 @@ export default function SchedulePage() {
     });
 
     const shifts = useMemo(() => scheduleQ.data ?? [], [scheduleQ.data]);
-    const teamView = canManage && activeTab === 'team';
+    const teamView = canObserve && activeTab === 'team';
     const draftCount = useMemo(() => shifts.filter((s) => !s.published).length, [shifts]);
 
     // "My team only" + free-text person filter narrow what the calendars show.
@@ -593,7 +596,7 @@ export default function SchedulePage() {
         <div className="space-y-4 px-1 pb-10">
             {/* HEADER — controls mirror the Overview page (export dropdown + month picker). */}
             <PageHeader
-                eyebrow={canManage ? t('schedule.roster') : t('schedule.mine')}
+                eyebrow={canObserve ? t('schedule.roster') : t('schedule.mine')}
                 title={t('nav.schedule')}
                 actions={
                     <>
@@ -641,8 +644,8 @@ export default function SchedulePage() {
                 }
             />
 
-            {/* Tabs (managers) + quick add */}
-            {canManage && (
+            {/* Tabs (managers observe, admins also plan) + quick add */}
+            {canObserve && (
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2 min-w-0">
                         <div className="segmented">
@@ -708,7 +711,7 @@ export default function SchedulePage() {
                             />
                         )}
                     </div>
-                    {teamView && (
+                    {teamView && canManage && (
                         <div className="flex flex-wrap items-center gap-2">
                             {draftCount > 0 && (
                                 <Button size="sm" icon={PaperPlaneTiltIcon} loading={publishM.isPending} onClick={() => publishM.mutate()}>
@@ -736,7 +739,7 @@ export default function SchedulePage() {
             )}
 
             {/* MY TEAM — self-service: take free members / release your own. */}
-            {teamView && user && (
+            {teamView && canManage && user && (
                 <MyTeam members={membersQ.data ?? []} userId={user.id} userRank={user.role.rank ?? 0} />
             )}
 
@@ -747,12 +750,12 @@ export default function SchedulePage() {
                     members={plannableMembers}
                     selfId={user.id}
                     orgId={user.organization_id}
-                    managerMode={teamView}
+                    managerMode={teamView && canManage}
                 />
             )}
 
             {/* OPEN SHIFTS — post (managers) / claim (members). */}
-            {user && <OpenShiftsCard user={user} locations={locations} canManage={teamView} />}
+            {user && <OpenShiftsCard user={user} locations={locations} canManage={teamView && canManage} />}
 
             {scheduleQ.isLoading ? (
                 <div className="space-y-3" aria-hidden>
@@ -762,7 +765,7 @@ export default function SchedulePage() {
                 </div>
             ) : teamView ? (
                 <div className="space-y-3">
-                    {viewMode === 'grid' && (
+                    {viewMode === 'grid' && canManage && (
                         <TemplateBrush
                             templates={templateList}
                             value={brush?.id ?? null}
@@ -810,7 +813,7 @@ export default function SchedulePage() {
                                             className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
                                         />
                                     </button>
-                                    {sec.id && (
+                                    {sec.id && canManage && (
                                         <button
                                             type="button"
                                             onClick={() => setCoverageFor({ id: sec.id!, name: sec.name })}
@@ -821,7 +824,7 @@ export default function SchedulePage() {
                                             <UsersThreeIcon weight="bold" className="w-4 h-4" />
                                         </button>
                                     )}
-                                    {sec.items.length > 0 && (
+                                    {sec.items.length > 0 && canManage && (
                                         <button
                                             type="button"
                                             onClick={() => clearLocation(sec.name, sec.items)}
@@ -853,7 +856,7 @@ export default function SchedulePage() {
                                                                 const e = leaveOn(memberId, date);
                                                                 return e ? t(`timeoff.short_${e.kind}` as 'timeoff.short_vacation') : undefined;
                                                             }}
-                                                            canManage
+                                                            canManage={canManage}
                                                             onCellTap={(memberId, date) => cellTap(sec.id)(memberId, date)}
                                                             onQuickFill={quickFill(sec.id)}
                                                             onRemoveRow={removeMember(sec.id, sec.items)}
@@ -863,7 +866,7 @@ export default function SchedulePage() {
                                                             availabilityFor={availabilityFor}
                                                         />
                                                     )}
-                                                    {sec.id && addable.length > 0 && (
+                                                    {sec.id && canManage && addable.length > 0 && (
                                                         <div className="flex items-center gap-2 px-4 py-2.5 border-t border-gray-50 dark:border-gray-800/60">
                                                             <MemberSearchAdd
                                                                 candidates={addable}
@@ -880,8 +883,8 @@ export default function SchedulePage() {
                                             monthKey={selectedMonth}
                                             shifts={sec.items}
                                             chipLabel={memberShort}
-                                            canManage
-                                            onDayClick={(date) => openDay(date, sec.id)}
+                                            canManage={canManage}
+                                            onDayClick={canManage ? (date) => openDay(date, sec.id) : undefined}
                                             holidayFor={holidayFor}
                                             requiredOn={requiredOn(sec.id)}
                                             isConfirmed={(s) => orgConfirmed.has(s.id)}
