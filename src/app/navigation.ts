@@ -15,6 +15,7 @@ import {
 import { usePermissions } from '@shared/auth/usePermissions';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { usePendingNameRequestCount } from '@features/admin/usePendingNameRequests';
+import { useUnreadAnnouncementCount } from '@features/announcements/useUnreadAnnouncementCount';
 import type { TranslationKey } from '@shared/i18n/translations';
 
 /**
@@ -43,7 +44,13 @@ export interface NavCaps {
 }
 
 /** Named live-badge sources, resolved by `useNavItems`. */
-type BadgeSource = 'pendingRequests';
+type BadgeSource = 'pendingRequests' | 'unreadAnnouncements';
+
+/**
+ * Who the mobile tab bar is laid out for. Staff (rank < 20) live in their own
+ * schedule and hours; managers and up live in the rota, timesheets and team.
+ */
+export type MobileAudience = 'staff' | 'manager';
 
 export interface NavItemDef {
     id: string;
@@ -56,18 +63,22 @@ export interface NavItemDef {
     section: NavSection;
     /** When omitted the item is always visible; otherwise gated on capabilities. */
     visible?: (caps: NavCaps) => boolean;
-    /** Lit directly in the mobile bottom bar; the rest live in the "More" sheet. */
-    primaryOnMobile?: boolean;
+    /**
+     * Slot in the mobile tab bar per audience (lower = further left); items
+     * without a slot for the current audience live in the "More" sheet. The bar
+     * holds at most four destinations + "More" (the 3–5 tab rule).
+     */
+    mobileSlot?: Partial<Record<MobileAudience, number>>;
     badge?: BadgeSource;
 }
 
 export const NAV_ITEMS: readonly NavItemDef[] = [
-    { id: 'dashboard', labelKey: 'nav.dashboard', shortLabelKey: 'nav.home', icon: SquaresFourIcon, route: '/', section: 'work', primaryOnMobile: true },
-    { id: 'overview', labelKey: 'nav.overview', icon: ChartBarIcon, route: '/overview', section: 'work', primaryOnMobile: true },
-    { id: 'announcements', labelKey: 'nav.announcements', icon: MegaphoneIcon, route: '/announcements', section: 'work'},
-    { id: 'schedule', labelKey: 'nav.schedule', icon: CalendarBlankIcon, route: '/schedule', section: 'work' },
-    { id: 'admin', labelKey: 'nav.adminPanel', shortLabelKey: 'nav.admin', icon: ShieldCheckIcon, route: '/admin', section: 'manage', visible: (c) => c.canViewAdminPanel, primaryOnMobile: true },
-    { id: 'timesheets', labelKey: 'nav.timesheets', icon: ClockUserIcon, route: '/timesheets', section: 'manage', visible: (c) => c.canViewAdminPanel },
+    { id: 'dashboard', labelKey: 'nav.dashboard', shortLabelKey: 'nav.home', icon: SquaresFourIcon, route: '/', section: 'work', mobileSlot: { staff: 1, manager: 1 } },
+    { id: 'schedule', labelKey: 'nav.schedule', icon: CalendarBlankIcon, route: '/schedule', section: 'work', mobileSlot: { staff: 2, manager: 2 } },
+    { id: 'overview', labelKey: 'nav.myHours', icon: ChartBarIcon, route: '/overview', section: 'work', mobileSlot: { staff: 3 } },
+    { id: 'announcements', labelKey: 'nav.announcements', icon: MegaphoneIcon, route: '/announcements', section: 'work', mobileSlot: { staff: 4 }, badge: 'unreadAnnouncements' },
+    { id: 'timesheets', labelKey: 'nav.timesheets', icon: ClockUserIcon, route: '/timesheets', section: 'manage', visible: (c) => c.canViewAdminPanel, mobileSlot: { manager: 3 } },
+    { id: 'admin', labelKey: 'nav.team', icon: ShieldCheckIcon, route: '/admin', section: 'manage', visible: (c) => c.canViewAdminPanel, mobileSlot: { manager: 4 } },
     { id: 'requests', labelKey: 'nav.requests', icon: UserCircleGearIcon, route: '/requests', section: 'manage', visible: (c) => c.canManageEmployees, badge: 'pendingRequests' },
     { id: 'activity', labelKey: 'nav.activity', icon: ClockCounterClockwiseIcon, route: '/activity', section: 'manage', visible: (c) => c.canManageEmployees },
     { id: 'settings', labelKey: 'nav.settings', icon: GearIcon, route: '/settings', section: 'system' },
@@ -81,7 +92,8 @@ export interface ResolvedNavItem {
     icon: Icon;
     route: string;
     section: NavSection;
-    primaryOnMobile: boolean;
+    /** Tab-bar slot for the current user's audience, or null = "More" sheet. */
+    mobileSlot: number | null;
     badgeCount: number;
 }
 
@@ -91,12 +103,15 @@ export interface ResolvedNavItem {
  */
 export function useNavItems(): ResolvedNavItem[] {
     const { canViewAdminPanel, canManageEmployees } = usePermissions();
+    // Name changes awaiting an admin (time off joins once Requests becomes the shared inbox).
     const pendingRequests = usePendingNameRequestCount();
+    const unreadAnnouncements = useUnreadAnnouncementCount();
     const t = useTranslation();
 
     return useMemo(() => {
         const caps: NavCaps = { canViewAdminPanel, canManageEmployees };
-        const badges: Record<BadgeSource, number> = { pendingRequests };
+        const audience: MobileAudience = canViewAdminPanel ? 'manager' : 'staff';
+        const badges: Record<BadgeSource, number> = { pendingRequests, unreadAnnouncements };
         return NAV_ITEMS.filter((i) => !i.visible || i.visible(caps)).map((i) => ({
             id: i.id,
             label: t(i.labelKey),
@@ -104,8 +119,8 @@ export function useNavItems(): ResolvedNavItem[] {
             icon: i.icon,
             route: i.route,
             section: i.section,
-            primaryOnMobile: !!i.primaryOnMobile,
+            mobileSlot: i.mobileSlot?.[audience] ?? null,
             badgeCount: i.badge ? badges[i.badge] : 0,
         }));
-    }, [canViewAdminPanel, canManageEmployees, pendingRequests, t]);
+    }, [canViewAdminPanel, canManageEmployees, pendingRequests, unreadAnnouncements, t]);
 }

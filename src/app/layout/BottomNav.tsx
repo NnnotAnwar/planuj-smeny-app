@@ -88,8 +88,8 @@ export function BottomNav() {
 
     // Primary bar destinations vs. those tucked into the "More" sheet — both
     // derived from the shared nav config (single source of truth with Sidebar).
-    const items = navItems.filter((i) => i.primaryOnMobile);
-    const moreItems = navItems.filter((i) => !i.primaryOnMobile);
+    const items = navItems.filter((i) => i.mobileSlot !== null).sort((a, b) => a.mobileSlot! - b.mobileSlot!);
+    const moreItems = navItems.filter((i) => i.mobileSlot === null);
 
     // When the sheet is open only "More" is lit; otherwise it's lit on its routes.
     const moreActive = menuOpen || moreItems.some((i) => i.route === pathname);

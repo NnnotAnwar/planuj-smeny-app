@@ -338,7 +338,7 @@ export default function OverviewPage() {
     <div className="space-y-4 px-1 pb-10">
       <PageHeader
         eyebrow={selectedMonth ? t('overview.titleMonthly') : t('overview.titleAll')}
-        title={t('nav.overview')}
+        title={t('nav.myHours')}
         actions={
           <>
             <div className="flex items-center gap-2">
