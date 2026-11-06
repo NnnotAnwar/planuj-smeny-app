@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { PlusIcon, UserCircleIcon, CheckCircleIcon, ChatTextIcon } from '@phosphor-icons/react';
+import { PlusIcon, CheckCircleIcon, ChatTextIcon } from '@phosphor-icons/react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { can } from '@shared/auth/permissions';
 import { PageHeader } from '@shared/components/PageHeader';
@@ -125,14 +124,6 @@ export function RequestsPage() {
                         <Button size="sm" variant="secondary" icon={ChatTextIcon} onClick={() => setAsking(true)}>
                             {t('mreq.new')}
                         </Button>
-                        <Link
-                            to="/profile"
-                            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-meta font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink dark:text-slate-400 dark:hover:bg-white/8 dark:hover:text-white"
-                            title={t('requests.nameHint')}
-                        >
-                            <UserCircleIcon weight="bold" className="size-4" />
-                            {t('requests.typeName')}
-                        </Link>
                     </div>
                     {mine.length === 0 ? (
                         empty(t('requests.mineEmpty'))
