@@ -12,13 +12,19 @@ managers keep an eye on the team. On the web or as a native Android/iOS app.
 
 ## 📸 Screenshots
 
-| Dashboard | Command palette (⌘K) |
-| :--: | :--: |
-| ![Dashboard](docs/screenshots/desktop-dashboard.png) | ![Command palette](docs/screenshots/command-palette.png) |
+_Czech UI, dark theme with the Amber scheme. Test data from the preprod project._
 
-| Overview — dark, Violet motif | Mobile (home · More) |
+| Home — live board | Roster grid (location letters, Σ hours) |
 | :--: | :--: |
-| ![Overview dark](docs/screenshots/overview-dark-violet.png) | <img src="docs/screenshots/mobile-home.png" width="220" /> <img src="docs/screenshots/mobile-more.png" width="220" /> |
+| ![Home](docs/screenshots/desktop-dashboard.png) | ![Roster grid](docs/screenshots/schedule-grid.png) |
+
+| My hours — month pace vs last month | Command palette (⌘K) |
+| :--: | :--: |
+| ![My hours](docs/screenshots/my-hours.png) | ![Command palette](docs/screenshots/command-palette.png) |
+
+| Requests inbox | Mobile (home · More) |
+| :--: | :--: |
+| ![Requests](docs/screenshots/requests.png) | <img src="docs/screenshots/mobile-home.png" width="200" /> <img src="docs/screenshots/mobile-more.png" width="200" /> |
 
 ---
 
