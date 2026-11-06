@@ -75,10 +75,11 @@ const FIELD_LABEL: Record<string, TranslationKey> = {
 };
 
 /** "Role: Manager · Organization: Acme" from a profile_updated audit entry. */
-function fmtProfileChanges(changes: { field: string; new?: string | null }[] | undefined, t: Translate): string | undefined {
-    if (!changes || changes.length === 0) return undefined;
-    return changes
-        .map((c) => `${t(FIELD_LABEL[c.field] ?? 'notif.field.name')}: ${c.new || '—'}`)
+function fmtProfileChanges(changes: { field?: string; new?: string | null }[] | undefined, t: Translate): string | undefined {
+    const rows = (changes ?? []).filter((c) => !!c.field);
+    if (rows.length === 0) return undefined;
+    return rows
+        .map((c) => `${t(FIELD_LABEL[c.field!] ?? 'notif.field.name')}: ${c.new || '—'}`)
         .join(' · ');
 }
 

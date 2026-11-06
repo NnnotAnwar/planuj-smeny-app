@@ -14,6 +14,8 @@ import {
     UserGearIcon,
     PaperPlaneTiltIcon,
     SunHorizonIcon,
+    IdentificationBadgeIcon,
+    ArrowsDownUpIcon,
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
@@ -50,7 +52,19 @@ const ACTION: Record<string, ActionMeta> = {
     timeoff_declined: { labelKey: 'audit.actionTimeoffDeclined', Icon: XCircleIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
     late_15: { labelKey: 'audit.actionLate', Icon: ClockCountdownIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
     late_60: { labelKey: 'audit.actionLate', Icon: ClockCountdownIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
+    role_created: { labelKey: 'audit.roleCreated', Icon: IdentificationBadgeIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    role_updated: { labelKey: 'audit.roleUpdated', Icon: PencilSimpleIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    role_permissions: { labelKey: 'audit.rolePermissions', Icon: IdentificationBadgeIcon, badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400' },
+    role_moved: { labelKey: 'audit.roleMoved', Icon: ArrowsDownUpIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    role_deleted: { labelKey: 'audit.roleDeleted', Icon: TrashIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
 };
+
+/** "rw" → "View · Change" for a permission cell. */
+function fmtRights(flags: string | null | undefined, t: ReturnType<typeof useTranslation>): string {
+    const f = flags ?? '';
+    const parts = [f.includes('r') && t('roles.action.read'), f.includes('w') && t('roles.action.write'), f.includes('d') && t('roles.action.delete')].filter(Boolean);
+    return parts.length ? parts.join(' · ') : t('audit.noRights');
+}
 
 const FALLBACK_META: ActionMeta = { labelKey: 'audit.actionGeneric', Icon: ClockCounterClockwiseIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' };
 
@@ -296,6 +310,52 @@ function AuditBody({ entry }: { entry: ShiftAuditLog }) {
                 <p className="text-caption tabular-nums text-gray-700 dark:text-gray-200">{parts.join(' · ')}</p>
             ) : null;
         }
+        case 'profile_updated': {
+            const rows = (d.changes ?? []).filter((c) => !!c.field);
+            if (rows.length === 0) return null;
+            return (
+                <div className="space-y-0.5">
+                    {rows.map((c, i) => (
+                        <div key={i} className="flex flex-wrap items-baseline gap-x-1.5">
+                            <span className="text-caption text-gray-400">{t(`notif.field.${c.field}` as TranslationKey)}:</span>
+                            <DiffRow before={c.old || '—'} after={c.new || '—'} />
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+        case 'role_created':
+            return null;
+        case 'role_updated':
+            return d.old_name && d.old_name !== d.role_name ? <DiffRow before={d.old_name} after={d.role_name ?? '—'} /> : (
+                <p className="flex items-center gap-1.5 text-caption text-gray-700 dark:text-gray-200">
+                    {t('audit.roleColor')}
+                    <span className="size-3 rounded-full" style={{ backgroundColor: d.old_color ?? undefined }} />
+                    <ArrowRightIcon weight="bold" className="size-3 text-gray-300" />
+                    <span className="size-3 rounded-full" style={{ backgroundColor: d.color ?? undefined }} />
+                </p>
+            );
+        case 'role_moved':
+            return (
+                <p className="text-caption text-gray-700 dark:text-gray-200">
+                    {t(d.direction === 'up' ? 'audit.roleMovedAbove' : 'audit.roleMovedBelow', { other: d.other_name ?? '—' })}
+                </p>
+            );
+        case 'role_deleted':
+            return d.moved ? (
+                <p className="text-caption text-gray-700 dark:text-gray-200">{t('roles.deleteMoves', { n: d.moved, role: d.moved_to ?? '—' })}</p>
+            ) : null;
+        case 'role_permissions':
+            return (
+                <div className="space-y-0.5">
+                    {(d.changes ?? []).filter((c) => !!c.area).map((c, i) => (
+                        <div key={i} className="flex flex-wrap items-baseline gap-x-1.5">
+                            <span className="text-caption text-gray-400">{t(`roles.area.${c.area}` as TranslationKey)}:</span>
+                            <DiffRow before={fmtRights(c.old, t)} after={fmtRights(c.new, t)} />
+                        </div>
+                    ))}
+                </div>
+            );
         default:
             return null;
     }
@@ -305,7 +365,8 @@ function AuditCard({ entry, onOpenUser }: { entry: ShiftAuditLog; onOpenUser: (u
     const t = useTranslation();
     const meta = ACTION[entry.action] ?? FALLBACK_META;
     const actor = entry.details.actor_name ?? t('audit.someone');
-    const target = entry.details.target_name ?? t('audit.member');
+    // Role events are about a role, not a person.
+    const target = entry.action.startsWith('role_') ? (entry.details.role_name ?? '—') : (entry.details.target_name ?? t('audit.member'));
     const when = formatDateTime(entry.created_at);
 
     return (

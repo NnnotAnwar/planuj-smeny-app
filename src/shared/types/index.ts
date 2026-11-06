@@ -276,17 +276,28 @@ export const ShiftAuditLogSchema = z.object({
       kind: z.string().nullable().optional(),
       starts_on: z.string().nullable().optional(),
       ends_on: z.string().nullable().optional(),
-      // Admin profile edits (name / role / organization changed from the panel).
+      // Admin profile edits (field: name / role / organization) and role
+      // permission edits (area + "rwd" flags before / after).
       changes: z
         .array(
           z.object({
-            field: z.string(),
+            field: z.string().optional(),
+            area: z.string().optional(),
             old: z.string().nullable().optional(),
             new: z.string().nullable().optional(),
           }),
         )
         .optional(),
+      // Role events (role_created / updated / moved / deleted / permissions).
+      role_name: z.string().nullable().optional(),
+      color: z.string().nullable().optional(),
+      old_color: z.string().nullable().optional(),
+      direction: z.string().nullable().optional(),
+      other_name: z.string().nullable().optional(),
+      moved: z.number().nullable().optional(),
+      moved_to: z.string().nullable().optional(),
     })
+    .passthrough()
     .default({}),
   created_at: z.string(),
 });
