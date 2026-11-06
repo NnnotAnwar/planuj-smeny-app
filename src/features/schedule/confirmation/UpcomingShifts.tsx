@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { CheckIcon, LockSimpleIcon } from '@phosphor-icons/react';
+import { ArrowsLeftRightIcon, CheckIcon, LockSimpleIcon } from '@phosphor-icons/react';
 import type { ScheduledShift, User } from '@shared/types';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { formatTime, weekdayShort } from '@shared/utils/date';
 import { Button } from '@shared/components/Button';
+import { toast } from '@shared/toast/toastStore';
 import { useShiftConfirmations } from './useShiftConfirmations';
+import { useShiftSwaps } from '../swaps/useShiftSwaps';
+import { personName } from '../swaps/types';
 
 /**
  * --- UPCOMING SHIFTS (member) ---
@@ -12,6 +15,8 @@ import { useShiftConfirmations } from './useShiftConfirmations';
  * you've seen (or "Select all"), then "Confirm" sends them in one go so the
  * manager knows the rota landed. A confirmation is final — confirmed rows
  * are locked (only a manager can reset one), so the member commits once.
+ * Each upcoming shift can also be offered to colleagues (a swap) in one tap —
+ * Undo in the toast takes the offer back.
  */
 export function UpcomingShifts({
     user,
@@ -26,6 +31,18 @@ export function UpcomingShifts({
     const t = useTranslation();
     const { confirmedIds, confirm } = useShiftConfirmations(user);
     const [selected, setSelected] = useState<Set<string>>(() => new Set());
+    const swaps = useShiftSwaps(user);
+    // My live offers, by shift.
+    const liveSwap = new Map(
+        swaps.swaps.filter((w) => w.from_user === user.id && (w.status === 'open' || w.status === 'taken')).map((w) => [w.shift_id, w]),
+    );
+    const offerShift = (shiftId: string) =>
+        swaps.offer.mutate(shiftId, {
+            onSuccess: (row) =>
+                toast(t('swap.offered'), 'success', {
+                    action: { label: t('common.undo'), onClick: () => row && swaps.withdraw.mutate((row as { id: string }).id) },
+                }),
+        });
 
     // Snapshot of "now" for this mount — the list doesn't need to tick live.
     const [now] = useState(() => Date.now());
@@ -111,14 +128,45 @@ export function UpcomingShifts({
                                 ? 'bg-emerald-500/8 ring-emerald-500/25 dark:bg-emerald-400/10'
                                 : 'bg-white/55 ring-ink/5 dark:bg-white/4 dark:ring-white/6'
                         }`;
+                        const swap = liveSwap.get(s.id);
+                        const future = new Date(s.starts_at).getTime() > now;
                         return (
-                            <li key={s.id}>
-                                {done ? (
-                                    <div className={rowClass}>{body}</div>
-                                ) : (
-                                    <button type="button" role="checkbox" aria-checked={on} onClick={() => toggle(s.id)} className={`${rowClass} hover:bg-white/80 dark:hover:bg-white/8`}>
-                                        {body}
+                            <li key={s.id} className="flex items-center gap-1">
+                                <div className="min-w-0 flex-1">
+                                    {done ? (
+                                        <div className={rowClass}>{body}</div>
+                                    ) : (
+                                        <button type="button" role="checkbox" aria-checked={on} onClick={() => toggle(s.id)} className={`${rowClass} hover:bg-white/80 dark:hover:bg-white/8`}>
+                                            {body}
+                                        </button>
+                                    )}
+                                </div>
+                                {swap ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => swaps.withdraw.mutate(swap.id, { onSuccess: () => toast(t('swap.withdrawn'), 'success') })}
+                                        title={t('swap.withdraw')}
+                                        className={`shrink-0 rounded-lg px-2 py-1 text-[11px] font-semibold ${
+                                            swap.status === 'taken'
+                                                ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300'
+                                                : 'bg-amber-500/12 text-amber-700 dark:text-amber-300'
+                                        }`}
+                                    >
+                                        {swap.status === 'taken' ? t('swap.takenBy', { name: personName(swap.taker) }) : t('swap.offeredShort')}
                                     </button>
+                                ) : (
+                                    future && (
+                                        <button
+                                            type="button"
+                                            onClick={() => offerShift(s.id)}
+                                            disabled={swaps.offer.isPending}
+                                            title={t('swap.offer')}
+                                            aria-label={t('swap.offer')}
+                                            className="shrink-0 rounded-lg p-2 text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink disabled:opacity-50 dark:text-slate-400 dark:hover:bg-white/8 dark:hover:text-white"
+                                        >
+                                            <ArrowsLeftRightIcon weight="bold" className="size-4" />
+                                        </button>
+                                    )
                                 )}
                             </li>
                         );

@@ -14,6 +14,7 @@ import {
     XCircleIcon,
     UserGearIcon,
     XIcon,
+    ArrowsLeftRightIcon,
     type Icon,
 } from '@phosphor-icons/react';
 import type { ShiftAuditLog, ShiftSnapshot } from '@shared/types';
@@ -121,6 +122,26 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
                 title: t(entry.action === 'late_60' ? 'notif.late60' : 'notif.late15', { name: d.target_name || '—' }),
                 detail: [d.location_name, d.scheduled_start ? fmtClock(d.scheduled_start) : null].filter(Boolean).join(' · ') || undefined,
             };
+        case 'swap_taken':
+        case 'swap_requested':
+        case 'swap_approved':
+        case 'swap_declined': {
+            const when = d.scheduled_start
+                ? `${formatDateTime(d.scheduled_start)}${d.location_name ? ` · ${d.location_name}` : ''}`
+                : d.location_name || undefined;
+            if (entry.action === 'swap_taken')
+                return { Icon: ArrowsLeftRightIcon, tint: 'text-blue-500', title: t('notif.swapTaken', { name: d.taker_name || '—' }), detail: when };
+            if (entry.action === 'swap_requested')
+                return {
+                    Icon: ArrowsLeftRightIcon,
+                    tint: 'text-amber-500',
+                    title: t('notif.swapRequested', { from: d.from_name || '—', taker: d.taker_name || '—' }),
+                    detail: when,
+                };
+            return entry.action === 'swap_approved'
+                ? { Icon: CheckCircleIcon, tint: 'text-emerald-500', title: t('notif.swapApproved'), detail: when }
+                : { Icon: XCircleIcon, tint: 'text-red-500', title: t('notif.swapDeclined'), detail: [when, d.note].filter(Boolean).join(' · ') || undefined };
+        }
         default:
             return { Icon: BellIcon, tint: 'text-gray-400', title: t('notif.account') };
     }

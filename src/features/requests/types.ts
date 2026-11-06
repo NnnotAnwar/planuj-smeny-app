@@ -7,7 +7,7 @@ import type { TimeOff } from '@shared/types';
  */
 export interface RequestItem {
     key: string; // `${type}:${id}`
-    type: 'timeoff' | 'name';
+    type: 'timeoff' | 'name' | 'swap';
     id: string;
     userId: string;
     personName: string;
@@ -23,4 +23,11 @@ export interface RequestItem {
     // name change
     oldName?: string;
     newName?: string;
+    // shift swap (userId = the person who offered it)
+    takerId?: string | null;
+    takerName?: string;
+    shiftStart?: string;
+    shiftEnd?: string;
+    shiftAllDay?: boolean;
+    locationName?: string;
 }

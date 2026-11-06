@@ -3,7 +3,7 @@ import { CheckIcon, WarningIcon, XIcon, ArrowRightIcon } from '@phosphor-icons/r
 import { Button } from '@shared/components/Button';
 import { Textarea } from '@shared/components/Input';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
-import { formatDateShort } from '@shared/utils/date';
+import { formatDateShort, formatTime } from '@shared/utils/date';
 import { KIND_KEYS } from '@features/schedule/timeOffShared';
 import type { RequestItem } from './types';
 
@@ -62,7 +62,8 @@ export function RequestCard({
     const [declining, setDeclining] = useState(false);
     const [reason, setReason] = useState('');
 
-    const typeLabel = item.type === 'name' ? t('requests.typeName') : t(KIND_KEYS[item.kind ?? 'other']);
+    const typeLabel =
+        item.type === 'name' ? t('requests.typeName') : item.type === 'swap' ? t('swap.typeLabel') : t(KIND_KEYS[item.kind ?? 'other']);
     const statusLabel =
         item.status === 'pending' ? t('requests.statusPending') : item.status === 'approved' ? t('timeoff.approved') : t('timeoff.declined');
     const range =
@@ -98,6 +99,19 @@ export function RequestCard({
                         <p className="mt-1 text-meta tabular-nums text-ink dark:text-slate-200">
                             {range} · {t('requests.days', { n: days })}
                         </p>
+                    ) : item.type === 'swap' && item.shiftStart ? (
+                        <div className="mt-1 space-y-0.5 text-meta text-ink dark:text-slate-200">
+                            <p className="tabular-nums">
+                                {formatDateShort(item.shiftStart)} ·{' '}
+                                {item.shiftAllDay ? t('schedule.allDay') : `${formatTime(item.shiftStart)}–${formatTime(item.shiftEnd!)}`}
+                                {item.locationName ? ` · ${item.locationName}` : ''}
+                            </p>
+                            <p className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-ink-soft dark:text-slate-400">{item.personName}</span>
+                                <ArrowRightIcon weight="bold" className="size-3 text-ink-soft" />
+                                <span className="font-semibold">{item.takerName}</span>
+                            </p>
+                        </div>
                     ) : (
                         <p className="mt-1 flex flex-wrap items-center gap-1.5 text-meta text-ink dark:text-slate-200">
                             <span className="text-ink-soft line-through decoration-ink/30 dark:text-slate-400">{item.oldName}</span>

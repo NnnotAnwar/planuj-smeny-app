@@ -133,6 +133,22 @@ function render(msg: PushMessage, lang: Lang): { title: string; body: string } {
                 ? { title: 'Profil upraven', body: `${actor} upravil(a) váš ${fields}.` }
                 : { title: 'Profile updated', body: `${actor} updated your ${fields}.` };
         }
+        case 'swap_taken':
+            return cs
+                ? { title: 'Někdo bere vaši směnu', body: `${v.taker || 'Kolega'} bere vaši směnu${v.when ? ` (${v.when})` : ''}. Čeká na schválení.` }
+                : { title: 'Your shift was taken', body: `${v.taker || 'A colleague'} took your shift${v.when ? ` (${v.when})` : ''}. Waiting for approval.` };
+        case 'swap_requested':
+            return cs
+                ? { title: 'Výměna ke schválení', body: `${v.from || '—'} → ${v.taker || '—'}${v.when ? ` · ${v.when}` : ''}` }
+                : { title: 'Swap to approve', body: `${v.from || '—'} → ${v.taker || '—'}${v.when ? ` · ${v.when}` : ''}` };
+        case 'swap_approved':
+            return cs
+                ? { title: 'Výměna schválena', body: `Výměna směny${v.when ? ` (${v.when})` : ''} byla schválena.` }
+                : { title: 'Swap approved', body: `The shift swap${v.when ? ` (${v.when})` : ''} was approved.` };
+        case 'swap_declined':
+            return cs
+                ? { title: 'Výměna zamítnuta', body: `Výměna směny${v.when ? ` (${v.when})` : ''} byla zamítnuta.` }
+                : { title: 'Swap declined', body: `The shift swap${v.when ? ` (${v.when})` : ''} was declined.` };
         case 'name_request_new':
             return cs
                 ? { title: 'Nová žádost o změnu jména', body: 'Člen týmu požádal o změnu jména.' }
@@ -379,6 +395,25 @@ async function messagesFromWebhook(table: string, record: Record<string, unknown
                     route: '/requests',
                     category: 'requests',
                 }];
+            case 'swap_taken':
+            case 'swap_requested':
+            case 'swap_approved':
+            case 'swap_declined': {
+                let when = '';
+                if (typeof details.scheduled_start === 'string') {
+                    try {
+                        when = new Date(details.scheduled_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                    } catch { /* ignore */ }
+                }
+                if (typeof details.location_name === 'string' && details.location_name) when = [when, details.location_name].filter(Boolean).join(' · ');
+                return [{
+                    userId: target,
+                    key: action,
+                    vars: { from: (details.from_name as string) || '', taker: (details.taker_name as string) || '', when },
+                    route: action === 'swap_taken' ? '/schedule' : '/requests',
+                    category: 'requests',
+                }];
+            }
             case 'profile_updated': {
                 const changes = (details.changes as { field: string }[] | undefined) ?? [];
                 // Regular users have no admin screen for this — open the app on the

@@ -135,7 +135,7 @@ export function RequestsPage() {
                                     item={item}
                                     showPerson={false}
                                     busy={busyKey === item.key}
-                                    onWithdraw={item.type === 'timeoff' ? () => withdraw.mutate(item) : undefined}
+                                    onWithdraw={item.type !== 'name' ? () => withdraw.mutate(item) : undefined}
                                 />
                             ))}
                         </ul>
