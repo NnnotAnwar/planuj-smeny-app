@@ -69,7 +69,7 @@ export default function SchedulePage() {
     const qc = useQueryClient();
 
     // Managers OBSERVE the team rota; admins PLAN it (see permissions.ts).
-    const canObserve = can(user, 'team.view');
+    const canObserve = can(user, 'rota.view');
     const canManage = can(user, 'rota.edit');
 
     const [selectedMonth, setSelectedMonth] = useState(() => monthKeyOf(new Date()));
@@ -190,7 +190,7 @@ export default function SchedulePage() {
     // admins (rank >= 30) plan for everyone.
     const plannableMembers = useMemo(() => {
         const all = membersQ.data ?? [];
-        if ((user?.role.rank ?? 0) >= 30) return all;
+        if (can(user, 'rota.edit')) return all;
         return all.filter((m) => m.manager_id === user?.id || m.id === user?.id);
     }, [membersQ.data, user]);
 

@@ -146,7 +146,7 @@ export function useRequests() {
         : null;
     const rotaQ = useQuery({
         queryKey: ['schedule', 'request-conflicts', range?.from, range?.to],
-        enabled: !!range && can(user, 'team.view'),
+        enabled: !!range && can(user, 'rota.view'),
         queryFn: () => {
             const [fy, fm, fd] = range!.from.split('-').map(Number);
             const [ty, tm, td] = range!.to.split('-').map(Number);

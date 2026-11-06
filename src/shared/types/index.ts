@@ -24,6 +24,20 @@ export const ProfileSchema = z.object({
   organization_id: z.string(), // The company this user belongs to
   username_changed_at: z.string().nullable().optional(), // last username change (7-day self-service limit)
   manager_id: z.string().nullable().optional(), // the manager this member reports to (rota scoping)
+  // The member's organization role (custom roles, #124): its name/colour are
+  // what people see; `role` above stays the LEVEL that drives the hierarchy.
+  org_role_id: z.string().nullable().optional(),
+  org_role: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      color: z.string(),
+      base_role: z.string(),
+      preset_key: z.string().nullable().optional(),
+      sort: z.number().optional(), // position in the hierarchy = rank (Head Admin 40, default role 0)
+    })
+    .nullable()
+    .optional(),
 });
 
 /**
@@ -173,7 +187,12 @@ export const OrganizationSchema = z.object({
     first_name: z.string().nullable(),
     last_name: z.string().nullable(),
     organization_id: z.string(),
-    manager_id: z.string().nullable().optional()
+    manager_id: z.string().nullable().optional(),
+    org_role_id: z.string().nullable().optional(),
+    org_role: z
+      .object({ id: z.string(), name: z.string(), color: z.string(), base_role: z.string(), preset_key: z.string().nullable().optional(), sort: z.number().optional() })
+      .nullable()
+      .optional(),
   }))
 })
 
@@ -231,6 +250,8 @@ export const ShiftAuditLogSchema = z.object({
   shift_id: z.string().nullable(),
   actor_id: z.string().nullable(),
   target_user_id: z.string().nullable(),
+  /** Who the entry is about (filter by employee); target_user_id = who was notified. */
+  subject_id: z.string().nullable().optional(),
   action: z.string(),
   details: z
     .object({
@@ -257,17 +278,40 @@ export const ShiftAuditLogSchema = z.object({
       kind: z.string().nullable().optional(),
       starts_on: z.string().nullable().optional(),
       ends_on: z.string().nullable().optional(),
-      // Admin profile edits (name / role / organization changed from the panel).
+      // Admin profile edits (field: name / role / organization) and role
+      // permission edits (area + "rwd" flags before / after).
       changes: z
         .array(
           z.object({
-            field: z.string(),
+            field: z.string().optional(),
+            area: z.string().optional(),
             old: z.string().nullable().optional(),
             new: z.string().nullable().optional(),
           }),
         )
         .optional(),
+      // Role events (role_created / updated / moved / deleted / permissions).
+      role_name: z.string().nullable().optional(),
+      color: z.string().nullable().optional(),
+      old_color: z.string().nullable().optional(),
+      direction: z.string().nullable().optional(),
+      other_name: z.string().nullable().optional(),
+      moved: z.number().nullable().optional(),
+      moved_to: z.string().nullable().optional(),
+      // Everything else (clock, open shifts, templates, locations, …).
+      subject_name: z.string().nullable().optional(),
+      starts_at: z.string().nullable().optional(),
+      ends_at: z.string().nullable().optional(),
+      all_day: z.boolean().nullable().optional(),
+      start_time: z.string().nullable().optional(),
+      end_time: z.string().nullable().optional(),
+      shift_role: z.string().nullable().optional(),
+      to_name: z.string().nullable().optional(),
+      auto: z.boolean().nullable().optional(),
+      pinned: z.boolean().nullable().optional(),
+      email: z.string().nullable().optional(),
     })
+    .passthrough()
     .default({}),
   created_at: z.string(),
 });
@@ -293,8 +337,13 @@ export type ShiftAuditLog = z.infer<typeof ShiftAuditLogSchema>;
  * These types are specific to how we show data in the UI (User Interface).
  */
 
-/** Used for the profile of the current logged-in user */
-export type User = Profile;
+/** Areas a role grants read / write / delete on (mirrors org_role_permissions). */
+export type PermissionArea = 'rota' | 'timesheets' | 'requests' | 'announcements' | 'members' | 'wages' | 'locations' | 'activity' | 'roles';
+export type PermissionAction = 'read' | 'write' | 'delete';
+export type PermissionMap = Partial<Record<PermissionArea, { read: boolean; write: boolean; delete: boolean }>>;
+
+/** Used for the profile of the current logged-in user (+ their role's permissions). */
+export type User = Profile & { permissions?: PermissionMap };
 
 /** Simplified shift data used in the ShiftCards components */
 export type ShiftDisplayData = {

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { can } from '@shared/auth/permissions';
 import { toast } from '@shared/toast/toastStore';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type User } from '@shared/types';
@@ -15,7 +16,7 @@ export function useWages(user: User | null) {
   const t = useTranslation();
   const qc = useQueryClient();
   const enabled = !!user;
-  const isAdmin = enabled && (user.role.rank ?? 0) >= 30;
+  const isAdmin = enabled && can(user, 'wages.edit');
 
   const mine = useQuery({
     queryKey: ['wages', 'mine', user?.id ?? 'anon'],

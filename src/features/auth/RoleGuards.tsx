@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthContext } from './AuthContext';
-import { canViewAdminPanel } from '@shared/auth/permissions';
+import { can } from '@shared/auth/permissions';
 
 export function RoleGuard() {
     const { user, isLoading, isAuthChecking } = useAuthContext();
@@ -12,7 +12,8 @@ export function RoleGuard() {
 
     // 2. Gate on the role hierarchy (Manager+). is_admin is legacy and was
     //    inconsistent with the rank-based model used everywhere else.
-    if (!user || !canViewAdminPanel(user)) {
+    // Team-area pages (Team, Timesheets, Activity) — each page checks its own area too.
+    if (!user || !can(user, 'team.view')) {
         return <Navigate to="/" replace />;
     }
 

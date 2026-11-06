@@ -7,6 +7,7 @@ import {
     UsersIcon,
     PlusIcon,
     PaperPlaneTiltIcon,
+    IdentificationBadgeIcon,
 } from '@phosphor-icons/react';
 import { SearchInput } from '@shared/components/SearchInput';
 import { Button } from '@shared/components/Button';
@@ -15,7 +16,8 @@ import type { Organization, Profile } from '@/shared/types';
 
 import { useAuthContext } from '@/features/auth/AuthContext';
 import { AdminProvider, useAdminContext } from './AdminContext';
-import { canManageEmployees, canManageLocations } from '@shared/auth/permissions';
+import { can, canManageEmployees, canManageLocations } from '@shared/auth/permissions';
+import { RolesPanel } from '@features/roles/RolesPanel';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { ConfirmDialog } from './components/Modal';
 import { OrganizationForm } from './components/OrganizationForm';
@@ -28,7 +30,7 @@ import { LocationsList, type LocationRow } from './components/LocationsList';
 import { EmployeesList, type EmployeeRow } from './components/EmployeesList';
 import { EmployeeProfileModal } from '@features/profile/components/EmployeeProfileModal';
 
-type TabType = 'employees' | 'locations' | 'organizations';
+type TabType = 'employees' | 'locations' | 'organizations' | 'roles';
 
 type ModalState =
     | { kind: 'org-form'; org?: Organization }
@@ -68,12 +70,14 @@ function AdminPanel() {
     // Admin (rank >= 30) capability.
     const canManageEmp = user ? canManageEmployees(user) : false;
     const canManageLoc = user ? canManageLocations(user) : false;
+    // Head Admin (and Superadmin) define the organization's roles.
+    const canManageRoles = can(user, 'roles.view');
 
     // `?tab=locations` (e.g. from the Home setup checklist) opens that tab.
     const [params] = useSearchParams();
     const [activeTab, setActiveTab] = useState<TabType>(() => {
         const q = params.get('tab');
-        return q === 'locations' || q === 'organizations' ? q : 'employees';
+        return q === 'locations' || q === 'organizations' || q === 'roles' ? q : 'employees';
     });
     const [searchQuery, setSearchQuery] = useState('');
     const [modal, setModal] = useState<ModalState>(null);
@@ -81,13 +85,14 @@ function AdminPanel() {
     const tabs = [
         { id: 'employees', label: t('admin.tabEmployees'), icon: UsersIcon },
         { id: 'locations', label: t('admin.tabLocations'), icon: MapPinIcon },
+        ...(canManageRoles ? [{ id: 'roles', label: t('roles.tab'), icon: IdentificationBadgeIcon }] : []),
         ...(isSuperAdmin ? [{ id: 'organizations', label: t('admin.tabOrganizations'), icon: BuildingsIcon }] : []),
     ] as const;
 
     // Guard against showing a tab the user may not access (e.g. if their role
     // changes mid-session) without a setState-in-effect round trip.
     const safeTab: TabType =
-        activeTab === 'organizations' && !isSuperAdmin ? 'employees' : activeTab;
+        (activeTab === 'organizations' && !isSuperAdmin) || (activeTab === 'roles' && !canManageRoles) ? 'employees' : activeTab;
 
     // --- Derived, flattened + searched collections ---
     const query = searchQuery.trim().toLowerCase();
@@ -116,7 +121,7 @@ function AdminPanel() {
             ) ?? [];
         if (!query) return all;
         return all.filter((e) =>
-            `${e.first_name ?? ''} ${e.last_name ?? ''} ${e.email} ${e.username} ${e.role.name} ${e.organizationName}`
+            `${e.first_name ?? ''} ${e.last_name ?? ''} ${e.email} ${e.username} ${e.role.name} ${e.org_role?.name ?? ''} ${e.organizationName}`
                 .toLowerCase()
                 .includes(query),
         );
@@ -211,12 +216,12 @@ function AdminPanel() {
                     })}
                 </div>
 
-                <SearchInput
+                {safeTab !== 'roles' && <SearchInput
                     value={searchQuery}
                     onChange={setSearchQuery}
                     placeholder={t('admin.search', { what: safeTab === 'employees' ? t('admin.nounEmployees') : safeTab === 'locations' ? t('admin.nounLocations') : t('admin.nounOrganizations') })}
                     className="w-full md:w-64"
-                />
+                />}
             </div>
 
             {/* --- CONTENT AREA --- */}
@@ -252,6 +257,12 @@ function AdminPanel() {
                                     onDelete={(loc) =>
                                         setModal({ kind: 'delete', entity: 'locations', id: loc.id, label: loc.name })
                                     }
+                                />
+                            )}
+                            {safeTab === 'roles' && user && (
+                                <RolesPanel
+                                    organizationId={user.organization_id}
+                                    organizations={isSuperAdmin ? adminData?.map((o) => ({ id: o.id, name: o.name, people: o.profiles.length })) : undefined}
                                 />
                             )}
                             {safeTab === 'employees' && (

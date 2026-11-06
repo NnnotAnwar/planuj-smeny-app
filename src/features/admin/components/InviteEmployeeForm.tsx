@@ -3,7 +3,8 @@ import { Modal } from './Modal';
 import { Field, TextInput, SelectInput, FormError, FormActions } from './FormControls';
 import { useAdminContext } from '../AdminContext';
 import { useAuthContext } from '@/features/auth/AuthContext';
-import { assignableRoles as getAssignableRoles } from '@shared/auth/permissions';
+import { isSuperAdmin as isSuper, rankOf } from '@shared/auth/permissions';
+import { useOrgRoles } from '@features/roles/useOrgRoles';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
@@ -14,19 +15,26 @@ import { useTranslation } from '@shared/preferences/PreferencesContext';
  * server-side by the invite-employee Edge Function).
  */
 export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
-    const { adminData, roles, isSuperAdmin, inviteEmployee } = useAdminContext();
+    const { adminData, isSuperAdmin, inviteEmployee } = useAdminContext();
     const { user } = useAuthContext();
     const t = useTranslation();
 
     const ownOrgId = user?.organization_id ?? '';
-    // Roles strictly below the inviter's rank (Admin -> up to Manager, etc.).
-    const roleOptions = user ? getAssignableRoles(roles, user) : [];
 
     const [email, setEmail] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [role, setRole] = useState('Employee');
     const [organizationId, setOrganizationId] = useState(adminData?.[0]?.id ?? ownOrgId);
+    // The target organization's roles whose LEVEL sits below the inviter's.
+    const targetOrg = isSuperAdmin ? organizationId : ownOrgId;
+    const orgRoles = useOrgRoles(targetOrg);
+    const myRank = user ? (isSuper(user) ? 1000 : rankOf(user)) : -1;
+    // Roles below yours, lowest first so the default (Employee) is preselected.
+    const roleOptions = orgRoles.roles.filter((r) => r.sort < myRank).sort((a, b) => a.sort - b.sort);
+    const [pickedRoleId, setPickedRoleId] = useState('');
+    // Default: the lowest role (usually Employee) until one is picked.
+    const orgRoleId = roleOptions.some((r) => r.id === pickedRoleId) ? pickedRoleId : (roleOptions[0]?.id ?? '');
+    const picked = roleOptions.find((r) => r.id === orgRoleId);
     const [isBusy, setIsBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +51,8 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
             await inviteEmployee({
                 email: trimmedEmail,
                 organization_id: isSuperAdmin ? organizationId : ownOrgId,
-                role,
+                role: picked?.base_role ?? 'Employee',
+                org_role_id: orgRoleId || undefined,
                 first_name: firstName.trim() || null,
                 last_name: lastName.trim() || null,
             });
@@ -89,11 +98,10 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
                 )}
 
                 <Field label={t('profile.field.role')}>
-                    <SelectInput value={role} onChange={(e) => setRole(e.target.value)}>
+                    <SelectInput value={orgRoleId} onChange={(e) => setPickedRoleId(e.target.value)}>
                         {roleOptions.map((r) => (
-                            <option key={r.name} value={r.name}>
+                            <option key={r.id} value={r.id}>
                                 {r.name}
-                                {r.description ? ` — ${r.description}` : ''}
                             </option>
                         ))}
                     </SelectInput>

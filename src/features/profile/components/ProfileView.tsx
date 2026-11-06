@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { roleLabel } from '@shared/auth/permissions';
+import { RoleBadge } from '@shared/components/RoleBadge';
 import {
   AtIcon,
   BuildingsIcon,
@@ -7,7 +9,6 @@ import {
   UserIcon,
 } from '@phosphor-icons/react';
 import type { Profile } from '@shared/types';
-import { getRoleBadgeColor } from '@shared/utils/roleColors';
 import { getFullInitials, getFullName } from '@shared/utils/getInitials';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { ShiftStatusBadge } from './ShiftStatusBadge';
@@ -60,9 +61,7 @@ export function ProfileView({
           <div className="min-w-0">
             <h2 className="text-title text-gray-900 dark:text-white truncate">{getFullName(profile)}</h2>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className={`inline-block px-2 py-0.5 text-micro rounded-md ${getRoleBadgeColor(profile.role.name)}`}>
-                {profile.role.name}
-              </span>
+              <RoleBadge profile={profile} />
               <span className="text-caption text-gray-400 normal-case">@{profile.username}</span>
             </div>
           </div>
@@ -93,7 +92,7 @@ export function ProfileView({
         <ProfileField
           icon={<IdentificationBadgeIcon weight="bold" className="w-4 h-4" />}
           label={t('profile.field.role')}
-          value={profile.role.name}
+          value={roleLabel(profile)}
         />
         {showOrganization && organizationName && (
           <ProfileField

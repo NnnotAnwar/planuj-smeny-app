@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { RoleBadge } from '@shared/components/RoleBadge';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -17,13 +18,12 @@ import {
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
-import { canViewAdminPanel, canManageMember } from '@shared/auth/permissions';
+import { can, canEditTimesheetOf } from '@shared/auth/permissions';
 import { DataTable, type Column } from '@shared/components/DataTable';
 import { MonthPicker } from '@shared/components/MonthPicker';
 import { ActionButtons } from '@features/admin/components/ActionButtons';
 import { ConfirmDialog } from '@features/admin/components/Modal';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
-import { getRoleBadgeColor } from '@shared/utils/roleColors';
 import { getFullInitials } from '@shared/utils/getInitials';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type Shift, type Profile } from '@shared/types';
@@ -124,7 +124,7 @@ function ExportMenu({
  */
 export function TimesheetsPage() {
     const { user } = useAuthContext();
-    if (user && !canViewAdminPanel(user)) return <Navigate to="/" replace />;
+    if (user && !can(user, 'timesheets.view')) return <Navigate to="/" replace />;
     return <TimesheetsInner />;
 }
 
@@ -196,7 +196,7 @@ function TimesheetsInner() {
         return { gross, net, brk: gross - net, count: shifts.length };
     }, [shifts]);
 
-    const canEdit = !!(user && selected && canManageMember(user, selected));
+    const canEdit = !!(user && selected && canEditTimesheetOf(user, selected));
     // Period for the exported document — `YYYY-MM`, or all-time.
     const periodLabel = month ?? t('overview.allTime');
 
@@ -458,9 +458,7 @@ function TimesheetsInner() {
                                 align: 'right',
                                 width: 'w-24 sm:w-32',
                                 render: (m) => (
-                                    <span className={`inline-block px-1.5 py-1 text-micro tracking-tight rounded-md whitespace-nowrap ${getRoleBadgeColor(m.role.name)}`}>
-                                        {m.role.name}
-                                    </span>
+                                    <RoleBadge profile={m} />
                                 ),
                             },
                             {
@@ -497,9 +495,7 @@ function TimesheetsInner() {
                                 <p className="text-micro text-emerald-600 dark:text-emerald-400 truncate normal-case">@{selected.username}</p>
                             </div>
                         </button>
-                        <span className={`shrink-0 px-1.5 py-1 text-micro tracking-tight rounded-md whitespace-nowrap ${getRoleBadgeColor(selected.role.name)}`}>
-                            {selected.role.name}
-                        </span>
+                        <RoleBadge profile={selected} className="shrink-0" />
                     </div>
 
                     {/* Summary stats */}
