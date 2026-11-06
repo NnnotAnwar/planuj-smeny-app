@@ -6,7 +6,6 @@ import { haptics } from '@shared/utils/haptics';
 import { Button } from '@shared/components/Button';
 import { LiveClockIcon } from '@shared/components/LiveClockIcon';
 import { toast } from '@shared/toast/toastStore';
-import { openLocationPicker } from '@features/locations/locationPickerSignal';
 import { LocationPickerPopover } from '@features/locations/components/LocationPickerPopover';
 import { useOnline } from '@shared/hooks/useOnline';
 
@@ -22,13 +21,11 @@ import { useOnline } from '@shared/hooks/useOnline';
  * same shape, muted clock) so starting a shift reads as one card waking up.
  * The clock is the location picker: tapping it (or the title) opens the picker
  * right under it, and while nothing is picked a blinking ring points at it.
- * Desktop and mobile are separate (CSS-toggled), and the location picker lives
- * in different places: a bottom sheet on mobile, the sidebar on desktop. The
- * mobile field stays mounted-but-hidden on desktop, so we can't infer context
- * from "is a picker subscribed" — each button passes its own guide explicitly
- * (`sheet` opens the mobile sheet; `hint` shows a toast). On desktop Start
- * never opens the picker for you: the toast + blinking ring point the way and
- * the person picks the location themselves.
+ * Desktop and mobile are separate (CSS-toggled). On both, Start with no
+ * location never opens the picker for you: a toast says what's missing (plus
+ * the blinking ring on desktop, the hint line on mobile) and the person picks
+ * the location themselves — sidebar/clock on desktop, the "Current location"
+ * field on mobile.
  */
 export function CheckIn({ onPickLocation }: { onPickLocation?: (locationId: string) => void }) {
     const { selectedLocationId, activeShift, handleStartShift, isStarting, locations } = useShiftContext();
@@ -40,7 +37,7 @@ export function CheckIn({ onPickLocation }: { onPickLocation?: (locationId: stri
     // If a shift is already running, we don't show the check-in button.
     if (activeShift) return null;
 
-    const attemptStart = (guide: 'sheet' | 'hint') => {
+    const attemptStart = () => {
         // Starting a shift needs the server — block it (with a reason) while offline.
         if (!online) {
             haptics.error();
@@ -49,8 +46,7 @@ export function CheckIn({ onPickLocation }: { onPickLocation?: (locationId: stri
         }
         if (!selectedLocationId) {
             haptics.error();
-            if (guide === 'sheet') openLocationPicker();
-            else toast(t('shifts.selectLocation'), 'info');
+            toast(t('shifts.selectLocation'), 'info');
             return;
         }
         haptics.heavy();
@@ -105,7 +101,7 @@ export function CheckIn({ onPickLocation }: { onPickLocation?: (locationId: stri
                 />
                 <button
                     type="button"
-                    onClick={() => attemptStart('hint')}
+                    onClick={attemptStart}
                     disabled={isStarting}
                     className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-linear-to-b from-emerald-500 to-emerald-600 px-3.5 text-meta font-semibold text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.25),0_6px_16px_-6px_var(--color-emerald-500)] transition-all hover:brightness-105 active:scale-[0.98] disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
                 >
@@ -119,13 +115,13 @@ export function CheckIn({ onPickLocation }: { onPickLocation?: (locationId: stri
             </div>
 
             {/* --- MOBILE STICKY --- */}
-            <div className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 border-t border-white/70 bg-white/70 px-3 py-2.5 backdrop-blur-xl transition-all duration-300 dark:border-white/5 dark:bg-slate-950/70 md:hidden">
+            <div data-mobile-dock className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 border-t border-white/70 bg-white/70 px-3 py-2.5 backdrop-blur-xl transition-all duration-300 dark:border-white/5 dark:bg-slate-950/70 md:hidden">
                 <Button
                     size="lg"
                     icon={PlayIcon}
                     iconWeight="fill"
                     loading={isStarting}
-                    onClick={() => attemptStart('sheet')}
+                    onClick={attemptStart}
                     fullWidth
                     className="rounded-2xl"
                 >

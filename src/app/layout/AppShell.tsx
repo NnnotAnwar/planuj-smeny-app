@@ -180,7 +180,7 @@ export function AppShell() {
       <BottomNav />
 
       {/* ACTION ERROR TOASTS — surface failed shift actions (start/end/move). */}
-      <div className="fixed left-1/2 -translate-x-1/2 z-200 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 w-[calc(100%-2rem)] max-w-md space-y-2">
+      <div className="toast-stack fixed left-1/2 -translate-x-1/2 z-200 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 w-[calc(100%-2rem)] max-w-md space-y-2">
         <AnimatePresence>
           {toasts.map((toastItem) => {
             // Colour + icon by intent so success/undo reads differently from an error.
