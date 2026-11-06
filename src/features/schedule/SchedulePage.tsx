@@ -39,6 +39,7 @@ import { useShiftConfirmations } from './confirmation/useShiftConfirmations';
 import { UpcomingShifts } from './confirmation/UpcomingShifts';
 import { useShiftTemplates } from './templates/useShiftTemplates';
 import { OpenShiftsCard } from './openShifts/OpenShiftsCard';
+import { SwapOffersCard } from './swaps/SwapOffersCard';
 import { tplTime } from './templates/templateTime';
 import { TemplateBrush } from './templates/TemplateBrush';
 import { TemplatesDialog } from './templates/TemplatesDialog';
@@ -762,6 +763,8 @@ export default function SchedulePage() {
 
             {/* OPEN SHIFTS — post (managers) / claim (members). */}
             {user && <OpenShiftsCard user={user} locations={locations} canManage={teamView && canManage} />}
+            {/* SWAPS — shifts colleagues offered (take one) + ones you took, awaiting approval. */}
+            {user && <SwapOffersCard user={user} locationName={locationName} />}
 
             {scheduleQ.isLoading ? (
                 <div className="space-y-3" aria-hidden>

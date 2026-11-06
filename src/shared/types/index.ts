@@ -236,6 +236,9 @@ export const ShiftAuditLogSchema = z.object({
     .object({
       actor_name: z.string().nullable().optional(),
       target_name: z.string().nullable().optional(),
+      // Shift swaps: who offered / who took it.
+      from_name: z.string().nullable().optional(),
+      taker_name: z.string().nullable().optional(),
       old: ShiftSnapshotSchema.nullable().optional(),
       new: ShiftSnapshotSchema.nullable().optional(),
       // Account events (username change / name-change request review).

@@ -9,6 +9,9 @@ import { scheduleService } from '@features/schedule/scheduleService';
 import { adminService } from '@features/admin/adminService';
 import { leaveErr } from '@features/schedule/timeOffShared';
 import { requestsService } from './requestsService';
+import { swapBlockReason, swapService } from '@features/schedule/swaps/swapService';
+import { swapKeys } from '@features/schedule/swaps/useShiftSwaps';
+import { personName, type ShiftSwap } from '@features/schedule/swaps/types';
 import type { RequestItem } from './types';
 
 /**
@@ -54,6 +57,29 @@ const fromName = (r: NameChangeRequest): RequestItem => ({
     newName: [r.requested_first_name, r.requested_last_name].filter(Boolean).join(' ') || '—',
 });
 
+/** A swap is a request once someone took it; open offers live on the Schedule. */
+const fromSwap = (w: ShiftSwap): RequestItem | null => {
+    if (!w.shift || (w.status !== 'taken' && w.status !== 'approved' && w.status !== 'declined')) return null;
+    return {
+        key: `swap:${w.id}`,
+        type: 'swap',
+        id: w.id,
+        userId: w.from_user,
+        personName: personName(w.from),
+        status: w.status === 'taken' ? 'pending' : w.status,
+        createdAt: w.updated_at,
+        reviewedAt: w.reviewed_at ?? null,
+        reviewNote: w.review_note ?? null,
+        note: w.note ?? null,
+        takerId: w.taker_id ?? null,
+        takerName: personName(w.taker),
+        shiftStart: w.shift.starts_at,
+        shiftEnd: w.shift.ends_at,
+        shiftAllDay: w.shift.all_day,
+        locationName: w.shift.location?.name ?? '',
+    };
+};
+
 export const requestKeys = {
     timeOff: ['time-off', 'requests'] as const,
     names: ['requests', 'names'] as const,
@@ -62,17 +88,27 @@ export const requestKeys = {
 /** Whether `user` may decide on `item` (mirrors can_review_request in the DB). */
 export function canDecideOn(user: User | null, item: RequestItem): boolean {
     if (!user || !can(user, 'requests.decide')) return false;
-    return item.userId !== user.id || isSuperAdmin(user) || user.role.rank >= RANK.OWNER;
+    const involved = item.userId === user.id || item.takerId === user.id;
+    return !involved || isSuperAdmin(user) || user.role.rank >= RANK.OWNER;
 }
 
 function useRequestQueries(user: User | null) {
     const timeOffQ = useQuery({ queryKey: requestKeys.timeOff, queryFn: requestsService.getTimeOff, enabled: !!user });
     const namesQ = useQuery({ queryKey: requestKeys.names, queryFn: requestsService.getNameRequests, enabled: !!user });
+    const swapsQ = useQuery({ queryKey: swapKeys.all, queryFn: swapService.list, enabled: !!user });
     const items = useMemo(
-        () => [...(timeOffQ.data ?? []).map(fromTimeOff), ...(namesQ.data ?? []).map(fromName)],
-        [timeOffQ.data, namesQ.data],
+        () => [
+            ...(timeOffQ.data ?? []).map(fromTimeOff),
+            ...(namesQ.data ?? []).map(fromName),
+            ...(swapsQ.data ?? []).map(fromSwap).filter((i): i is RequestItem => !!i),
+        ],
+        [timeOffQ.data, namesQ.data, swapsQ.data],
     );
-    return { items, isLoading: timeOffQ.isLoading || namesQ.isLoading, error: timeOffQ.error ?? namesQ.error };
+    return {
+        items,
+        isLoading: timeOffQ.isLoading || namesQ.isLoading || swapsQ.isLoading,
+        error: timeOffQ.error ?? namesQ.error ?? swapsQ.error,
+    };
 }
 
 export function useRequests() {
@@ -89,11 +125,13 @@ export function useRequests() {
         const decidedAt = (i: RequestItem) => new Date(i.reviewedAt ?? i.createdAt).getTime();
         return {
             // Oldest first: a fair queue.
-            toReview: items.filter((i) => i.status === 'pending' && i.userId !== me).sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+            toReview: items
+                .filter((i) => i.status === 'pending' && i.userId !== me && i.takerId !== me)
+                .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
             history: items
                 .filter((i) => i.status !== 'pending' && decidedAt(i) >= monthAgo)
                 .sort((a, b) => decidedAt(b) - decidedAt(a)),
-            mine: items.filter((i) => i.userId === me).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+            mine: items.filter((i) => i.userId === me || i.takerId === me).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
         };
     }, [items, me, now]);
 
@@ -131,23 +169,29 @@ export function useRequests() {
         qc.invalidateQueries({ queryKey: ['admin'] });
         // Approved leave removes rota shifts on those days.
         qc.invalidateQueries({ queryKey: ['schedule'] });
+        // An approved swap moves the shift to the taker.
+        qc.invalidateQueries({ queryKey: swapKeys.all });
     };
 
     const decide = useMutation({
         mutationFn: async ({ item, approve, note }: { item: RequestItem; approve: boolean; note?: string | null }) => {
             if (!user) throw new Error('Not signed in.');
             if (item.type === 'timeoff') await scheduleService.reviewTimeOff(item.id, approve, user.id, note);
+            else if (item.type === 'swap') await swapService.review(item.id, approve, note?.trim() || null);
             else await adminService.reviewNameChange(item.id, approve, note?.trim() || null);
         },
         onSuccess: (_d, v) => {
             refresh();
             toast(v.approve ? t('requests.approved') : t('requests.declined'), 'success');
         },
-        onError: (e) => toast(leaveErr(e, t) || t('requests.error'), 'error'),
+        onError: (e) => {
+            const blocked = swapBlockReason(e);
+            toast(blocked ? t(`swap.blocked_${blocked}` as 'swap.blocked_busy') : leaveErr(e, t) || t('requests.error'), 'error');
+        },
     });
 
     const withdraw = useMutation({
-        mutationFn: (item: RequestItem) => scheduleService.deleteTimeOff(item.id),
+        mutationFn: (item: RequestItem) => (item.type === 'swap' ? swapService.withdraw(item.id) : scheduleService.deleteTimeOff(item.id)),
         onSuccess: refresh,
         onError: () => toast(t('requests.error'), 'error'),
     });
@@ -195,5 +239,7 @@ export function useRequestsBadge(): number {
     );
     if (!user) return 0;
     if (can(user, 'requests.decide')) return items.filter((i) => i.status === 'pending' && canDecideOn(user, i)).length;
-    return items.filter((i) => i.userId === user.id && i.status !== 'pending' && i.reviewedAt && new Date(i.reviewedAt).getTime() > seen).length;
+    return items.filter(
+        (i) => (i.userId === user.id || i.takerId === user.id) && i.status !== 'pending' && i.reviewedAt && new Date(i.reviewedAt).getTime() > seen,
+    ).length;
 }
