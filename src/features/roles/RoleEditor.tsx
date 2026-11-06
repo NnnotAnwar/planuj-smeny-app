@@ -23,8 +23,11 @@ export function RoleEditor({
     onSave,
     onDelete,
     onClose,
+    templates = [],
 }: {
     role: OrgRole | null; // null = new role
+    /** Roles a new role can start from (copies level + permissions). */
+    templates?: OrgRole[];
     memberCount: number;
     busy: boolean;
     onSave: (v: { name: string; color: string; base_role: string; grants: Grants }) => void;
@@ -39,6 +42,14 @@ export function RoleEditor({
     const [level, setLevel] = useState(role?.base_role ?? 'Employee');
     const [grants, setGrants] = useState<Grants>(() => (role ? grantsOf(role) : emptyGrants()));
     const [error, setError] = useState<string | null>(null);
+    const [from, setFrom] = useState('');
+    const startFrom = (id: string) => {
+        setFrom(id);
+        const tpl = templates.find((r) => r.id === id);
+        if (!tpl) return setGrants(emptyGrants());
+        setLevel(tpl.base_role);
+        setGrants(grantsOf(tpl));
+    };
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,6 +79,20 @@ export function RoleEditor({
     return (
         <Modal title={role ? t('roles.edit') : t('roles.new')} subtitle={role ? t(peopleKey(memberCount), { n: memberCount }) : t('roles.newHint')} onClose={onClose}>
             <form onSubmit={submit} className="space-y-4">
+                {!role && templates.length > 0 && (
+                    <div className="space-y-1.5">
+                        <span className="text-label text-ink-soft dark:text-slate-400">{t('roles.startFrom')}</span>
+                        <Select aria-label={t('roles.startFrom')} value={from} onChange={(e) => startFrom(e.target.value)} fullWidth>
+                            <option value="">{t('roles.startBlank')}</option>
+                            {templates.map((r) => (
+                                <option key={r.id} value={r.id}>
+                                    {r.name}
+                                </option>
+                            ))}
+                        </Select>
+                        <p className="text-caption text-ink-soft dark:text-slate-400">{t('roles.startFromHint')}</p>
+                    </div>
+                )}
                 <div className="grid gap-3">
                     <div className="space-y-1.5">
                         <label htmlFor="role-name" className="text-label text-ink-soft dark:text-slate-400">{t('roles.name')}</label>
@@ -151,7 +176,7 @@ export function RoleEditor({
 
                 <FormError message={error} />
                 <div className="flex items-center justify-between gap-2">
-                    {onDelete && !isPreset ? (
+                    {onDelete ? (
                         <Button
                             type="button"
                             size="sm"

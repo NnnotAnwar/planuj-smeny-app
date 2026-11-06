@@ -12,6 +12,9 @@
 //
 // The chosen organization + role travel as user metadata and are applied
 // atomically by the handle_new_user trigger (see the companion migration).
+// Custom roles (#124): the client sends an organization role (`org_role_id`);
+// its LEVEL must sit below the caller's, and the caller needs the Team
+// (members) write permission.
 // =============================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -72,8 +75,9 @@ Deno.serve(async (req) => {
 
         const isSuperadmin = callerProfile.role === 'Superadmin';
         const callerRank = Number(callerRole?.rank ?? 0);
-        // Inviting requires Admin level or above (rank >= 30). Managers and below cannot.
-        if (callerRank < 30) return json({ error: 'You are not allowed to invite users.' }, 403);
+        // Inviting needs the Team (members) write permission of the caller's role.
+        const { data: mayInvite } = await admin.rpc('profile_has_permission', { p_user: caller.id, p_area: 'members', p_action: 'write' });
+        if (!isSuperadmin && !mayInvite) return json({ error: 'You are not allowed to invite users.' }, 403);
 
         // 4. Parse + validate the request body.
         const body = await req.json().catch(() => ({}));
@@ -81,7 +85,8 @@ Deno.serve(async (req) => {
         const firstName = body.first_name ? String(body.first_name).trim() : null;
         const lastName = body.last_name ? String(body.last_name).trim() : null;
         let organizationId = body.organization_id ? String(body.organization_id) : '';
-        const role = body.role ? String(body.role) : 'Employee';
+        let role = body.role ? String(body.role) : 'Employee';
+        const orgRoleId = body.org_role_id ? String(body.org_role_id) : '';
         const redirectTo = body.redirect_to ? String(body.redirect_to) : '';
 
         if (!email || !email.includes('@')) return json({ error: 'A valid email is required.' }, 400);
@@ -92,7 +97,13 @@ Deno.serve(async (req) => {
         }
         if (!organizationId) return json({ error: 'An organization is required.' }, 400);
 
-        // 6. Validate the organization, and that the role exists and is ranked
+        // 6. An organization role decides the level (and must belong to the org).
+        if (orgRoleId) {
+            const { data: orgRole } = await admin.from('org_roles').select('id, organization_id, base_role').eq('id', orgRoleId).single();
+            if (!orgRole || orgRole.organization_id !== organizationId) return json({ error: 'Unknown role.' }, 400);
+            role = orgRole.base_role;
+        }
+        //    Validate the organization, and that the level exists and is ranked
         //    strictly below the caller (you can't invite a peer or superior).
         const [{ data: roleRow }, { data: orgRow }] = await Promise.all([
             admin.from('roles').select('name, rank').eq('name', role).single(),
@@ -113,6 +124,7 @@ Deno.serve(async (req) => {
                 organization_id: organizationId,
                 organization_name: orgRow.name, // surfaced in the invite email template
                 role,
+                ...(orgRoleId ? { org_role_id: orgRoleId } : {}),
                 first_name: firstName,
                 last_name: lastName,
             },

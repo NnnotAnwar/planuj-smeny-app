@@ -132,8 +132,20 @@ BEGIN
     -- level's preset.
     IF NOT EXISTS (SELECT 1 FROM public.org_roles
                     WHERE id = NEW.org_role_id AND organization_id = NEW.organization_id AND base_role = NEW.role) THEN
-      SELECT id INTO NEW.org_role_id FROM public.org_roles
-       WHERE organization_id = NEW.organization_id AND preset_key IS NOT NULL AND base_role = NEW.role;
+      -- The level's preset; if it was deleted, another role at that level; if
+      -- the level has none, the nearest role BELOW it (never more rights). In
+      -- that last case the level follows the role.
+      SELECT r.* INTO v_role
+        FROM public.org_roles r
+       WHERE r.organization_id = NEW.organization_id AND public.role_rank(r.base_role) <= public.role_rank(NEW.role)
+       ORDER BY public.role_rank(r.base_role) DESC, (r.preset_key IS NULL), r.sort
+       LIMIT 1;
+      IF FOUND THEN
+        NEW.org_role_id := v_role.id;
+        NEW.role := v_role.base_role;
+      ELSE
+        NEW.org_role_id := NULL;  -- no role at or below this level: no permissions
+      END IF;
     END IF;
   END IF;
   RETURN NEW;
@@ -181,6 +193,7 @@ REVOKE ALL ON FUNCTION public.sync_profile_org_role() FROM PUBLIC, anon, authent
 REVOKE ALL ON FUNCTION public.profile_has_permission(uuid, text, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.has_permission(text, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.has_permission(text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.profile_has_permission(uuid, text, text) TO service_role;  -- invite-employee
 
 -- --- Roles are managed by the Head Admin ------------------------------------------
 ALTER TABLE public.org_roles ENABLE ROW LEVEL SECURITY;
@@ -190,8 +203,9 @@ DROP POLICY IF EXISTS "org_roles_select" ON public.org_roles;
 CREATE POLICY "org_roles_select" ON public.org_roles FOR SELECT TO authenticated
   USING (is_superadmin() OR organization_id = get_my_org_id());
 -- Head Admin manages roles. Presets are created by the system (seeding runs as
--- the table owner, which bypasses RLS) and can't be deleted; the Head Admin
--- preset's permissions can't be touched.
+-- the table owner, which bypasses RLS). Any role nobody holds can be deleted
+-- (FK RESTRICT protects roles in use) — except the Head Admin preset, whose
+-- permissions can't be touched either.
 DROP POLICY IF EXISTS "org_roles_write" ON public.org_roles;
 DROP POLICY IF EXISTS "org_roles_insert" ON public.org_roles;
 CREATE POLICY "org_roles_insert" ON public.org_roles FOR INSERT TO authenticated
@@ -202,7 +216,7 @@ CREATE POLICY "org_roles_update" ON public.org_roles FOR UPDATE TO authenticated
   WITH CHECK (is_superadmin() OR (my_role_rank() >= 40 AND organization_id = get_my_org_id()));
 DROP POLICY IF EXISTS "org_roles_delete" ON public.org_roles;
 CREATE POLICY "org_roles_delete" ON public.org_roles FOR DELETE TO authenticated
-  USING (preset_key IS NULL AND (is_superadmin() OR (my_role_rank() >= 40 AND organization_id = get_my_org_id())));
+  USING (preset_key IS DISTINCT FROM 'head_admin' AND (is_superadmin() OR (my_role_rank() >= 40 AND organization_id = get_my_org_id())));
 
 DROP POLICY IF EXISTS "org_role_perms_select" ON public.org_role_permissions;
 CREATE POLICY "org_role_perms_select" ON public.org_role_permissions FOR SELECT TO authenticated
@@ -248,5 +262,86 @@ CREATE TRIGGER propagate_org_role_level AFTER UPDATE OF base_role ON public.org_
 ALTER TABLE public.org_roles REPLICA IDENTITY FULL;
 ALTER TABLE public.org_role_permissions REPLICA IDENTITY FULL;
 
+
+
+
+-- --- Invites can assign an organization role --------------------------------------
+-- Same as 20261106160000_owner_signup, plus the invite's org_role_id.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_trusted  boolean := new.invited_at IS NOT NULL OR (new.raw_app_meta_data ? 'organization_id');
+  v_org_id   uuid;
+  v_org_name text;
+  v_slug     text;
+  v_role     text;
+  v_base     text;
+  v_username text;
+  v_suffix   int := 0;
+BEGIN
+  IF v_trusted THEN
+    v_org_id := COALESCE(
+      NULLIF(new.raw_app_meta_data->>'organization_id', '')::uuid,
+      NULLIF(new.raw_user_meta_data->>'organization_id', '')::uuid
+    );
+    IF v_org_id IS NULL THEN
+      SELECT id INTO v_org_id FROM public.organizations WHERE slug = 'default-org';
+    END IF;
+    IF v_org_id IS NULL THEN
+      RAISE EXCEPTION 'No organization for new user: provide organization_id metadata or seed a "default-org".';
+    END IF;
+    v_role := COALESCE(
+      NULLIF(new.raw_app_meta_data->>'role', ''),
+      NULLIF(new.raw_user_meta_data->>'role', ''),
+      'Employee'
+    );
+  ELSE
+    -- Self sign-up → owner of a brand-new organization.
+    v_org_name := left(btrim(COALESCE(new.raw_user_meta_data->>'organization_name', '')), 80);
+    IF v_org_name = '' THEN
+      RAISE EXCEPTION 'Sign-up needs an organization name.' USING ERRCODE = 'check_violation';
+    END IF;
+    v_slug := trim(BOTH '-' FROM regexp_replace(translate(lower(v_org_name), 'áäčďéěëíňóöřšťúůüýž', 'aacdeeeinoorstuuuyz'), '[^a-z0-9]+', '-', 'g'));
+    v_slug := left(COALESCE(NULLIF(v_slug, ''), 'org'), 40) || '-' || substr(md5(random()::text || new.id::text), 1, 6);
+    INSERT INTO public.organizations (name, slug) VALUES (v_org_name, v_slug) RETURNING id INTO v_org_id;
+    v_role := 'Head Admin';
+  END IF;
+
+  v_base := CASE WHEN v_trusted THEN
+      -- Invites: unchanged behaviour (the invite may carry a chosen username).
+      COALESCE(NULLIF(new.raw_user_meta_data->>'username', ''), NULLIF(split_part(new.email, '@', 1), ''), 'user_' || substr(md5(random()::text), 1, 8))
+    ELSE
+      -- Self sign-up: a clean handle from the email (they can change it later).
+      COALESCE(NULLIF(regexp_replace(lower(split_part(new.email, '@', 1)), '[^a-z0-9._]+', '', 'g'), ''), 'user_' || substr(md5(random()::text), 1, 8))
+  END;
+  v_username := v_base;
+  WHILE EXISTS (SELECT 1 FROM public.profiles WHERE username = v_username) LOOP
+    v_suffix := v_suffix + 1;
+    v_username := v_base || v_suffix;
+  END LOOP;
+
+  INSERT INTO public.profiles (id, username, role, email, organization_id, org_role_id, first_name, last_name)
+  VALUES (
+    new.id,
+    v_username,
+    v_role,
+    new.email,
+    v_org_id,
+    -- Invites may name an organization role (the sync trigger checks it
+    -- belongs to the org and sets the level from it). Self sign-ups: none.
+    CASE WHEN v_trusted THEN NULLIF(new.raw_user_meta_data->>'org_role_id', '')::uuid END,
+    NULLIF(left(btrim(new.raw_user_meta_data->>'first_name'), 60), ''),
+    NULLIF(left(btrim(new.raw_user_meta_data->>'last_name'), 60), '')
+  );
+
+  RETURN new;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
 
 NOTIFY pgrst, 'reload schema';

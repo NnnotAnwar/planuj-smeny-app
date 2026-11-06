@@ -41,7 +41,9 @@ export interface EmployeeUpdate {
 export interface EmployeeInvite {
     email: string;
     organization_id: string;
+    /** The level (kept for older servers); `org_role_id` decides when given. */
     role: string;
+    org_role_id?: string;
     first_name?: string | null;
     last_name?: string | null;
 }

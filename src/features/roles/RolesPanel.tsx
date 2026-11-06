@@ -117,7 +117,8 @@ export function RolesPanel({
                                 { onSuccess: () => setEditing(null) },
                             )
                         }
-                        onDelete={current && !current.preset_key ? () => remove.mutate(current.id, { onSuccess: () => setEditing(null) }) : undefined}
+                        onDelete={current && current.preset_key !== 'head_admin' ? () => remove.mutate(current.id, { onSuccess: () => setEditing(null) }) : undefined}
+                        templates={roles.filter((r) => r.preset_key !== 'head_admin')}
                     />
                 )}
             </AnimatePresence>
