@@ -42,26 +42,36 @@ _Last updated: November 6, 2026 · current version 1.10.0 “Beroun”._
 
 ---
 
-## 🔭 Now / near-term (tracked issues)
+## 🔭 Next — v1.11 “C” (finish what v1.10 opened)
 
-- **#96 GDPR** — account self-deletion + personal-data export (P1).
-- **#89 iOS push (APNs)** — gated on Apple Developer + Firebase iOS setup; guide
-  in [`docs/ios-push.md`](docs/ios-push.md).
-- **#97 Test coverage** — the scheduling logic (quick-fill, copy-month, overlap)
-  is barely covered; add unit + a few integration tests.
-- **#99 Lock down RLS helper functions** — needs a schema-move (not a naive
-  revoke, which breaks RLS); do as a dedicated, tested change.
-- **#98 Unused-index review** — revisit once prod has real query volume.
+- **Location hours that do something** — opening hours become the location's
+  default shift time (a built-in template outside the 8-template limit) and
+  planning outside them warns. The break field goes away; breaks already follow
+  Czech law. _(Today the hours are saved but unused.)_
+- **Shift swaps** — a member offers a shift, a teammate takes it, an admin
+  approves it in Requests.
+- **Rest & fatigue warnings** — under 11 h between shifts, close-then-open, too
+  many days in a row; shown in the grid like conflicts.
+- **#97 Tests + E2E** — Playwright happy paths in CI (sign in, clock in,
+  publish, request and approve time off).
+- **#99 Lock down RLS helper functions** — needs a schema move (a naive revoke
+  breaks RLS); a dedicated, tested change. **#98** unused-index review with it.
 
-## 🛠 Next (near-term polish)
+## 🗺 After that — v1.12 “D” (roles your way)
 
-- **Accent contrast pass** — audit on-accent text for the brighter motifs (a11y /
-  WCAG AA), especially amber.
-- **12h grid cells** — timed roster cells get cramped with “dop./odp.” suffixes;
-  tighten the layout or abbreviate.
-- **Empty/error states** — a consistent illustration + retry across pages.
-- **Accessibility sweep** — focus rings, ARIA on custom controls, keyboard paths
-  through the roster grid and modals, reduced-motion support.
+- **Custom roles** — a Head Admin creates roles with any name and sets read /
+  write / delete per area (rota, timesheets, requests, announcements, members),
+  Discord-style. Today's fixed ranks stay as presets; the capability layer
+  (`can()`) is already the seam to build on.
+- **Targeted announcements** (per location) with read receipts for admins.
+- **Calendar sync** — your rota as an ICS feed.
+
+## ⏳ Later / blocked
+
+- **#89 iOS push (APNs)** — blocked on the Apple Developer account + Firebase iOS
+  setup; guide in [`docs/ios-push.md`](docs/ios-push.md).
+- Czech payroll export + DPP/DPČ hour caps · QR/geofenced clock-in · manager
+  home · Sentry · self-serve organizations.
 
 ---
 
@@ -73,19 +83,19 @@ Drafts to pull from — not commitments. Rough **value (V)** and **effort (E)** 
 ### A. Scheduling depth
 - **Shift swaps / give-away** — a member offers a shift; a teammate claims it;
   manager approves. Closes the loop the rota opens. _(V5 E4)_
-- **Open shifts / shift bidding** — post an unassigned shift; eligible members
+- ✅ _(v1.10)_ **Open shifts / shift bidding** — post an unassigned shift; eligible members
   claim or express interest; manager confirms. _(V4 E4)_
-- **Availability & preferences** — members mark days/times they can’t work;
+- ✅ _(v1.10)_ **Availability & preferences** — members mark days/times they can’t work;
   quick-fill and the day editor respect it (like time off but recurring). _(V5 E3)_
-- **Custom shift templates** — beyond the restaurant short/long week, let each org
+- ✅ _(v1.10)_ **Custom shift templates** — beyond the restaurant short/long week, let each org
   define named patterns (e.g. “Opening 7–15”, “Close 15–23”) and one-tap apply. _(V4 E3)_
 - **Shift roles / positions** — assign a role per shift (bar, kitchen, floor) and
   require N of each per day; warn on understaffing. _(V4 E4)_
-- **Coverage requirements** — per-location, per-day minimum headcount with a
+- ✅ _(v1.10)_ **Coverage requirements** — per-location, per-day minimum headcount with a
   visual “understaffed” flag in the grid. _(V4 E3)_
 - **Recurring shifts** — “every Monday 9–17 until end of quarter” without
   re-drawing each month. _(V3 E3)_
-- **Shift confirmation** — members acknowledge a published shift (“Got it”);
+- ✅ _(v1.10)_ **Shift confirmation** — members acknowledge a published shift (“Got it”);
   managers see who hasn’t confirmed. _(V3 E2)_
 - **Conflict & fatigue rules** — warn on back-to-back closes/opens (clopening),
   <11 h rest between shifts, >X consecutive days. _(V4 E3)_
@@ -97,7 +107,7 @@ Drafts to pull from — not commitments. Rough **value (V)** and **effort (E)** 
   a printed QR at the venue) to stop off-site punches. _(V4 E4)_
 - **Break tracking** — start/stop unpaid breaks instead of the flat mandatory-break
   deduction; more accurate net hours. _(V4 E3)_
-- **Clock-in reminders** — nudge a member when their shift starts and they haven’t
+- ✅ _(v1.9 late alerts)_ **Clock-in reminders** — nudge a member when their shift starts and they haven’t
   clocked in (complements the manager-facing late alert). _(V3 E2)_
 - **Missed-clock-out correction** — a lightweight request/approve when auto-end
   midnight isn’t right, instead of admin-only edits. _(V3 E3)_
@@ -116,7 +126,7 @@ Drafts to pull from — not commitments. Rough **value (V)** and **effort (E)** 
 ### D. Payroll & compliance (Czech-specific)
 - **Payroll export** — a period export shaped for Czech payroll (net hours,
   overtime, weekend/holiday premiums) as CSV/XLSX. _(V5 E3)_
-- **Czech public holidays** — auto-mark státní svátky in the rota + holiday-pay
+- ✅ _(v1.10)_ **Czech public holidays** — auto-mark státní svátky in the rota + holiday-pay
   flags. _(V4 E2)_
 - **DPP/DPČ hour caps** — warn when a member on a Dohoda approaches the legal
   monthly/annual hour limit. _(V4 E3)_
@@ -127,7 +137,7 @@ Drafts to pull from — not commitments. Rough **value (V)** and **effort (E)** 
   (if wage is stored). _(V4 E2)_
 - **Wallet-style shift widget / calendar sync** — subscribe to your rota as an
   ICS feed or add to Google/Apple Calendar. _(V4 E3)_
-- **In-app announcements** — managers post a note to a location/team; shows on
+- ✅ _(v1.10)_ **In-app announcements** — managers post a note to a location/team; shows on
   home with read receipts. _(V3 E3)_
 - **Document sharing** — payslips / contracts / training docs per member. _(V3 E4)_
 - **Onboarding checklist** — guided first-run for new employees. _(V2 E2)_
@@ -143,7 +153,7 @@ Drafts to pull from — not commitments. Rough **value (V)** and **effort (E)** 
   free org-wide. _(V4 E4)_
 - **Location groups / regions** — roll up analytics for a manager over several
   venues. _(V3 E3)_
-- **Per-location settings** — open hours, timezone, break rules, wage bands. _(V3 E3)_
+- 🟡 _(v1.10, unused yet)_ **Per-location settings** — open hours, timezone, break rules, wage bands. _(V3 E3)_
 
 ### H. Platform & technical
 - **Automated tests + E2E** — Playwright happy-paths in CI (login, clock-in,
@@ -154,7 +164,7 @@ Drafts to pull from — not commitments. Rough **value (V)** and **effort (E)** 
 - **Offline queue** — queue clock-in/out offline and sync on reconnect. _(V4 E4)_
 - **Performance budget** — code-split the heavy export libs further; lazy-load
   the schedule grid; track bundle size in CI. _(V3 E3)_
-- **Design-system pass** — extract the ad-hoc Tailwind patterns into documented
+- ✅ _(v1.10 glass redesign)_ **Design-system pass** — extract the ad-hoc Tailwind patterns into documented
   primitives (Button/Card/Modal/Table) for consistency. _(V3 E3)_
 - **Backup/restore & audit retention** — scheduled DB backups + an audit-log
   retention policy. _(V3 E2)_
@@ -170,7 +180,7 @@ Drafts to pull from — not commitments. Rough **value (V)** and **effort (E)** 
 - **2FA / stronger auth** for admins (TOTP). _(V4 E3)_
 - **Session management** — see & revoke active devices; force-logout. _(V3 E3)_
 - **Audit export** — download the Activity Log for a period (compliance). _(V3 E2)_
-- **Granular permissions** — beyond ranks, per-capability toggles for edge orgs. _(V2 E4)_
+- 🔜 _(v1.12 custom roles)_ **Granular permissions** — beyond ranks, per-capability toggles for edge orgs. _(V2 E4)_
 
 ---
 

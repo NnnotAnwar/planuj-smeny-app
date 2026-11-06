@@ -1,8 +1,9 @@
 # Planuj Směny
 
-A modern, cross-platform **shift-management** app for teams. Employees clock in
-and out by location in real time; managers and admins oversee organizations,
-locations, people and requests — on the web or as a native Android/iOS app.
+A modern, cross-platform **shift-planning and time-tracking** app for Czech
+teams. People clock in and out by location in real time and confirm their
+planned shifts; admins plan the rota, decide requests and post announcements;
+managers keep an eye on the team. On the web or as a native Android/iOS app.
 
 > **Status: active development (beta).** Features and UI change frequently.
 > _Version 1.10.0 — “Beroun” · last updated: November 6, 2026._ · See the [Roadmap](ROADMAP.md).
@@ -35,7 +36,7 @@ locations, people and requests — on the web or as a native Android/iOS app.
 ### Scheduling (rota)
 - **Two views of one rota:** a **roster grid** (people × days, paper-rota style —
   the default) split into 1–15 / 16–end print bands, and a **month calendar per
-  location**. Managers tap a cell (grid) or a day (calendar) to assign staff.
+  location**. Admins tap a cell (grid) or a day (calendar) to assign staff.
 - **Day editor** — assign several people at once, per-member times or an all-day
   mark; anyone already busy elsewhere that day is locked, and the database
   rejects overlapping assignments so nobody is double-booked.
@@ -45,22 +46,39 @@ locations, people and requests — on the web or as a native Android/iOS app.
   search, admin-set **location letters** shown in cells, and a Σ hours column.
 - **Draft → publish** — new assignments are drafts only the planner sees; one
   **Publish** flips the month live for members and notifies everyone involved.
-- **Time off** (vacation / sick / other): members request, managers approve or
-  decline (or enter pre-approved leave); approved leave **clears the rota** for
-  those days and blocks planning, and overlapping leave per person is rejected.
+- **Time off** (vacation / sick / other): members request, admins approve or
+  decline in Requests (or enter pre-approved leave); approved leave **clears the
+  rota** for those days and blocks planning, and overlapping leave per person is
+  rejected.
 - **Reminders:** if someone hasn't clocked in, **late-for-shift alerts** fire at
   +15 min and +1 h to the member and their manager (pg_cron, every 5 min).
 - **Exports mirror the on-screen view** — the grid exports as a people × days
   matrix (PDF in two print bands / Excel), the calendar as month pages.
 - A **next-shift card** on the dashboard, and today's rostered location
   preselects your clock-in.
+- **Fast grid editing** — pick a template in the brush bar and tap empty cells to
+  paint shifts; tap an existing shift to remove it, with **Undo** in the toast.
+- **Shift templates** — save a time once ("09:00–17:30") and reuse it in the grid
+  and the day editor; up to 8 per organization.
+- **Shift confirmations** — members tick their upcoming shifts (select all →
+  Confirm). A confirmation is final for the member and resets automatically when
+  an admin changes that shift.
+- **Availability** — members mark days they can't work; the grid hatches them and
+  the editor warns before you plan someone there.
+- **Coverage targets** — set how many people a location needs per weekday; days
+  below target get a dot in the grid.
+- **Open shifts** — post an unassigned shift; members claim it (or give it back);
+  an admin adds it to the rota in one tap.
+- **Czech public holidays** are marked in the rota. Working on a holiday is
+  allowed; the app warns once (with "don't show again").
 
 ### Timesheets & analytics
-- **Overview** (per employee): monthly analytics — total/avg hours, shift count,
-  busiest days, share-of-time per location — with **mandatory-break math** baked
-  in (−30 min from 6 h, −1 h from 12 h).
-- **Timesheets** (managers+): pick a member, review/add/edit/delete their shifts
-  for a month, with an overnight-shift-aware time picker.
+- **My hours** (Overview, per member): this month's plan (worked vs. planned
+  shifts), an hours-through-the-month chart with last month for comparison,
+  totals and averages, with **mandatory-break math** baked in (−30 min for every
+  started 6 h, per Czech labour law).
+- **Timesheets**: managers view a member's month; admins also add, edit and
+  delete shifts, with an overnight-shift-aware time picker.
 - **Exports** as **PDF / Excel / CSV**, per employee or the whole team; on native
   they open the OS **share sheet**, on web they download.
 - **Activity Log** (admins+): append-only feed of administrative changes.
@@ -68,21 +86,34 @@ locations, people and requests — on the web or as a native Android/iOS app.
   surprises).
 
 ### Admin & roles
-- **Admin Panel** for Organizations (Superadmin), Locations (owners), and
+- **Admin Panel** for Organizations (Superadmin), Locations (Head Admin), and
   Employees (admins): create / edit / delete, with search.
-- **Ranked role hierarchy** enforced in the database (RLS), not just the UI.
+- **Admins act, managers observe** — admins plan, edit, decide and post;
+  managers see the team rota, timesheets, team and requests without changing
+  them. Enforced in the database (RLS), not just the UI.
+- **Hourly wages** are set by admins only (for people below them, never
+  themselves) and feed a pay estimate.
 - **Invite by email** — new members are provisioned into the right organization
   and role atomically, finishing onboarding on a branded `/accept-invite` page.
 
 ### Requests
-- Dedicated **Requests** hub. **Name-change requests**: staff file a request an
-  admin approves; approval applies the new name automatically. **Username** is
-  self-service but rate-limited to once every 7 days.
+- **One inbox for every request** — time off (vacation / sick / other) and name
+  changes, with *To review*, *History* and *My requests* tabs.
+- **Admins decide**: approve, or decline with a reason the member sees. Approving
+  leave warns first when it would remove planned shifts. Nobody decides on their
+  own request (except the Head Admin). Managers see the queue read-only.
+- Members track every decision and can withdraw a pending request. **Username**
+  is self-service but rate-limited to once every 7 days.
+
+### Announcements
+- Admins post, pin, edit and delete notices for the whole team. New posts arrive
+  as a push notification and an unread badge; the latest unread one shows on
+  Home.
 
 ### Notifications
 - **In-app bell** — a personal feed of what concerns you: your schedule being
   published / changed / removed, time-off decisions, late-shift alerts,
-  name-change decisions, and admin edits to your profile.
+  name-change decisions, announcements, and admin edits to your profile.
 - **Push notifications** (Firebase Cloud Messaging, native): the same events,
   delivered to your device, with **per-category preferences** (master switch +
   shift / account / requests) in Settings. Tapping opens the relevant screen —
@@ -92,14 +123,19 @@ locations, people and requests — on the web or as a native Android/iOS app.
 
 ### Navigation
 - **Command palette** (**⌘K / Ctrl K**) to jump to any page or location.
-- Grouped sidebar (Work / Manage / System) + a searchable location picker with
-  recent posts.
+- Sticky, collapsible sidebar grouped by section + a searchable location picker
+  with recent posts.
+- **Role-aware mobile tab bar** — staff get Home · Schedule · My hours ·
+  Announcements · More; managers and admins get Home · Schedule · Timesheets ·
+  Team · More.
 
 ### Localization & theming
 - **English / Čeština** throughout, with a 12h/24h time-format option and
   locale-aware dates.
-- **Colour schemes** (Emerald / Cyan / Amber / Violet) + **Light / Dark / System**
-  themes, with native status-bar sync.
+- **Premium glass design** — frosted surfaces, compact type, one consistent set of
+  components on every page.
+- **Colour schemes** (Lilac / Emerald / Cyan / Amber / Violet) + **Light / Dark /
+  System** themes, with native status-bar sync.
 
 ### Mobile (Capacitor)
 - Native-style bottom tab bar + a "More" control center (grouped nav, quick
@@ -141,7 +177,10 @@ src/
 │  ├─ locations/   # location picker (recent + search), confirm/switch popup
 │  ├─ timesheets/  # admin shift management, exports, Activity Log
 │  ├─ admin/       # Admin Panel: orgs / locations / employees / roles
-│  ├─ requests/    # Requests hub (name-change approvals)
+│  ├─ requests/    # Requests inbox: time off + name changes, decisions
+│  ├─ announcements/# team announcements, read state, home banner
+│  ├─ availability/# "can't work" days
+│  ├─ wages/       # hourly rates (admin-only) + pay estimate
 │  ├─ notifications/# in-app bell + push registration + preferences
 │  ├─ profile/     # profile editing
 │  └─ settings/    # appearance, language, time format, notifications
@@ -156,24 +195,28 @@ supabase/
 | Role | Rank | Can |
 | --- | --- | --- |
 | Superadmin | 100 | Everything, across all organizations |
-| Head Admin | 40 | Manage own org incl. locations ("owner") |
-| Admin | 30 | Invite & manage members below them; review requests |
-| Manager | 20 | Timesheets + admin panel |
-| Supervisor | 10 | Shift control |
-| Employee | 0 | Own shifts only |
+| Head Admin | 40 | Everything an Admin can, plus locations; may decide own requests |
+| Admin | 30 | Plan the rota, edit timesheets, decide requests, post announcements, manage members below them, set wages |
+| Manager | 20 | An employee who can also **see** the team rota, timesheets, team and requests — read-only |
+| Supervisor | 10 | A badge — same rights as Employee |
+| Employee | 0 | Own shifts, own requests, clock in/out |
 
-Capability rules (assigning roles below your own, no self-escalation, org
-scoping) are enforced by **RLS policies + triggers** in the database, so they
-hold even for direct API calls — the UI just mirrors them.
+The UI asks for a **capability** (`can(user, 'rota.edit')` in
+`src/shared/auth/permissions.ts`); the database enforces the same rule with
+**RLS policies, triggers and checked RPCs**, so it holds even for direct API
+calls. Assigning roles below your own, no self-escalation and org scoping are
+enforced the same way.
 
 ### Edge Functions (`supabase/functions/`)
 - **`invite-employee`** — invites a user and provisions org + role.
 - **`delete-employee`** — removes a member with rank/org checks.
 - **`username-login`** — resolves a username to an email for sign-in.
+- **`delete-account`** — GDPR self-service account deletion.
 - **`send-push`** — sends FCM (HTTP v1) pushes from Database Webhooks
-  (`shift_audit_log`, `name_change_requests`), honouring per-user preferences.
-  Schedule and time-off notifications flow through the same `shift_audit_log`
-  webhook (rows are written by SECURITY DEFINER triggers / the publish RPC).
+  (`shift_audit_log`, `name_change_requests`, `announcements`), localized per
+  recipient (EN/CS) and honouring per-user preferences. Schedule and time-off
+  notifications flow through the `shift_audit_log` webhook (rows are written by
+  SECURITY DEFINER triggers / the publish RPC).
 
 ---
 
@@ -219,8 +262,8 @@ Android app (`com.planujsmeny.app`), drop `google-services.json` into
 supabase secrets set FCM_SERVICE_ACCOUNT="$(cat service-account.json)"
 supabase functions deploy send-push --no-verify-jwt
 ```
-Create Database Webhooks (INSERT) on `shift_audit_log` and
-`name_change_requests` pointing at the `send-push` function. Keep the Firebase
+Create Database Webhooks (INSERT) on `shift_audit_log`, `name_change_requests`
+and `announcements` pointing at the `send-push` function. Keep the Firebase
 **service-account key out of git** (it's ignored).
 
 ---
@@ -232,7 +275,7 @@ Create Database Webhooks (INSERT) on `shift_audit_log` and
 | `yarn build` | Type-check + production build (`tsc -b && vite build`) |
 | `yarn typecheck` | Type-check only |
 | `yarn lint` | ESLint |
-| `yarn format` | Prettier write |
+| `yarn format` | Prettier write — run it on the files you touch, not the whole repo |
 | `yarn test` / `test:watch` | Vitest (run / watch) |
 
 ---
