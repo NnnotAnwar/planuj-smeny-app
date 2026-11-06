@@ -6,7 +6,7 @@ import { Button } from '@shared/components/Button';
 import { FormError } from '@shared/components/FormError';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { useShiftTemplates } from './useShiftTemplates';
-import { tplTime } from './templateTime';
+import { MAX_TEMPLATES, tplTime } from './templateTime';
 
 /**
  * --- MANAGE TEMPLATES ---
@@ -95,14 +95,20 @@ export function TemplatesDialog({ user, onClose }: { user: User; onClose: () => 
                         </li>
                     ))}
                 </ul>
-                <Button
-                    size="sm"
-                    variant="tonal"
-                    icon={PlusIcon}
-                    onClick={() => setDrafts((prev) => [...prev, { id: null, name: '', start: '08:00', end: '16:00' }])}
-                >
-                    {t('tpl.add')}
-                </Button>
+                <div className="flex items-center justify-between gap-3">
+                    <Button
+                        size="sm"
+                        variant="tonal"
+                        icon={PlusIcon}
+                        disabled={drafts.length >= MAX_TEMPLATES}
+                        onClick={() => setDrafts((prev) => [...prev, { id: null, name: '', start: '08:00', end: '16:00' }])}
+                    >
+                        {t('tpl.add')}
+                    </Button>
+                    <span className={`text-caption tabular-nums ${drafts.length >= MAX_TEMPLATES ? 'text-amber-600 dark:text-amber-300' : 'text-ink-soft dark:text-slate-400'}`}>
+                        {drafts.length >= MAX_TEMPLATES ? t('tpl.limitShort', { max: MAX_TEMPLATES }) : t('tpl.count', { n: drafts.length, max: MAX_TEMPLATES })}
+                    </span>
+                </div>
                 <FormError message={error} />
                 <div className="flex gap-2 pt-1">
                     <Button variant="secondary" fullWidth onClick={onClose} disabled={busy}>

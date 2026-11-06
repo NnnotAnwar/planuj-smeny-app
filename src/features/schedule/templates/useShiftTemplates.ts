@@ -34,7 +34,9 @@ export function useShiftTemplates(user: User | null) {
       invalidate();
       toast(t('tpl.saved'), 'success');
     },
-    onError: () => toast(t('tpl.error'), 'error'),
+    // TEMPLATE_LIMIT comes from the DB trigger (max 8 per organization).
+    onError: (e: unknown) =>
+      toast(e instanceof Error && e.message.includes('TEMPLATE_LIMIT') ? t('tpl.limit') : t('tpl.error'), 'error'),
   });
 
   const update = useMutation({

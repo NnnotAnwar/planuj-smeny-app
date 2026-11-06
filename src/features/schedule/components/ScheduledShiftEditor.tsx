@@ -14,7 +14,7 @@ import type { Availability } from '@features/availability/types';
 import { availabilityWindow } from '@features/availability/availabilityLogic';
 import type { ShiftTemplate, ShiftTemplateInput } from '@features/schedule/templates/types';
 import { HolidayWarningBody, HOLIDAY_WARNING_KEY } from '@features/schedule/holidays/HolidayWarning';
-import { templateFor, tplTime } from '@features/schedule/templates/templateTime';
+import { MAX_TEMPLATES, templateFor, tplTime } from '@features/schedule/templates/templateTime';
 import { useDismissibleWarning } from '@shared/hooks/useDismissibleWarning';
 
 /**
@@ -184,7 +184,7 @@ export function ScheduledShiftEditor({
 
     /** One tap: save a row's exact times as a template, named after them. */
     const saveRowTemplate = (r: RowState) => {
-        if (!onSaveTemplate || templateFor(templates ?? [], r.start, r.end)) return;
+        if (!onSaveTemplate || templateFor(templates ?? [], r.start, r.end) || (templates?.length ?? 0) >= MAX_TEMPLATES) return;
         void onSaveTemplate({ name: `${r.start}–${r.end}`, start_time: r.start, end_time: r.end });
     };
 
@@ -399,6 +399,10 @@ export function ScheduledShiftEditor({
                                                     })}
                                                     {onSaveTemplate && (() => {
                                                         const saved = templateFor(templates ?? [], r.start, r.end);
+                                                        const atLimit = (templates?.length ?? 0) >= MAX_TEMPLATES;
+                                                        if (!saved && atLimit) {
+                                                            return <span className="text-[11px] text-ink-soft dark:text-slate-400">{t('tpl.limit')}</span>;
+                                                        }
                                                         return (
                                                             <button
                                                                 type="button"

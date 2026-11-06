@@ -4,7 +4,7 @@ import { BookmarkSimpleIcon, CheckIcon, SunHorizonIcon, TrashIcon } from '@phosp
 import { Button } from '@shared/components/Button';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import type { ShiftTemplate } from './types';
-import { templateFor, tplTime } from './templateTime';
+import { MAX_TEMPLATES, templateFor, tplTime } from './templateTime';
 
 /**
  * --- SHIFT TIME MENU ---
@@ -65,6 +65,7 @@ export function ShiftTimeMenu({
     const pos = below ? { top: anchor.bottom + 4 } : { bottom: window.innerHeight - anchor.top + 4 };
 
     const typedTemplate = templateFor(templates, start, end);
+    const atLimit = templates.length >= MAX_TEMPLATES;
     const isActive = (tpl: ShiftTemplate) => !value.allDay && tplTime(tpl.start_time) === value.start && tplTime(tpl.end_time) === value.end;
     const rowClass =
         'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-meta font-medium text-ink transition-colors hover:bg-ink/5 disabled:opacity-50 dark:text-slate-200 dark:hover:bg-white/8';
@@ -114,9 +115,9 @@ export function ShiftTimeMenu({
                         {onSaveTemplate && (
                             <button
                                 type="button"
-                                disabled={!!typedTemplate || !start || !end}
+                                disabled={!!typedTemplate || atLimit || !start || !end}
                                 onClick={() => onSaveTemplate(start, end)}
-                                title={typedTemplate ? typedTemplate.name : t('tpl.save')}
+                                title={typedTemplate ? typedTemplate.name : atLimit ? t('tpl.limit') : t('tpl.save')}
                                 aria-label={t('tpl.save')}
                                 className="flex size-7 shrink-0 items-center justify-center rounded-lg text-emerald-600 transition-colors hover:bg-emerald-500/10 disabled:opacity-60 dark:text-emerald-300"
                             >

@@ -10,6 +10,8 @@
 --    non-managers to the claim columns only.
 -- 3. shift_confirmations: a confirmation is final for the member — they can no
 --    longer withdraw it; only a manager in the org can reset one.
+-- 4. shift_templates: at most 8 per organization (they become buttons all over
+--    the rota UI, so an unbounded list would crowd it out).
 -- =============================================================================
 
 -- True when `target` is in my organization and ranks strictly below me.
@@ -78,5 +80,26 @@ CREATE TRIGGER open_shifts_guard_member_edits
 DROP POLICY IF EXISTS "shift_conf_delete" ON public.shift_confirmations;
 CREATE POLICY "shift_conf_delete" ON public.shift_confirmations FOR DELETE TO authenticated
   USING (is_superadmin() OR (my_role_rank() >= 20 AND organization_id = get_my_org_id()));
+
+-- At most 8 shift templates per organization.
+CREATE OR REPLACE FUNCTION public.shift_templates_limit()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+BEGIN
+  IF (SELECT count(*) FROM public.shift_templates WHERE organization_id = NEW.organization_id) >= 8 THEN
+    RAISE EXCEPTION 'TEMPLATE_LIMIT' USING ERRCODE = 'P0001', HINT = 'An organization can keep at most 8 shift templates.';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION public.shift_templates_limit() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS shift_templates_limit ON public.shift_templates;
+CREATE TRIGGER shift_templates_limit
+  BEFORE INSERT ON public.shift_templates
+  FOR EACH ROW EXECUTE FUNCTION public.shift_templates_limit();
 
 NOTIFY pgrst, 'reload schema';
