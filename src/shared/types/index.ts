@@ -250,6 +250,8 @@ export const ShiftAuditLogSchema = z.object({
   shift_id: z.string().nullable(),
   actor_id: z.string().nullable(),
   target_user_id: z.string().nullable(),
+  /** Who the entry is about (filter by employee); target_user_id = who was notified. */
+  subject_id: z.string().nullable().optional(),
   action: z.string(),
   details: z
     .object({
@@ -296,6 +298,18 @@ export const ShiftAuditLogSchema = z.object({
       other_name: z.string().nullable().optional(),
       moved: z.number().nullable().optional(),
       moved_to: z.string().nullable().optional(),
+      // Everything else (clock, open shifts, templates, locations, …).
+      subject_name: z.string().nullable().optional(),
+      starts_at: z.string().nullable().optional(),
+      ends_at: z.string().nullable().optional(),
+      all_day: z.boolean().nullable().optional(),
+      start_time: z.string().nullable().optional(),
+      end_time: z.string().nullable().optional(),
+      shift_role: z.string().nullable().optional(),
+      to_name: z.string().nullable().optional(),
+      auto: z.boolean().nullable().optional(),
+      pinned: z.boolean().nullable().optional(),
+      email: z.string().nullable().optional(),
     })
     .passthrough()
     .default({}),

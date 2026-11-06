@@ -93,9 +93,19 @@ Deno.serve(async (req) => {
                 Number(targetRank ?? 0) < Number(callerRank ?? 0));
         if (!allowed) return json({ error: 'You are not allowed to remove this member.' }, 403);
 
-        // 6. Delete the auth user — cascades to profiles + shifts.
+        // 6. Log it while the name still resolves, then delete the auth user —
+        //    cascades to profiles + shifts. A failed delete takes the entry back.
+        const { data: logId } = await admin.rpc('log_member_event', {
+            p_org: targetProfile.organization_id,
+            p_action: 'member_removed',
+            p_actor: caller.id,
+            p_subject: targetId,
+        });
         const { error: delErr } = await admin.auth.admin.deleteUser(targetId);
-        if (delErr) return json({ error: delErr.message }, 400);
+        if (delErr) {
+            if (logId) await admin.from('shift_audit_log').delete().eq('id', logId);
+            return json({ error: delErr.message }, 400);
+        }
 
         return json({ success: true }, 200);
     } catch (err) {

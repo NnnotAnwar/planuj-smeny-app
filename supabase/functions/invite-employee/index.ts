@@ -146,6 +146,20 @@ Deno.serve(async (req) => {
             return json({ error: message, status: e.status ?? null, code: e.code ?? null, name: e.name ?? null }, 400);
         }
 
+        // 8. Activity log: who invited whom, with which role.
+        if (invited?.user?.id) {
+            const roleName = orgRoleId
+                ? (await admin.from('org_roles').select('name').eq('id', orgRoleId).single()).data?.name ?? role
+                : role;
+            await admin.rpc('log_member_event', {
+                p_org: organizationId,
+                p_action: 'member_invited',
+                p_actor: caller.id,
+                p_subject: invited.user.id,
+                p_details: { role_name: roleName, email },
+            });
+        }
+
         return json({ success: true, user_id: invited?.user?.id ?? null }, 200);
     } catch (err) {
         const message = err instanceof Error ? err.message : JSON.stringify(err);

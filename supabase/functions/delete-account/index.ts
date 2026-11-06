@@ -97,9 +97,19 @@ Deno.serve(async (req) => {
             }
         }
 
-        // 5. Delete the auth user — cascades to all their data.
+        // 5. Log the departure (the org keeps the record), then delete the auth
+        //    user — cascades to all their data. A failed delete takes it back.
+        const { data: logId } = await admin.rpc('log_member_event', {
+            p_org: profile.organization_id,
+            p_action: 'member_left',
+            p_actor: caller.id,
+            p_subject: caller.id,
+        });
         const { error: delErr } = await admin.auth.admin.deleteUser(caller.id);
-        if (delErr) return json({ error: delErr.message }, 400);
+        if (delErr) {
+            if (logId) await admin.from('shift_audit_log').delete().eq('id', logId);
+            return json({ error: delErr.message }, 400);
+        }
 
         return json({ success: true }, 200);
     } catch (err) {
