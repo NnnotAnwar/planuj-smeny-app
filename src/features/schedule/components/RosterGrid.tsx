@@ -72,6 +72,10 @@ interface RosterGridProps {
     requiredOn?: (date: string) => number;
     /** A member's availability entry for a day (can't / would like to work). */
     availabilityFor?: (memberId: string, date: string) => Availability | undefined;
+    /** A planned shift falls outside this location's opening hours. */
+    outsideHours?: (shift: ScheduledShift) => boolean;
+    /** Shows as the location letter: all-day, or exactly the location's opening hours. */
+    isLetter?: (shift: ScheduledShift) => boolean;
 }
 
 /** Diagonal hatch for "can't work" cells — reads as blocked without shouting. */
@@ -90,7 +94,7 @@ function WeekPreview({ days, tone }: { days: number[]; tone: 'sky' | 'emerald' }
     );
 }
 
-export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow, leaveFor, onOpenProfile, holidayFor, requiredOn, availabilityFor }: RosterGridProps) {
+export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow, leaveFor, onOpenProfile, holidayFor, requiredOn, availabilityFor, outsideHours, isLetter }: RosterGridProps) {
     const t = useTranslation();
     const [fillMenu, setFillMenu] = useState<{ id: string; name: string; left: number; top: number } | null>(null);
 
@@ -259,20 +263,22 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                             {days.map((d) => {
                                                 const items = memberDays?.get(d.key) ?? [];
                                                 const has = items.length > 0;
-                                                const allDay = has && items.every((s) => s.all_day);
+                                                const allDay = has && items.every((s) => s.all_day || !!isLetter?.(s));
                                                 const leave = !has ? leaveFor?.(row.id, d.key) : undefined;
                                                 const tappable = canManage && row.editable && !!onCellTap && !leave;
                                                 const holiday = holidayFor?.(d.key) ?? null;
                                                 const avail = !leave ? availabilityFor?.(row.id, d.key) : undefined;
                                                 const conflict = has && avail?.kind === 'unavailable';
+                                                const outside = has && !!outsideHours && items.some((s) => outsideHours(s));
                                                 return (
                                                     <td
                                                         key={d.key}
                                                         onClick={tappable ? () => onCellTap!(row.id, d.key) : undefined}
                                                         title={
                                                             [
-                                                                has && !allDay ? items.map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`).join(', ') : '',
+                                                                has && items.some((s) => !s.all_day) ? items.filter((s) => !s.all_day).map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`).join(', ') : '',
                                                                 avail ? availText(avail) : '',
+                                                                outside ? t('locset.outsideShort') : '',
                                                             ].filter(Boolean).join('\n') || undefined
                                                         }
                                                         className={`border-b border-l border-gray-100 dark:border-gray-800 h-9 px-0 align-middle select-none ${zebra} ${
@@ -299,7 +305,7 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                                     {code || '✓'}
                                                                 </span>
                                                             ) : (
-                                                                <span className={`inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-0.5 py-0.5 leading-[1.15] tabular-nums ${items.some((s) => !s.published) ? 'opacity-50' : ''} ${conflict ? 'ring-2 ring-amber-400' : ''}`}>
+                                                                <span className={`inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-0.5 py-0.5 leading-[1.15] tabular-nums ${items.some((s) => !s.published) ? 'opacity-50' : ''} ${conflict || outside ? 'ring-2 ring-amber-400' : ''}`}>
                                                                     {hm(items[0].starts_at)}
                                                                     <br />
                                                                     {hm(items[0].ends_at)}

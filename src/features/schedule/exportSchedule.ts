@@ -50,6 +50,8 @@ export interface ScheduleExportGridSection {
     shifts: ScheduledShift[];
     /** Approved-leave marker for a member+day (localized short code, e.g. "V"). */
     leaveFor?: (memberId: string, date: string) => string | undefined;
+    /** Shows as the letter: all-day, or exactly the location's opening hours. */
+    isLetter?: (s: ScheduledShift) => boolean;
 }
 
 export interface ScheduleExportContext {
@@ -126,7 +128,7 @@ function gridCellText(section: ScheduleExportGridSection, byDay: Map<string, Sch
     const items = byDay.get(`${memberId}|${date}`) ?? [];
     if (items.length > 0) {
         return items
-            .map((s) => (s.all_day ? section.code || allDayMark : `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`))
+            .map((s) => (s.all_day || section.isLetter?.(s) ? section.code || allDayMark : `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`))
             .join('\n');
     }
     return section.leaveFor?.(memberId, date) ?? '';

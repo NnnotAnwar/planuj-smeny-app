@@ -42,6 +42,8 @@ import { OpenShiftsCard } from './openShifts/OpenShiftsCard';
 import { tplTime } from './templates/templateTime';
 import { TemplateBrush } from './templates/TemplateBrush';
 import { TemplatesDialog } from './templates/TemplatesDialog';
+import { useLocationSettings } from '@features/locations/settings/useLocationSettings';
+import { openingHours, isOutsideHours, isHoursShift, fullDayShift, type OpeningHours } from '@features/locations/settings/openingHours';
 import { buildShiftDates } from '@features/timesheets/shiftTimes';
 
 /**
@@ -164,6 +166,17 @@ export default function SchedulePage() {
     // Roster grid "brush": what a tap on an empty cell puts down (null = all day).
     const [brushId, setBrushId] = useState<string | null>(null);
     const brush = templateList.find((tpl) => tpl.id === brushId) ?? null;
+    // Locations' opening hours. A location's "full day" (the letter in the grid)
+    // means its opening hours when it has them — stored as real times — and an
+    // all-day mark otherwise. Shifts planned outside the hours get flagged.
+    const locSettings = useLocationSettings(user);
+    const hoursOf = (locId: string | null): OpeningHours | null => {
+        const ls = locId ? locSettings.byLocation.get(locId) : undefined;
+        return openingHours(ls?.open_time, ls?.close_time);
+    };
+    /** A shift that reads as the location letter: all-day, or exactly the opening hours. */
+    const isLetterShift = (sh: Pick<ScheduledShift, 'starts_at' | 'ends_at' | 'all_day' | 'location_id'>) =>
+        sh.all_day || isHoursShift(sh.starts_at, sh.ends_at, sh.all_day, hoursOf(sh.location_id));
     const [managingTemplates, setManagingTemplates] = useState(false);
 
 
@@ -376,21 +389,14 @@ export default function SchedulePage() {
             toast(t('schedule.busyAt', { where: `${locationName(s.location_id)} · ${when}` }), 'info');
             return;
         }
-        // An empty cell gets whatever the brush holds: all day, or a template's times.
+        // An empty cell gets whatever the brush holds: a template's times, or the
+        // location's full day (its opening hours, or all day when it has none).
         const row = brush
             ? (() => {
                   const { startDate, endDate } = buildShiftDates(date, tplTime(brush.start_time), tplTime(brush.end_time));
                   return { user_id: memberId, starts_at: startDate.toISOString(), ends_at: endDate.toISOString(), all_day: false };
               })()
-            : (() => {
-                  const [y, m, d] = date.split('-').map(Number);
-                  return {
-                      user_id: memberId,
-                      starts_at: new Date(y, m - 1, d).toISOString(),
-                      ends_at: new Date(y, m - 1, d + 1).toISOString(),
-                      all_day: true,
-                  };
-              })();
+            : { user_id: memberId, ...fullDayShift(date, hoursOf(locId)) };
         const run = () =>
             quickM.mutate(() => scheduleService.createMany(user.organization_id, user.id, [row], { location_id: locId, note: null }));
         // Planning onto a public holiday asks once first (silenceable per device).
@@ -416,29 +422,23 @@ export default function SchedulePage() {
             return;
         }
 
-        // Replace previous all-day fills; keep hand-set timed shifts.
-        const removeIds = mineHere.filter((s) => s.all_day).map((s) => s.id);
+        // Replace previous full-day fills (letters); keep hand-set timed shifts.
+        const removeIds = mineHere.filter(isLetterShift).map((s) => s.id);
         // Days that stay blocked: their timed shifts here + anything elsewhere.
         const blocked = new Set(
             shifts
-                .filter((s) => s.user_id === memberId && (s.location_id !== locId || !s.all_day))
+                .filter((s) => s.user_id === memberId && (s.location_id !== locId || !isLetterShift(s)))
                 .map((s) => {
                     const d = new Date(s.starts_at);
                     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
                 }),
         );
 
-        const [y, m] = selectedMonth.split('-').map(Number);
         const rows: Array<{ user_id: string; starts_at: string; ends_at: string; all_day: boolean }> = [];
         for (const day of quickFillDays(selectedMonth, action)) {
             const dateKey = `${selectedMonth}-${pad(day)}`;
             if (blocked.has(dateKey) || leaveOn(memberId, dateKey)) continue;
-            rows.push({
-                user_id: memberId,
-                starts_at: new Date(y, m - 1, day).toISOString(),
-                ends_at: new Date(y, m - 1, day + 1).toISOString(),
-                all_day: true,
-            });
+            rows.push({ user_id: memberId, ...fullDayShift(dateKey, hoursOf(locId)) });
         }
         if (rows.length === 0 && removeIds.length === 0) {
             toast(t('schedule.nothingToFill'), 'info');
@@ -568,6 +568,7 @@ export default function SchedulePage() {
                       const e = leaveOn(memberId, date);
                       return e ? t(`timeoff.short_${e.kind}` as 'timeoff.short_vacation') : undefined;
                   },
+                  isLetter: isLetterShift,
               }))
             : undefined;
         await exportSchedule(format, {
@@ -864,6 +865,8 @@ export default function SchedulePage() {
                                                             holidayFor={holidayFor}
                                                             requiredOn={requiredOn(sec.id)}
                                                             availabilityFor={availabilityFor}
+                                                            outsideHours={(sh) => isOutsideHours(sh.starts_at, sh.ends_at, hoursOf(sec.id), sh.all_day)}
+                                                            isLetter={isLetterShift}
                                                         />
                                                     )}
                                                     {sec.id && canManage && addable.length > 0 && (
@@ -927,6 +930,7 @@ export default function SchedulePage() {
                         holidayName={holidayFor}
                         availabilityFor={availabilityFor}
                         templates={templateList}
+                        hoursFor={hoursOf}
                         onSaveTemplate={(input) => templates.create.mutateAsync(input)}
                         onRemoveTemplate={(id) => templates.remove.mutate(id)}
                     />
