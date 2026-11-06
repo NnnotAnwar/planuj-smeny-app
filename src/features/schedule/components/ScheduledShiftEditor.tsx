@@ -98,6 +98,7 @@ export function ScheduledShiftEditor({
     availabilityFor,
     templates,
     hoursFor,
+    restFor,
     onSaveTemplate,
     onRemoveTemplate,
 }: {
@@ -119,6 +120,8 @@ export function ScheduledShiftEditor({
     templates?: ShiftTemplate[];
     /** A location's opening hours — offered as a time chip, and shifts outside them are flagged. */
     hoursFor?: (locationId: string | null) => OpeningHours | null;
+    /** Rest-rule warnings a shift would have for a member (text), ignoring the shift it replaces. */
+    restFor?: (memberId: string, shift: { starts_at: string; ends_at: string; all_day: boolean }, replacingId?: string) => string[];
     onSaveTemplate?: (input: ShiftTemplateInput) => Promise<unknown>;
     onRemoveTemplate?: (id: string) => void;
 }) {
@@ -347,6 +350,13 @@ export function ScheduledShiftEditor({
                                                         </span>
                                                     );
                                                 })()}
+                                                {r.selected && !busyText && restFor &&
+                                                    restFor(m.id, toISO(r), existingByUser.get(m.id)?.id).map((msg) => (
+                                                        <span key={msg} className="flex items-center gap-1 text-caption font-medium text-rose-600 dark:text-rose-300">
+                                                            <WarningIcon weight="fill" className="size-3 shrink-0" />
+                                                            <span className="truncate">{msg}</span>
+                                                        </span>
+                                                    ))}
                                                 {busyText && (
                                                     <span className="flex items-center gap-1 text-micro normal-case tracking-normal text-amber-600 dark:text-amber-400">
                                                         <WarningIcon weight="fill" className="w-3 h-3 shrink-0" />
