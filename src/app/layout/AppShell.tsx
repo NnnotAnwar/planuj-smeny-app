@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Outlet, useSearchParams } from 'react-router-dom';
+import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { WarningCircleIcon, CheckCircleIcon, InfoIcon, XIcon, MapPinIcon, WifiSlashIcon } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
@@ -60,6 +60,13 @@ export function AppShell() {
     next.delete('openNotifications');
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
+
+  // A new page starts at the top — otherwise it opened at the previous page's
+  // scroll position (half-way down a long list).
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   // Failed shift actions (start/end/move) are surfaced via the toast store; the
   // store auto-dismisses each entry.
@@ -165,11 +172,15 @@ export function AppShell() {
       {/* SIDEBAR — persistent dispatch board / navigation (desktop) + header (mobile) */}
       <Sidebar onLocationSelect={handleLocationSelect} onOpenSearch={() => setPaletteOpen(true)} />
 
-      {/* MAIN CONTENT AREA — bottom padding clears the mobile tab bar (+ the
-          floating check-in button on Home); md+ uses the sidebar instead.
+      {/* MAIN CONTENT AREA — bottom padding clears the mobile tab bar; Home
+          also clears its floating check-in button. md+ uses the sidebar instead.
           No max-width: collapsing the sidebar should hand its space to the
           content (a capped main just sat left-aligned with a dead right gap). */}
-      <main className="flex-1 min-w-0 p-3 pb-32 md:py-6 md:pr-6 md:pl-3 transition-all">
+      <main
+        className={`flex-1 min-w-0 p-3 md:py-6 md:pr-6 md:pl-3 transition-all ${
+          pathname === '/' ? 'pb-32' : 'pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))]'
+        }`}
+      >
         {/* One reading width for every page, so titles and cards line up as you navigate. */}
         <div className="mx-auto w-full max-w-6xl">
           <Outlet context={contextValue} />
