@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckIcon, ClockIcon, WarningIcon, CalendarStarIcon, PlusIcon, XIcon, HeartIcon } from '@phosphor-icons/react';
+import { CheckIcon, ClockIcon, WarningIcon, CalendarStarIcon, XIcon, HeartIcon, BookmarkSimpleIcon } from '@phosphor-icons/react';
 import { Modal } from '@features/admin/components/Modal';
 import { TimePicker } from '@shared/components/TimePicker';
 import { DatePicker } from '@shared/components/DatePicker';
@@ -14,6 +14,7 @@ import type { Availability } from '@features/availability/types';
 import { availabilityWindow } from '@features/availability/availabilityLogic';
 import type { ShiftTemplate, ShiftTemplateInput } from '@features/schedule/templates/types';
 import { HolidayWarningBody, HOLIDAY_WARNING_KEY } from '@features/schedule/holidays/HolidayWarning';
+import { templateFor, tplTime } from '@features/schedule/templates/templateTime';
 import { useDismissibleWarning } from '@shared/hooks/useDismissibleWarning';
 
 /**
@@ -24,8 +25,10 @@ import { useDismissibleWarning } from '@shared/hooks/useDismissibleWarning';
  * flips back to all-day in one tap. Members already busy elsewhere that day
  * are flagged inline, as is each member's availability for the day.
  *
- * Templates ("Morning 7–15") stamp their times onto everyone ticked, and the
- * current times can be saved as a new one. Planning onto a public holiday asks
+ * Templates ("Morning 7–15") stamp their times onto everyone ticked (top
+ * bar) or onto one person (chips in their row) — so a day where people start
+ * at different times is a few taps. Each row's times save as a template with
+ * one tap (named after the times; rename in Manage templates). Planning onto a public holiday asks
  * once first (inline confirm step, silenceable per device).
  */
 
@@ -123,8 +126,6 @@ export function ScheduledShiftEditor({
     // Holiday confirm step: shown once per save attempt on a holiday date.
     const [holidayAsk, setHolidayAsk] = useState(false);
     const [dontShowHoliday, setDontShowHoliday] = useState(false);
-    // "Save as template" inline name field.
-    const [tplName, setTplName] = useState<string | null>(null);
     const pickable = locations.filter((l) => !l.archived_at);
 
     const [locationId, setLocationId] = useState(defaultLocationId ?? pickable[0]?.id ?? '');
@@ -181,14 +182,10 @@ export function ScheduledShiftEditor({
         });
     };
 
-    /** Save the first ticked member's exact times as a named template. */
-    const saveTemplate = async () => {
-        const name = tplName?.trim();
-        const source = selectedIds.map(rowOf).find((r) => r.withTime);
-        if (!name || !onSaveTemplate) return;
-        if (!source) return setError(t('tpl.tickFirst'));
-        await onSaveTemplate({ name, start_time: source.start, end_time: source.end });
-        setTplName(null);
+    /** One tap: save a row's exact times as a template, named after them. */
+    const saveRowTemplate = (r: RowState) => {
+        if (!onSaveTemplate || templateFor(templates ?? [], r.start, r.end)) return;
+        void onSaveTemplate({ name: `${r.start}–${r.end}`, start_time: r.start, end_time: r.end });
     };
 
     const handleSubmit = async () => {
@@ -262,7 +259,7 @@ export function ScheduledShiftEditor({
                 )}
 
                 {/* TEMPLATES — one tap sets the times for everyone ticked. */}
-                {templates && (templates.length > 0 || onSaveTemplate) && (
+                {templates && templates.length > 0 && (
                     <div className="space-y-1.5">
                         <label className="text-label text-gray-400">{t('tpl.title')}</label>
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -291,35 +288,6 @@ export function ScheduledShiftEditor({
                                     )}
                                 </span>
                             ))}
-                            {onSaveTemplate &&
-                                (tplName === null ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => setTplName('')}
-                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-meta font-semibold text-ink-soft ring-1 ring-dashed ring-ink/20 hover:text-ink dark:text-slate-400 dark:ring-white/20 dark:hover:text-white"
-                                    >
-                                        <PlusIcon weight="bold" className="size-3" />
-                                        {t('tpl.save')}
-                                    </button>
-                                ) : (
-                                    <span className="inline-flex items-center gap-1">
-                                        <input
-                                            autoFocus
-                                            value={tplName}
-                                            onChange={(e) => setTplName(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') void saveTemplate();
-                                                if (e.key === 'Escape') setTplName(null);
-                                            }}
-                                            placeholder={t('tpl.namePh')}
-                                            maxLength={40}
-                                            className="w-40 rounded-lg border border-ink/10 bg-white/80 px-2 py-1 text-meta text-ink outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-white/5 dark:text-white"
-                                        />
-                                        <Button size="sm" onClick={() => void saveTemplate()} disabled={!tplName.trim()}>
-                                            {t('common.save')}
-                                        </Button>
-                                    </span>
-                                ))}
                         </div>
                         <p className="text-caption text-ink-soft dark:text-slate-400">{t('tpl.hint')}</p>
                     </div>
@@ -407,6 +375,45 @@ export function ScheduledShiftEditor({
                                             <TimePicker value={r.end} onChange={(v) => patchRow(m.id, { end: v })} aria-label={t('shiftEditor.endTime')} />
                                             {r.end <= r.start && (
                                                 <p className="col-span-2 text-micro text-amber-500">{t('shiftEditor.overnight')}</p>
+                                            )}
+                                            {/* This person's time from a template, or save theirs as one. */}
+                                            {(templates?.length || onSaveTemplate) && (
+                                                <div className="col-span-2 flex flex-wrap items-center gap-1">
+                                                    {(templates ?? []).map((tpl) => {
+                                                        const on = tplTime(tpl.start_time) === r.start && tplTime(tpl.end_time) === r.end;
+                                                        return (
+                                                            <button
+                                                                key={tpl.id}
+                                                                type="button"
+                                                                onClick={() => patchRow(m.id, { start: tplTime(tpl.start_time), end: tplTime(tpl.end_time) })}
+                                                                aria-pressed={on}
+                                                                className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold transition-colors ${
+                                                                    on
+                                                                        ? 'bg-emerald-600 text-white'
+                                                                        : 'bg-emerald-500/10 text-emerald-800 hover:bg-emerald-500/15 dark:text-emerald-200'
+                                                                }`}
+                                                            >
+                                                                {tpl.name}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                    {onSaveTemplate && (() => {
+                                                        const saved = templateFor(templates ?? [], r.start, r.end);
+                                                        return (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => saveRowTemplate(r)}
+                                                                disabled={!!saved}
+                                                                title={saved ? saved.name : t('tpl.saveRow')}
+                                                                aria-label={t('tpl.saveRow')}
+                                                                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink disabled:hover:bg-transparent dark:text-slate-400 dark:hover:bg-white/8"
+                                                            >
+                                                                <BookmarkSimpleIcon weight={saved ? 'fill' : 'bold'} className={`size-3 ${saved ? 'text-emerald-600 dark:text-emerald-300' : ''}`} />
+                                                                {saved ? null : t('tpl.save')}
+                                                            </button>
+                                                        );
+                                                    })()}
+                                                </div>
                                             )}
                                         </div>
                                     )}

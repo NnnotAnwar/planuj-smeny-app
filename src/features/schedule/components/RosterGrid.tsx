@@ -58,7 +58,8 @@ interface RosterGridProps {
     /** The location's short letter (paper-rota style) — replaces the ✓ when set. */
     code?: string | null;
     canManage: boolean;
-    onCellTap?: (memberId: string, date: string) => void;
+    /** Tap on a cell; `anchor` is the cell's rect so a menu can open next to it. */
+    onCellTap?: (memberId: string, date: string, anchor: DOMRect) => void;
     /** Restaurant quick-fill / clear for one member's month at this location. */
     onQuickFill?: (memberId: string, action: QuickFillAction) => void;
     onRemoveRow?: (memberId: string) => void;
@@ -268,7 +269,7 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                 return (
                                                     <td
                                                         key={d.key}
-                                                        onClick={tappable ? () => onCellTap!(row.id, d.key) : undefined}
+                                                        onClick={tappable ? (e) => onCellTap!(row.id, d.key, e.currentTarget.getBoundingClientRect()) : undefined}
                                                         title={
                                                             [
                                                                 has && !allDay ? items.map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`).join(', ') : '',
