@@ -2,13 +2,13 @@ import { z } from 'zod';
 import type { PermissionArea, PermissionAction } from '@shared/types';
 
 /** Every area a role can be granted, in the order the editor shows them. */
-export const AREAS: PermissionArea[] = ['rota', 'timesheets', 'requests', 'announcements', 'members', 'wages', 'locations', 'activity'];
+export const AREAS: PermissionArea[] = ['rota', 'timesheets', 'requests', 'announcements', 'members', 'wages', 'locations', 'activity', 'roles'];
 export const ACTIONS: PermissionAction[] = ['read', 'write', 'delete'];
 
-/** The levels a custom role can sit at (Head Admin is the locked preset only). */
-export const LEVELS = ['Employee', 'Supervisor', 'Manager', 'Admin'] as const;
-export type Level = (typeof LEVELS)[number];
-export const LEVEL_RANK: Record<string, number> = { Employee: 0, Supervisor: 10, Manager: 20, Admin: 30, 'Head Admin': 40, Superadmin: 100 };
+/** Position = hierarchy rank: Head Admin 40 (top), the default role 0 (bottom). */
+export const TOP = 40;
+export const isLockedTop = (r: Pick<OrgRole, 'preset_key'>) => r.preset_key === 'head_admin';
+export const isDefaultRole = (r: Pick<OrgRole, 'preset_key'>) => r.preset_key === 'employee';
 
 export const ROLE_COLORS = ['#22c55e', '#0ea5e9', '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', '#eab308', '#14b8a6', '#64748b'];
 

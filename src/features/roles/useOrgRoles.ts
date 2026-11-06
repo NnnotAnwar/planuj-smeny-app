@@ -30,25 +30,32 @@ export function useOrgRoles(organizationId: string | null | undefined) {
         const m = e instanceof Error ? e.message : String((e as { message?: string })?.message ?? '');
         toast(
             m.includes('org_roles_name_uniq') || m.includes('duplicate') ? t('roles.nameTaken')
-            : m.includes('violates foreign key') ? t('roles.inUse')
+            : m.includes('permissions you have') ? t('roles.cantGrant')
+            : m.includes('no room') ? t('roles.noRoom')
             : t('roles.error'),
             'error',
         );
     };
 
     const save = useMutation({
-        mutationFn: async (v: { id?: string; name: string; color: string; base_role: string; sort: number; grants: Grants; locked?: boolean }) => {
+        mutationFn: async (v: { id?: string; name: string; color: string; grants: Grants; before?: Grants; locked?: boolean }) => {
             if (v.id) {
-                await rolesService.update(v.id, v.locked ? { color: v.color } : { name: v.name, color: v.color, base_role: v.base_role, sort: v.sort });
-                if (!v.locked) await rolesService.setGrants(v.id, v.grants);
+                await rolesService.update(v.id, v.locked ? { color: v.color } : { name: v.name, color: v.color });
+                if (!v.locked) await rolesService.setGrants(v.id, v.grants, v.before);
                 return v.id;
             }
-            return rolesService.create({ organization_id: orgId, name: v.name, color: v.color, base_role: v.base_role, sort: v.sort }, v.grants);
+            return rolesService.create({ organization_id: orgId, name: v.name, color: v.color }, v.grants);
         },
         onSuccess: () => {
             refresh();
             toast(t('roles.saved'), 'success');
         },
+        onError: fail,
+    });
+
+    const move = useMutation({
+        mutationFn: ({ id, up }: { id: string; up: boolean }) => rolesService.move(id, up),
+        onSuccess: refresh,
         onError: fail,
     });
 
@@ -61,5 +68,5 @@ export function useOrgRoles(organizationId: string | null | undefined) {
         onError: fail,
     });
 
-    return { list, roles: list.data ?? [], counts: counts.data ?? {}, save, remove };
+    return { list, roles: list.data ?? [], counts: counts.data ?? {}, save, move, remove };
 }

@@ -74,7 +74,9 @@ Deno.serve(async (req) => {
             .single();
 
         const isSuperadmin = callerProfile.role === 'Superadmin';
-        const callerRank = Number(callerRole?.rank ?? 0);
+        // Hierarchy rank = the position of the caller's organization role.
+        const { data: callerPos } = await admin.rpc('profile_rank', { p_user: caller.id });
+        const callerRank = isSuperadmin ? 1000 : Number(callerPos ?? callerRole?.rank ?? 0);
         // Inviting needs the Team (members) write permission of the caller's role.
         const { data: mayInvite } = await admin.rpc('profile_has_permission', { p_user: caller.id, p_area: 'members', p_action: 'write' });
         if (!isSuperadmin && !mayInvite) return json({ error: 'You are not allowed to invite users.' }, 403);
@@ -98,10 +100,12 @@ Deno.serve(async (req) => {
         if (!organizationId) return json({ error: 'An organization is required.' }, 400);
 
         // 6. An organization role decides the level (and must belong to the org).
+        let targetRank: number | null = null;
         if (orgRoleId) {
-            const { data: orgRole } = await admin.from('org_roles').select('id, organization_id, base_role').eq('id', orgRoleId).single();
+            const { data: orgRole } = await admin.from('org_roles').select('id, organization_id, base_role, sort').eq('id', orgRoleId).single();
             if (!orgRole || orgRole.organization_id !== organizationId) return json({ error: 'Unknown role.' }, 400);
             role = orgRole.base_role;
+            targetRank = Number(orgRole.sort);
         }
         //    Validate the organization, and that the level exists and is ranked
         //    strictly below the caller (you can't invite a peer or superior).
@@ -111,7 +115,7 @@ Deno.serve(async (req) => {
         ]);
         if (!roleRow) return json({ error: `Unknown role "${role}".` }, 400);
         if (!orgRow) return json({ error: 'Unknown organization.' }, 400);
-        if (Number(roleRow.rank) >= callerRank) {
+        if ((targetRank ?? Number(roleRow.rank)) >= callerRank) {
             return json({ error: 'You cannot invite someone at or above your own role level.' }, 403);
         }
 

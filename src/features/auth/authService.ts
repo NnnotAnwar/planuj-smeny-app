@@ -27,7 +27,7 @@ export const authService = {
       .from('profiles')
       .select(
         'id, username, first_name, last_name, role(name, is_admin, rank), email, organization_id, username_changed_at, ' +
-          'org_role_id, org_role:org_roles!profiles_org_role_id_fkey(id, name, color, base_role, preset_key, permissions:org_role_permissions(area, can_read, can_write, can_delete))',
+          'org_role_id, org_role:org_roles!profiles_org_role_id_fkey(id, name, color, base_role, preset_key, sort, permissions:org_role_permissions(area, can_read, can_write, can_delete))',
       )
       .eq('id', userId)
       .single();
@@ -37,11 +37,24 @@ export const authService = {
 
     // Validate the data from DB before using it in the app.
     const validated = ProfileSchema.parse(data);
-    // The role's permission rows → { area: { read, write, delete } } for can().
-    const rows = ((data as { org_role?: { permissions?: { area: PermissionArea; can_read: boolean; can_write: boolean; can_delete: boolean }[] } | null }).org_role?.permissions) ?? null;
-    const permissions: PermissionMap | undefined = rows
-      ? Object.fromEntries(rows.map((r) => [r.area, { read: r.can_read, write: r.can_write, delete: r.can_delete }]))
-      : undefined;
+    // Effective permissions = the member's own role ∪ the organization's
+    // default role (Employee, like Discord's @everyone) → { area: { … } }.
+    type Row = { area: PermissionArea; can_read: boolean; can_write: boolean; can_delete: boolean };
+    const own = ((data as { org_role?: { permissions?: Row[] } | null }).org_role?.permissions) ?? null;
+    let permissions: PermissionMap | undefined;
+    if (own) {
+      const { data: def } = await supabase
+        .from('org_roles')
+        .select('permissions:org_role_permissions(area, can_read, can_write, can_delete)')
+        .eq('organization_id', validated.organization_id)
+        .eq('preset_key', 'employee')
+        .maybeSingle();
+      permissions = {};
+      for (const r of [...own, ...(((def as { permissions?: Row[] } | null)?.permissions) ?? [])]) {
+        const cur = permissions[r.area] ?? { read: false, write: false, delete: false };
+        permissions[r.area] = { read: cur.read || r.can_read, write: cur.write || r.can_write, delete: cur.delete || r.can_delete };
+      }
+    }
     return {
       id: validated.id,
       username: validated.username,

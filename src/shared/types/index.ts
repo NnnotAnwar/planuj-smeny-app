@@ -34,6 +34,7 @@ export const ProfileSchema = z.object({
       color: z.string(),
       base_role: z.string(),
       preset_key: z.string().nullable().optional(),
+      sort: z.number().optional(), // position in the hierarchy = rank (Head Admin 40, default role 0)
     })
     .nullable()
     .optional(),
@@ -189,7 +190,7 @@ export const OrganizationSchema = z.object({
     manager_id: z.string().nullable().optional(),
     org_role_id: z.string().nullable().optional(),
     org_role: z
-      .object({ id: z.string(), name: z.string(), color: z.string(), base_role: z.string(), preset_key: z.string().nullable().optional() })
+      .object({ id: z.string(), name: z.string(), color: z.string(), base_role: z.string(), preset_key: z.string().nullable().optional(), sort: z.number().optional() })
       .nullable()
       .optional(),
   }))
@@ -312,7 +313,7 @@ export type ShiftAuditLog = z.infer<typeof ShiftAuditLogSchema>;
  */
 
 /** Areas a role grants read / write / delete on (mirrors org_role_permissions). */
-export type PermissionArea = 'rota' | 'timesheets' | 'requests' | 'announcements' | 'members' | 'wages' | 'locations' | 'activity';
+export type PermissionArea = 'rota' | 'timesheets' | 'requests' | 'announcements' | 'members' | 'wages' | 'locations' | 'activity' | 'roles';
 export type PermissionAction = 'read' | 'write' | 'delete';
 export type PermissionMap = Partial<Record<PermissionArea, { read: boolean; write: boolean; delete: boolean }>>;
 

@@ -24,7 +24,7 @@ import { z } from 'zod';
 
 // Shared select used to hydrate the full organization tree (locations + members).
 const ORG_TREE_SELECT =
-    '*, locations(id, name, code, organization_id, archived_at), profiles(id, role(name, is_admin, rank), email, username, first_name, last_name, organization_id, manager_id, org_role_id, org_role:org_roles!profiles_org_role_id_fkey(id, name, color, base_role, preset_key))';
+    '*, locations(id, name, code, organization_id, archived_at), profiles(id, role(name, is_admin, rank), email, username, first_name, last_name, organization_id, manager_id, org_role_id, org_role:org_roles!profiles_org_role_id_fkey(id, name, color, base_role, preset_key, sort))';
 
 export interface EmployeeUpdate {
     first_name: string | null;
@@ -119,9 +119,13 @@ export const adminService = {
         if (error) throw error;
     },
 
+    /** Deletes an organization nobody is in — with its (archived) locations. */
     async deleteOrganization(id: string): Promise<void> {
-        const { error } = await supabase.from('organizations').delete().eq('id', id);
-        if (error) throw error;
+        const { error } = await supabase.rpc('delete_organization', { p_org: id });
+        if (error) {
+            if (error.message.includes('org_has_members')) throw new Error('ORG_HAS_MEMBERS');
+            throw error;
+        }
     },
 
     // ----------------------------------------------------------------

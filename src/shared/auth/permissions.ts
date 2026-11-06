@@ -41,9 +41,10 @@ export type Capability =
     | 'wages.edit'
     | 'locations.manage' // create, edit and archive locations
     | 'activity.view'
-    | 'roles.manage'; // create and edit organization roles (Head Admin only)
+    | 'roles.view'
+    | 'roles.manage'; // create, edit, reorder roles below your own
 
-const CAP: Record<Exclude<Capability, 'team.view' | 'roles.manage'>, [PermissionArea, PermissionAction, number]> = {
+const CAP: Record<Exclude<Capability, 'team.view'>, [PermissionArea, PermissionAction, number]> = {
     'rota.view': ['rota', 'read', RANK.MANAGER],
     'rota.edit': ['rota', 'write', RANK.ADMIN],
     'timesheets.view': ['timesheets', 'read', RANK.MANAGER],
@@ -56,17 +57,28 @@ const CAP: Record<Exclude<Capability, 'team.view' | 'roles.manage'>, [Permission
     'wages.edit': ['wages', 'write', RANK.ADMIN],
     'locations.manage': ['locations', 'write', RANK.OWNER],
     'activity.view': ['activity', 'read', RANK.ADMIN],
+    'roles.view': ['roles', 'read', RANK.OWNER],
+    'roles.manage': ['roles', 'write', RANK.OWNER],
 };
 
+/**
+ * Hierarchy rank: the position of the member's organization role (Head Admin
+ * 40 at the top, the default role 0 at the bottom); Superadmin above all.
+ * Falls back to the legacy level before role data is loaded.
+ */
+export function rankOf(p: Pick<Profile, 'role' | 'org_role'>): number {
+    if (p.role.name === 'Superadmin') return 100;
+    return p.org_role?.sort ?? p.role.rank;
+}
+
 /** Whether `user` holds a capability (Superadmin and Head Admin hold them all). */
-export function can(user: Pick<User, 'role' | 'permissions'> | null | undefined, cap: Capability): boolean {
+export function can(user: Pick<User, 'role' | 'permissions' | 'org_role'> | null | undefined, cap: Capability): boolean {
     if (!user) return false;
-    if (isSuperAdmin(user) || user.role.rank >= RANK.OWNER) return true;
-    if (cap === 'roles.manage') return false;
+    if (isSuperAdmin(user) || rankOf(user as Pick<Profile, 'role' | 'org_role'>) >= RANK.OWNER) return true;
     if (cap === 'team.view') return (['rota.view', 'timesheets.view', 'members.view', 'requests.view'] as const).some((c) => can(user, c));
     const [area, action, minRank] = CAP[cap];
     if (user.permissions) return !!user.permissions[area]?.[action];
-    return user.role.rank >= minRank;
+    return rankOf(user as Pick<Profile, 'role' | 'org_role'>) >= minRank;
 }
 
 export function isSuperAdmin(user: Pick<User, 'role'>): boolean {
@@ -94,22 +106,22 @@ export function assignableRoles(roles: Role[], user: Pick<User, 'role'>): Role[]
 }
 
 /** Out-ranks the target (and isn't them) — the hierarchy half of every "manage X" check. */
-export function outranks(user: Pick<User, 'id' | 'role'>, target: Pick<Profile, 'id' | 'role'>): boolean {
-    return target.id !== user.id && (isSuperAdmin(user as Pick<User, 'role'>) || target.role.rank < user.role.rank);
+export function outranks(user: Pick<User, 'id' | 'role' | 'org_role'>, target: Pick<Profile, 'id' | 'role' | 'org_role'>): boolean {
+    return target.id !== user.id && (isSuperAdmin(user as Pick<User, 'role'>) || rankOf(target) < rankOf(user));
 }
 
 /** May edit/delete a specific member: holds members.manage and out-ranks them. */
-export function canManageMember(user: User, target: Pick<Profile, 'id' | 'role'>): boolean {
+export function canManageMember(user: User, target: Pick<Profile, 'id' | 'role' | 'org_role'>): boolean {
     return canManageEmployees(user) && outranks(user, target);
 }
 
 /** May edit a specific member's timesheet: holds timesheets.edit and out-ranks them. */
-export function canEditTimesheetOf(user: User, target: Pick<Profile, 'id' | 'role'>): boolean {
+export function canEditTimesheetOf(user: User, target: Pick<Profile, 'id' | 'role' | 'org_role'>): boolean {
     return can(user, 'timesheets.edit') && outranks(user, target);
 }
 
 /** May set a specific member's wage: holds wages.edit and out-ranks them. */
-export function canSetWageOf(user: User, target: Pick<Profile, 'id' | 'role'>): boolean {
+export function canSetWageOf(user: User, target: Pick<Profile, 'id' | 'role' | 'org_role'>): boolean {
     return can(user, 'wages.edit') && outranks(user, target);
 }
 

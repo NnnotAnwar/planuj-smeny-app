@@ -3,14 +3,12 @@ import { Modal } from './Modal';
 import { Field, TextInput, SelectInput, FormError, FormActions } from './FormControls';
 import { useAdminContext } from '../AdminContext';
 import { useAuthContext } from '@/features/auth/AuthContext';
-import { canSetWageOf, isSuperAdmin as isSuper } from '@shared/auth/permissions';
+import { canSetWageOf, isSuperAdmin as isSuper, rankOf } from '@shared/auth/permissions';
 import { useOrgRoles } from '@features/roles/useOrgRoles';
-import { LEVEL_RANK } from '@features/roles/types';
 import { Input } from '@shared/components/Input';
 import type { Profile } from '@/shared/types';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { useWages } from '@features/wages/useWages';
-import type { TranslationKey } from '@shared/i18n/translations';
 
 /**
  * Edit an employee's name, role and (for people below you) hourly rate. The
@@ -52,12 +50,11 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
         .filter((p) => p.role.rank >= 20 && p.id !== employee.id)
         .sort((a, b) => (a.first_name ?? a.username).localeCompare(b.first_name ?? b.username));
 
-    // The organization's roles whose LEVEL sits strictly below yours (an Admin
-    // can hand out Manager-level roles and below). The member's current role
-    // stays listed so the form opens on it.
+    // The organization's roles BELOW yours in the hierarchy (top → bottom).
+    // The member's current role stays listed so the form opens on it.
     const orgRoles = useOrgRoles(employee.organization_id);
-    const myRank = user ? (isSuper(user) ? 1000 : user.role.rank) : -1;
-    const roleOptions = orgRoles.roles.filter((r) => (LEVEL_RANK[r.base_role] ?? 0) < myRank || r.id === employee.org_role_id);
+    const myRank = user ? (isSuper(user) ? 1000 : rankOf(user)) : -1;
+    const roleOptions = orgRoles.roles.filter((r) => r.sort < myRank || r.id === employee.org_role_id);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -99,7 +96,6 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
                         {roleOptions.map((r) => (
                             <option key={r.id} value={r.id}>
                                 {r.name}
-                                {r.preset_key ? '' : ` · ${t(`roles.levelName.${r.base_role}` as TranslationKey)}`}
                             </option>
                         ))}
                     </SelectInput>

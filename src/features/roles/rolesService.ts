@@ -12,7 +12,7 @@ const SELECT = '*, permissions:org_role_permissions(area, can_read, can_write, c
 
 export const rolesService = {
     async list(organizationId: string): Promise<OrgRole[]> {
-        const { data, error } = await supabase.from('org_roles').select(SELECT).eq('organization_id', organizationId).order('sort').order('name');
+        const { data, error } = await supabase.from('org_roles').select(SELECT).eq('organization_id', organizationId).order('sort', { ascending: false });
         if (error) throw error;
         return z.array(OrgRoleSchema).parse(data ?? []);
     },
@@ -26,30 +26,42 @@ export const rolesService = {
         return out;
     },
 
-    async create(input: { organization_id: string; name: string; color: string; base_role: string; sort: number }, grants: Grants): Promise<string> {
+    /** New roles land at the bottom, just above the default role (DB picks the slot). */
+    async create(input: { organization_id: string; name: string; color: string }, grants: Grants): Promise<string> {
         const { data, error } = await supabase.from('org_roles').insert(input).select('id').single();
         if (error) throw error;
         await rolesService.setGrants(data.id, grants);
         return data.id;
     },
 
-    async update(id: string, patch: { name?: string; color?: string; base_role?: string; sort?: number }) {
+    async update(id: string, patch: { name?: string; color?: string }) {
         const { error } = await supabase.from('org_roles').update(patch).eq('id', id);
         if (error) throw error;
     },
 
-    async setGrants(roleId: string, grants: Grants) {
-        const rows = AREAS.map((area) => ({
+    /** Writes only the areas that changed — the DB refuses touching rights you don't hold. */
+    async setGrants(roleId: string, grants: Grants, before?: Grants) {
+        const rows = AREAS.filter(
+            (area) => !before || before[area].read !== grants[area].read || before[area].write !== grants[area].write || before[area].delete !== grants[area].delete,
+        ).map((area) => ({
             role_id: roleId,
             area,
             can_read: grants[area].read,
             can_write: grants[area].write,
             can_delete: grants[area].delete,
         }));
+        if (rows.length === 0) return;
         const { error } = await supabase.from('org_role_permissions').upsert(rows, { onConflict: 'role_id,area' });
         if (error) throw error;
     },
 
+    /** One step up or down the hierarchy (swaps with the neighbour). */
+    async move(id: string, up: boolean) {
+        const { error } = await supabase.rpc('move_org_role', { p_role: id, p_up: up });
+        if (error) throw error;
+    },
+
+    /** Its people move to the default role (DB trigger). */
     async remove(id: string) {
         const { error } = await supabase.from('org_roles').delete().eq('id', id);
         if (error) throw error;

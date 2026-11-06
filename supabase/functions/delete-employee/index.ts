@@ -76,21 +76,21 @@ Deno.serve(async (req) => {
             .single();
         if (tpErr || !targetProfile) return json({ error: 'Target user not found.' }, 404);
 
-        const { data: rankRows } = await admin
-            .from('roles')
-            .select('name, rank')
-            .in('name', [callerProfile.role, targetProfile.role]);
-        const rankOf = (name: string) => Number(rankRows?.find((r) => r.name === name)?.rank ?? 0);
-        const callerRank = rankOf(callerProfile.role);
-        const targetRank = rankOf(targetProfile.role);
+        // Hierarchy rank = position of each person's organization role (#124).
+        const [{ data: callerRank }, { data: targetRank }, { data: mayDelete }] = await Promise.all([
+            admin.rpc('profile_rank', { p_user: caller.id }),
+            admin.rpc('profile_rank', { p_user: targetId }),
+            admin.rpc('profile_has_permission', { p_user: caller.id, p_area: 'members', p_action: 'delete' }),
+        ]);
         const isSuperadmin = callerProfile.role === 'Superadmin';
 
-        // 5. Authorize (mirrors RLS + canManageMember).
+        // 5. Authorize (mirrors RLS + canManageMember): Team delete permission,
+        //    same organization, strictly above the target in the hierarchy.
         const allowed =
             isSuperadmin ||
-            (callerRank >= 30 &&
+            (!!mayDelete &&
                 callerProfile.organization_id === targetProfile.organization_id &&
-                targetRank < callerRank);
+                Number(targetRank ?? 0) < Number(callerRank ?? 0));
         if (!allowed) return json({ error: 'You are not allowed to remove this member.' }, 403);
 
         // 6. Delete the auth user — cascades to profiles + shifts.

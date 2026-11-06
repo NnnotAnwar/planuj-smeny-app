@@ -3,10 +3,8 @@ import { Modal } from './Modal';
 import { Field, TextInput, SelectInput, FormError, FormActions } from './FormControls';
 import { useAdminContext } from '../AdminContext';
 import { useAuthContext } from '@/features/auth/AuthContext';
-import { isSuperAdmin as isSuper } from '@shared/auth/permissions';
+import { isSuperAdmin as isSuper, rankOf } from '@shared/auth/permissions';
 import { useOrgRoles } from '@features/roles/useOrgRoles';
-import { LEVEL_RANK } from '@features/roles/types';
-import type { TranslationKey } from '@shared/i18n/translations';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
@@ -30,8 +28,9 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
     // The target organization's roles whose LEVEL sits below the inviter's.
     const targetOrg = isSuperAdmin ? organizationId : ownOrgId;
     const orgRoles = useOrgRoles(targetOrg);
-    const myRank = user ? (isSuper(user) ? 1000 : user.role.rank) : -1;
-    const roleOptions = orgRoles.roles.filter((r) => (LEVEL_RANK[r.base_role] ?? 0) < myRank);
+    const myRank = user ? (isSuper(user) ? 1000 : rankOf(user)) : -1;
+    // Roles below yours, lowest first so the default (Employee) is preselected.
+    const roleOptions = orgRoles.roles.filter((r) => r.sort < myRank).sort((a, b) => a.sort - b.sort);
     const [pickedRoleId, setPickedRoleId] = useState('');
     // Default: the lowest role (usually Employee) until one is picked.
     const orgRoleId = roleOptions.some((r) => r.id === pickedRoleId) ? pickedRoleId : (roleOptions[0]?.id ?? '');
@@ -103,7 +102,6 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
                         {roleOptions.map((r) => (
                             <option key={r.id} value={r.id}>
                                 {r.name}
-                                {r.preset_key ? '' : ` · ${t(`roles.levelName.${r.base_role}` as TranslationKey)}`}
                             </option>
                         ))}
                     </SelectInput>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { can, canEditTimesheetOf, roleLabel } from '@shared/auth/permissions';
+import { can, canEditTimesheetOf, outranks, rankOf, roleLabel } from '@shared/auth/permissions';
 import type { User } from '@shared/types';
 import { emptyGrants, toggleGrant } from './types';
 
@@ -66,5 +66,24 @@ describe('permission matrix toggles', () => {
         let g = toggleGrant(emptyGrants(), 'wages', 'delete');
         g = toggleGrant(g, 'wages', 'write');
         expect(g.wages).toEqual({ read: true, write: false, delete: false });
+    });
+});
+
+describe('hierarchy by role position', () => {
+    const at = (id: string, sort: number) => ({
+        id,
+        role: role('Employee', 0),
+        org_role: { id: `r${sort}`, name: `R${sort}`, color: '#000000', base_role: 'Employee', preset_key: null, sort },
+    });
+
+    it('ranks by the role position, not the legacy level', () => {
+        expect(rankOf(at('a', 25))).toBe(25);
+        expect(rankOf({ role: role('Superadmin', 100), org_role: null })).toBe(100);
+    });
+
+    it('a higher role outranks a lower one; equal positions do not', () => {
+        expect(outranks(at('a', 25), at('b', 12))).toBe(true);
+        expect(outranks(at('a', 12), at('b', 25))).toBe(false);
+        expect(outranks(at('a', 12), at('b', 12))).toBe(false);
     });
 });

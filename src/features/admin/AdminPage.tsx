@@ -71,7 +71,7 @@ function AdminPanel() {
     const canManageEmp = user ? canManageEmployees(user) : false;
     const canManageLoc = user ? canManageLocations(user) : false;
     // Head Admin (and Superadmin) define the organization's roles.
-    const canManageRoles = can(user, 'roles.manage');
+    const canManageRoles = can(user, 'roles.view');
 
     // `?tab=locations` (e.g. from the Home setup checklist) opens that tab.
     const [params] = useSearchParams();
