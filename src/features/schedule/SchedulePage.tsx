@@ -893,7 +893,6 @@ export default function SchedulePage() {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    <UpcomingShifts user={user} shifts={myShifts} locationName={locationName} />
                     <section className={cardClass}>
                         <MonthCalendar
                             monthKey={selectedMonth}
@@ -907,6 +906,7 @@ export default function SchedulePage() {
                             <p className="px-4 pb-4 text-center text-caption text-gray-400">{t('schedule.noShiftsMonth')}</p>
                         )}
                     </section>
+                    <UpcomingShifts user={user} shifts={myShifts} locationName={locationName} />
                     <AvailabilityCard user={user} />
                 </div>
             )}
