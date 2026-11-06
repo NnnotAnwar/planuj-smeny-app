@@ -367,7 +367,7 @@ async function messagesFromWebhook(table: string, record: Record<string, unknown
                     userId: target,
                     key: 'timeoff_requested',
                     vars: { who: (details.target_name as string) || '', kind: (details.kind as string) || 'other', range: dateRange() },
-                    route: '/schedule',
+                    route: '/requests',
                     category: 'requests',
                 }];
             case 'timeoff_approved':
@@ -376,7 +376,7 @@ async function messagesFromWebhook(table: string, record: Record<string, unknown
                     userId: target,
                     key: action,
                     vars: { kind: (details.kind as string) || 'other', range: dateRange() },
-                    route: '/schedule',
+                    route: '/requests',
                     category: 'requests',
                 }];
             case 'profile_updated': {

@@ -4,12 +4,21 @@ Living plan for **Planuj Směny**. Direction, not commitments — dates and scop
 change. Concrete work is tracked as **GitHub Issues** grouped into **Milestones**;
 this file is the high-level story, plus a large **idea backlog** to draw from.
 
-_Last updated: July 6, 2026 · current version 1.9.0 “Adamov”._
+_Last updated: November 6, 2026 · current version 1.10.0 “Beroun”._
 
 ---
 
 ## ✅ Shipped (recent highlights)
 
+- **v1.10.0 “Beroun”** — glass redesign across every page; **roles: admins act,
+  managers observe** (Supervisor is a badge); **Requests** is the shared inbox
+  (time off + name changes, decline with a reason, history, my requests);
+  announcements with push + unread badge; shift confirmations (select all →
+  confirm, auto-reset when a shift changes); public-holiday warnings;
+  availability; coverage targets; open shifts (claim / give back); shift
+  templates (max 8) with a grid brush and one-tap delete + Undo; admin-only
+  wages; location opening hours; Overview month plan + pace chart; role-aware
+  mobile tab bar.
 - **Scheduling / rota (v1.9.0)** — roster grid + month calendar per location,
   day editor with per-member times & busy-locking (DB no-overlap), per-location
   staff rosters, restaurant short/long-week quick-fill, copy last month,
@@ -203,6 +212,6 @@ Opinionated guidance for where to invest next.
 - **Issues** — one per concrete task, labelled by `area:*` and `priority:*`.
 - **Milestones** — group issues into shippable chunks.
 - **Releases** — semver tags (`vX.Y.Z`) + GitHub Releases with changelogs; notable
-  releases carry a Czech-town codename A→Z (v1.9.0 = _Adamov_; next = _B_).
+  releases carry a Czech-town codename A→Z (v1.9.0 = _Adamov_, v1.10.0 = _Beroun_; next = _C_).
 
 Have an idea or found a bug? Open an issue.
