@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckIcon, ClockIcon, WarningIcon, CalendarStarIcon, XIcon, HeartIcon, BookmarkSimpleIcon } from '@phosphor-icons/react';
+import { CheckIcon, ClockIcon, WarningIcon, CalendarStarIcon, XIcon, HeartIcon, BookmarkSimpleIcon, StorefrontIcon } from '@phosphor-icons/react';
 import { Modal } from '@features/admin/components/Modal';
 import { TimePicker } from '@shared/components/TimePicker';
 import { DatePicker } from '@shared/components/DatePicker';
@@ -16,6 +16,7 @@ import type { ShiftTemplate, ShiftTemplateInput } from '@features/schedule/templ
 import { HolidayWarningBody, HOLIDAY_WARNING_KEY } from '@features/schedule/holidays/HolidayWarning';
 import { MAX_TEMPLATES, templateFor, tplTime } from '@features/schedule/templates/templateTime';
 import { useDismissibleWarning } from '@shared/hooks/useDismissibleWarning';
+import { isOutsideHours, type OpeningHours } from '@features/locations/settings/openingHours';
 
 /**
  * --- DAY EDITOR ---
@@ -99,6 +100,7 @@ export function ScheduledShiftEditor({
     holidayName,
     availabilityFor,
     templates,
+    hoursFor,
     onSaveTemplate,
     onRemoveTemplate,
 }: {
@@ -118,6 +120,8 @@ export function ScheduledShiftEditor({
     /** A member's availability entry for the day being edited. */
     availabilityFor?: (memberId: string, date: string) => Availability | undefined;
     templates?: ShiftTemplate[];
+    /** A location's opening hours — offered as a time chip, and shifts outside them are flagged. */
+    hoursFor?: (locationId: string | null) => OpeningHours | null;
     onSaveTemplate?: (input: ShiftTemplateInput) => Promise<unknown>;
     onRemoveTemplate?: (id: string) => void;
 }) {
@@ -149,6 +153,8 @@ export function ScheduledShiftEditor({
         setHolidayAsk(false);
     }
     const holiday = holidayName?.(date) ?? null;
+    const hours = hoursFor?.(locationId || null) ?? null;
+    const hoursText = hours ? `${hours.open}–${hours.close}` : '';
 
     const rowOf = (id: string): RowState => rows.get(id) ?? { selected: false, withTime: false, start: '08:00', end: '16:00' };
     const patchRow = (id: string, patch: Partial<RowState>) =>
@@ -169,18 +175,19 @@ export function ScheduledShiftEditor({
 
     const selectedIds = members.filter((m) => rowOf(m.id).selected).map((m) => m.id);
 
-    /** Stamp a template's times onto everyone ticked. */
-    const applyTemplate = (tpl: ShiftTemplate) => {
+    /** Stamp times (a template's, or the opening hours) onto everyone ticked. */
+    const applyTimes = (start: string, end: string) => {
         if (selectedIds.length === 0) return setError(t('tpl.tickFirst'));
         setError(null);
         setRows((prev) => {
             const next = new Map(prev);
             for (const id of selectedIds) {
-                next.set(id, { ...rowOf(id), withTime: true, start: tpl.start_time.slice(0, 5), end: tpl.end_time.slice(0, 5) });
+                next.set(id, { ...rowOf(id), withTime: true, start, end });
             }
             return next;
         });
     };
+    const applyTemplate = (tpl: ShiftTemplate) => applyTimes(tplTime(tpl.start_time), tplTime(tpl.end_time));
 
     /** One tap: save a row's exact times as a template, named after them. */
     const saveRowTemplate = (r: RowState) => {
@@ -259,11 +266,22 @@ export function ScheduledShiftEditor({
                 )}
 
                 {/* TEMPLATES — one tap sets the times for everyone ticked. */}
-                {templates && templates.length > 0 && (
+                {((templates && templates.length > 0) || hours) && (
                     <div className="space-y-1.5">
                         <label className="text-label text-gray-400">{t('tpl.title')}</label>
                         <div className="flex flex-wrap items-center gap-1.5">
-                            {templates.map((tpl) => (
+                            {hours && (
+                                <button
+                                    type="button"
+                                    onClick={() => applyTimes(hours.open, hours.close)}
+                                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-meta font-semibold text-emerald-800 ring-1 ring-emerald-500/15 dark:bg-emerald-400/10 dark:text-emerald-200"
+                                >
+                                    <StorefrontIcon weight="bold" className="size-3.5" />
+                                    {t('locset.hours')}{' '}
+                                    <span className="font-medium tabular-nums text-emerald-700/70 dark:text-emerald-300/70">{hoursText}</span>
+                                </button>
+                            )}
+                            {(templates ?? []).map((tpl) => (
                                 <span key={tpl.id} className="group inline-flex items-center rounded-lg bg-emerald-500/10 ring-1 ring-emerald-500/15 dark:bg-emerald-400/10">
                                     <button
                                         type="button"
@@ -376,9 +394,35 @@ export function ScheduledShiftEditor({
                                             {r.end <= r.start && (
                                                 <p className="col-span-2 text-micro text-amber-500">{t('shiftEditor.overnight')}</p>
                                             )}
+                                            {(() => {
+                                                const iso = toISO(r);
+                                                return isOutsideHours(iso.starts_at, iso.ends_at, hours) ? (
+                                                    <p className="col-span-2 flex items-center gap-1 text-caption font-medium text-amber-700 dark:text-amber-300">
+                                                        <StorefrontIcon weight="bold" className="size-3.5" />
+                                                        {t('locset.outside', { hours: hoursText })}
+                                                    </p>
+                                                ) : null;
+                                            })()}
                                             {/* This person's time from a template, or save theirs as one. */}
-                                            {(templates?.length || onSaveTemplate) && (
+                                            {(templates?.length || onSaveTemplate || hours) && (
                                                 <div className="col-span-2 flex flex-wrap items-center gap-1">
+                                                    {hours && (() => {
+                                                        const on = r.start === hours.open && r.end === hours.close;
+                                                        return (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => patchRow(m.id, { start: hours.open, end: hours.close })}
+                                                                aria-pressed={on}
+                                                                className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold transition-colors ${
+                                                                    on
+                                                                        ? 'bg-emerald-600 text-white'
+                                                                        : 'bg-emerald-500/10 text-emerald-800 hover:bg-emerald-500/15 dark:text-emerald-200'
+                                                                }`}
+                                                            >
+                                                                {t('locset.hours')}
+                                                            </button>
+                                                        );
+                                                    })()}
                                                     {(templates ?? []).map((tpl) => {
                                                         const on = tplTime(tpl.start_time) === r.start && tplTime(tpl.end_time) === r.end;
                                                         return (

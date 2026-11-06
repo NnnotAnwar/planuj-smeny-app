@@ -1,24 +1,31 @@
-import { GearSixIcon, PaintBrushIcon } from '@phosphor-icons/react';
+import { GearSixIcon, PaintBrushIcon, StorefrontIcon } from '@phosphor-icons/react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import type { ShiftTemplate } from './types';
-import { tplTime } from './templateTime';
+import { HOURS_BRUSH, tplTime } from './templateTime';
 
 /**
  * --- TEMPLATE BRUSH (roster grid) ---
  * Picks what a tap on an empty grid cell puts down: an all-day shift or one of
  * the templates' times — paint a whole week of mornings in a few taps. "Manage"
- * opens the templates dialog. `value` is the chosen template id, null = all day.
+ * opens the templates dialog. `value` is the chosen template id, null = all day,
+ * HOURS_BRUSH = each location's own opening hours (shown once any are set).
  */
 export function TemplateBrush({
     templates,
     value,
     onChange,
     onManage,
+    hoursAvailable = false,
+    hoursLabel = null,
 }: {
     templates: ShiftTemplate[];
     value: string | null;
     onChange: (id: string | null) => void;
     onManage: () => void;
+    /** Some location has opening hours set. */
+    hoursAvailable?: boolean;
+    /** "09:00–22:00" when every location shares the same hours, else null. */
+    hoursLabel?: string | null;
 }) {
     const t = useTranslation();
     const chip = (on: boolean) =>
@@ -37,6 +44,15 @@ export function TemplateBrush({
             <button type="button" aria-pressed={value === null} onClick={() => onChange(null)} className={chip(value === null)}>
                 {t('schedule.allDay')}
             </button>
+            {hoursAvailable && (
+                <button type="button" aria-pressed={value === HOURS_BRUSH} onClick={() => onChange(HOURS_BRUSH)} className={chip(value === HOURS_BRUSH)}>
+                    <StorefrontIcon weight="bold" className="size-3.5" />
+                    {t('locset.hours')}
+                    {hoursLabel && (
+                        <span className={`tabular-nums ${value === HOURS_BRUSH ? 'text-white/75' : 'text-ink-soft/70 dark:text-slate-500'}`}>{hoursLabel}</span>
+                    )}
+                </button>
+            )}
             {templates.map((tpl) => (
                 <button key={tpl.id} type="button" aria-pressed={value === tpl.id} onClick={() => onChange(tpl.id)} className={chip(value === tpl.id)}>
                     {tpl.name}

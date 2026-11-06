@@ -18,8 +18,10 @@ export interface LocationEditTarget {
  * Create or edit a location.
  * Superadmins choose which organization the location belongs to when creating;
  * regular admins always create inside their own organization.
- * When editing, the location's operations (opening hours, default break) are
- * set here too — they live in `location_settings`, keyed by the location.
+ * When editing, the location's opening hours are set here too — they live in
+ * `location_settings`, keyed by the location. The rota uses them as the default
+ * shift time and flags shifts planned outside them. (Breaks follow Czech law —
+ * see calculateNetHours — so there is no per-location break setting.)
  */
 export function LocationForm({ location, onClose }: { location?: LocationEditTarget; onClose: () => void }) {
     const { adminData, isSuperAdmin, createLocation, updateLocation } = useAdminContext();
@@ -36,7 +38,6 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
     const current = location ? settings.byLocation.get(location.id) : undefined;
     const [openTime, setOpenTime] = useState(current?.open_time?.slice(0, 5) ?? '');
     const [closeTime, setCloseTime] = useState(current?.close_time?.slice(0, 5) ?? '');
-    const [breakMin, setBreakMin] = useState(String(current?.break_minutes ?? 0));
     // The settings query may still be loading when the form opens — seed the
     // fields once it lands (adjust-during-render, no effect needed).
     const [seeded, setSeeded] = useState(!settings.list.isLoading);
@@ -44,7 +45,6 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
         setSeeded(true);
         setOpenTime(current?.open_time?.slice(0, 5) ?? '');
         setCloseTime(current?.close_time?.slice(0, 5) ?? '');
-        setBreakMin(String(current?.break_minutes ?? 0));
     }
     const [isBusy, setIsBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -77,17 +77,14 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
                     code: code.trim() || null,
                     ...(isSuperAdmin ? { organization_id: organizationId } : {}),
                 });
-                const brk = Math.max(0, Math.min(240, Number.parseInt(breakMin, 10) || 0));
                 const changed =
                     openTime !== (current?.open_time?.slice(0, 5) ?? '') ||
-                    closeTime !== (current?.close_time?.slice(0, 5) ?? '') ||
-                    brk !== (current?.break_minutes ?? 0);
+                    closeTime !== (current?.close_time?.slice(0, 5) ?? '');
                 if (changed) {
                     await settings.save.mutateAsync({
                         location_id: location.id,
                         open_time: openTime || null,
                         close_time: closeTime || null,
-                        break_minutes: brk,
                     });
                 }
             } else {
@@ -126,25 +123,15 @@ export function LocationForm({ location, onClose }: { location?: LocationEditTar
                 {isEdit && (
                     <div className="space-y-2 rounded-xl bg-white/55 p-3 ring-1 ring-ink/5 dark:bg-white/4 dark:ring-white/6">
                         <p className="text-eyebrow text-ink-soft dark:text-slate-400">{t('locset.hours')}</p>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 gap-2">
                             <Field label={t('locset.open')}>
                                 <TextInput type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
                             </Field>
                             <Field label={t('locset.close')}>
                                 <TextInput type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
                             </Field>
-                            <Field label={t('locset.break')}>
-                                <TextInput
-                                    type="number"
-                                    inputMode="numeric"
-                                    min={0}
-                                    max={240}
-                                    step={5}
-                                    value={breakMin}
-                                    onChange={(e) => setBreakMin(e.target.value)}
-                                />
-                            </Field>
                         </div>
+                        <p className="text-caption text-ink-soft dark:text-slate-400">{t('locset.hint')}</p>
                     </div>
                 )}
 

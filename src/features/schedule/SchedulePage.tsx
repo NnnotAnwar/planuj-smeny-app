@@ -42,6 +42,9 @@ import { OpenShiftsCard } from './openShifts/OpenShiftsCard';
 import { tplTime } from './templates/templateTime';
 import { TemplateBrush } from './templates/TemplateBrush';
 import { TemplatesDialog } from './templates/TemplatesDialog';
+import { useLocationSettings } from '@features/locations/settings/useLocationSettings';
+import { openingHours, isOutsideHours, type OpeningHours } from '@features/locations/settings/openingHours';
+import { HOURS_BRUSH } from './templates/templateTime';
 import { buildShiftDates } from '@features/timesheets/shiftTimes';
 
 /**
@@ -164,6 +167,19 @@ export default function SchedulePage() {
     // Roster grid "brush": what a tap on an empty cell puts down (null = all day).
     const [brushId, setBrushId] = useState<string | null>(null);
     const brush = templateList.find((tpl) => tpl.id === brushId) ?? null;
+    // Locations' opening hours: the "Opening hours" brush / editor chip and the
+    // outside-hours flag on planned shifts.
+    const locSettings = useLocationSettings(user);
+    const hoursOf = (locId: string | null): OpeningHours | null => {
+        const ls = locId ? locSettings.byLocation.get(locId) : undefined;
+        return openingHours(ls?.open_time, ls?.close_time);
+    };
+    const hoursChoices = locations.filter((l) => !l.archived_at).map((l) => hoursOf(l.id)).filter((h): h is OpeningHours => !!h);
+    // Times on the brush chip only when every location shares the same hours.
+    const hoursLabel =
+        hoursChoices.length > 0 && hoursChoices.every((h) => h.open === hoursChoices[0].open && h.close === hoursChoices[0].close)
+            ? `${hoursChoices[0].open}–${hoursChoices[0].close}`
+            : null;
     const [managingTemplates, setManagingTemplates] = useState(false);
 
 
@@ -376,10 +392,17 @@ export default function SchedulePage() {
             toast(t('schedule.busyAt', { where: `${locationName(s.location_id)} · ${when}` }), 'info');
             return;
         }
-        // An empty cell gets whatever the brush holds: all day, or a template's times.
-        const row = brush
+        // An empty cell gets whatever the brush holds: all day, a template's
+        // times, or this location's opening hours.
+        const hours = brushId === HOURS_BRUSH ? hoursOf(locId) : null;
+        if (brushId === HOURS_BRUSH && !hours) {
+            toast(t('locset.noHours', { loc: locationName(locId) }), 'info');
+            return;
+        }
+        const times = hours ? { start: hours.open, end: hours.close } : brush ? { start: tplTime(brush.start_time), end: tplTime(brush.end_time) } : null;
+        const row = times
             ? (() => {
-                  const { startDate, endDate } = buildShiftDates(date, tplTime(brush.start_time), tplTime(brush.end_time));
+                  const { startDate, endDate } = buildShiftDates(date, times.start, times.end);
                   return { user_id: memberId, starts_at: startDate.toISOString(), ends_at: endDate.toISOString(), all_day: false };
               })()
             : (() => {
@@ -768,8 +791,10 @@ export default function SchedulePage() {
                     {viewMode === 'grid' && canManage && (
                         <TemplateBrush
                             templates={templateList}
-                            value={brush?.id ?? null}
+                            value={brushId === HOURS_BRUSH ? HOURS_BRUSH : brush?.id ?? null}
                             onChange={setBrushId}
+                            hoursAvailable={hoursChoices.length > 0}
+                            hoursLabel={hoursLabel}
                             onManage={() => setManagingTemplates(true)}
                         />
                     )}
@@ -864,6 +889,7 @@ export default function SchedulePage() {
                                                             holidayFor={holidayFor}
                                                             requiredOn={requiredOn(sec.id)}
                                                             availabilityFor={availabilityFor}
+                                                            outsideHours={(sh) => isOutsideHours(sh.starts_at, sh.ends_at, hoursOf(sec.id), sh.all_day)}
                                                         />
                                                     )}
                                                     {sec.id && canManage && addable.length > 0 && (
@@ -927,6 +953,7 @@ export default function SchedulePage() {
                         holidayName={holidayFor}
                         availabilityFor={availabilityFor}
                         templates={templateList}
+                        hoursFor={hoursOf}
                         onSaveTemplate={(input) => templates.create.mutateAsync(input)}
                         onRemoveTemplate={(id) => templates.remove.mutate(id)}
                     />
