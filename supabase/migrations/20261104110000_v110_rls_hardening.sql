@@ -8,6 +8,8 @@
 -- 2. open_shifts: the update policy let a member change an unclaimed post's
 --    details (times, location…) while "claiming". A trigger now limits
 --    non-managers to the claim columns only.
+-- 3. shift_confirmations: a confirmation is final for the member — they can no
+--    longer withdraw it; only a manager in the org can reset one.
 -- =============================================================================
 
 -- True when `target` is in my organization and ranks strictly below me.
@@ -71,5 +73,10 @@ DROP TRIGGER IF EXISTS open_shifts_guard_member_edits ON public.open_shifts;
 CREATE TRIGGER open_shifts_guard_member_edits
   BEFORE UPDATE ON public.open_shifts
   FOR EACH ROW EXECUTE FUNCTION public.open_shifts_guard_member_edits();
+
+-- A member's confirmation is final; managers may reset it (e.g. after a change).
+DROP POLICY IF EXISTS "shift_conf_delete" ON public.shift_confirmations;
+CREATE POLICY "shift_conf_delete" ON public.shift_confirmations FOR DELETE TO authenticated
+  USING (is_superadmin() OR (my_role_rank() >= 20 AND organization_id = get_my_org_id()));
 
 NOTIFY pgrst, 'reload schema';

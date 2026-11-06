@@ -12,8 +12,8 @@ import { shiftConfirmationKeys } from './shiftConfirmationKeys';
  *   • `confirmedIds` — a Set of the member's confirmed scheduled-shift ids
  *     (so a card can show its state with `confirmedIds.has(shift.id)`)
  *   • `orgConfirmations` — every confirmation in the org (managers only)
- *   • `confirm` / `unconfirm` — toggle the current member's acknowledgement
- *   • `confirmAll` — acknowledge a batch in one tap (a whole month's rota)
+ *   • `confirm(ids)` — acknowledge one or several shifts at once; final for
+ *     the member (no withdraw — only a manager can reset a confirmation)
  * Managers get the org query; staff don't (it would be empty for them anyway).
  */
 export function useShiftConfirmations(user: User | null) {
@@ -44,32 +44,19 @@ export function useShiftConfirmations(user: User | null) {
     if (user) qc.invalidateQueries({ queryKey: shiftConfirmationKeys.org(user.organization_id) });
   };
 
+  // Confirm one or many (the selected shifts) in a single request. Final for
+  // the member — there's no withdraw (RLS: only managers can reset one).
   const confirm = useMutation({
-    mutationFn: (scheduledShiftId: string) => {
-      if (!user) throw new Error('You must be signed in.');
-      return shiftConfirmationService.confirm(user, scheduledShiftId);
-    },
-    onSuccess: invalidate,
-    onError: () => toast(t('confirm.error'), 'error'),
-  });
-
-  const confirmAll = useMutation({
     mutationFn: (scheduledShiftIds: string[]) => {
       if (!user) throw new Error('You must be signed in.');
-      return shiftConfirmationService.confirmMany(user, scheduledShiftIds);
+      return shiftConfirmationService.confirm(user, scheduledShiftIds);
     },
     onSuccess: (_data, ids) => {
       invalidate();
-      toast(t('confirm.allDone', { n: ids.length }), 'success');
+      toast(ids.length === 1 ? t('confirm.toastDone') : t('confirm.allDone', { n: ids.length }), 'success');
     },
     onError: () => toast(t('confirm.error'), 'error'),
   });
 
-  const unconfirm = useMutation({
-    mutationFn: (scheduledShiftId: string) => shiftConfirmationService.unconfirm(scheduledShiftId),
-    onSuccess: invalidate,
-    onError: () => toast(t('confirm.undoError'), 'error'),
-  });
-
-  return { mine, orgConfirmations, confirmedIds, confirm, confirmAll, unconfirm, isManager };
+  return { mine, orgConfirmations, confirmedIds, confirm, isManager };
 }

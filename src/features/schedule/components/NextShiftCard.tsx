@@ -77,7 +77,7 @@ export function NextShiftCard() {
             ) : (
                 <button
                     type="button"
-                    onClick={() => confirm.mutate(next.id)}
+                    onClick={() => confirm.mutate([next.id])}
                     disabled={confirm.isPending}
                     className="shrink-0 rounded-lg bg-emerald-500/12 px-2.5 py-1 text-meta font-semibold text-emerald-700 ring-1 ring-emerald-500/20 transition-colors hover:bg-emerald-500/20 disabled:opacity-60 dark:text-emerald-300"
                 >
