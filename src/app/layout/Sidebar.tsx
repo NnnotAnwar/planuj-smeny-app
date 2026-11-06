@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
@@ -49,7 +49,7 @@ const INSET_SURFACE =
   'bg-white/55 dark:bg-white/5 ring-1 ring-inset ring-ink/6 dark:ring-white/8 hover:bg-white/80 dark:hover:bg-white/8';
 
 /** Icon-rail button geometry + idle colours (collapsed mode). */
-const RAIL_BTN = 'relative flex items-center justify-center size-10 rounded-xl transition-colors shrink-0';
+const RAIL_BTN = 'relative flex items-center justify-center size-9 rounded-xl transition-colors shrink-0';
 const RAIL_IDLE = 'text-ink-soft dark:text-slate-400 hover:bg-white/60 dark:hover:bg-white/5';
 
 /** Map pin in a soft accent disc; a solid dot on its corner marks a live shift. */
@@ -269,9 +269,9 @@ function LocationHero({
           title={railLabel}
           className={`${RAIL_BTN} ${open ? 'bg-white/70 text-emerald-600 dark:bg-white/8 dark:text-emerald-300' : RAIL_IDLE}`}
         >
-          <MapPinIcon weight={activeShift || selected ? 'fill' : 'regular'} className="size-5" />
+          <MapPinIcon weight={activeShift || selected ? 'fill' : 'regular'} className="size-4.5" />
           {activeShift && (
-            <span className="absolute top-2 right-2 size-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
+            <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
           )}
         </button>
       ) : showPost && activeShift ? (
@@ -310,6 +310,44 @@ function LocationHero({
 
 /** Icon-only rail (desktop compact mode). Tooltips via native title; the
  *  location pin opens the picker flyout directly, so nothing needs expanding. */
+/**
+ * Hover / focus label for an icon-rail button, portalled to <body> so the
+ * rail's scroll container can't clip it. Wraps exactly one element.
+ */
+function RailTip({ label, children }: { label: string; children: ReactNode }) {
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const show = (e: SyntheticEvent<HTMLSpanElement>) => {
+    const el = e.currentTarget.firstElementChild as HTMLElement | null;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setPos({ top: r.top + r.height / 2, left: r.right + 10 });
+  };
+  const hide = () => setPos(null);
+  return (
+    <span className="contents" onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>
+      {children}
+      {pos &&
+        createPortal(
+          <span
+            role="tooltip"
+            style={{ top: pos.top, left: pos.left }}
+            className="glass glass-menu pointer-events-none fixed z-70 -translate-y-1/2 whitespace-nowrap rounded-lg px-2 py-1 text-meta font-semibold text-ink dark:text-white"
+          >
+            {label}
+          </span>,
+          document.body,
+        )}
+    </span>
+  );
+}
+
+/**
+ * Collapsed icon rail. Kept compact so a full admin menu fits without
+ * scrolling: tools on top (expand · search · location), the nav grouped by
+ * section with hairline dividers (mirrors Work / Manage / System when
+ * expanded), and "you" at the bottom (notifications · profile · log out).
+ * Labels appear on hover/focus.
+ */
 function CollapsedRail({
   navItems,
   currentPath,
@@ -329,62 +367,71 @@ function CollapsedRail({
   location: ReactNode;
   t: TranslateFn;
 }) {
+  const groups = NAV_SECTIONS.map((section) => navItems.filter((i) => i.section === section)).filter((g) => g.length > 0);
+  const divider = <div aria-hidden className="my-1 h-px w-5 shrink-0 bg-ink/8 dark:bg-white/8" />;
+
   return (
-    <div className="hidden md:flex md:flex-col items-center flex-1 min-h-0 py-1 gap-1">
-      <button onClick={onExpand} aria-label={t('sidebar.expand')} title={t('sidebar.expand')} className={`${RAIL_BTN} ${RAIL_IDLE}`}>
-        <SidebarSimpleIcon weight="bold" className="size-5" />
-      </button>
-
-      <button onClick={onOpenSearch} aria-label={t('cmd.search')} title={t('cmd.search')} className={`${RAIL_BTN} ${RAIL_IDLE}`}>
-        <MagnifyingGlassIcon weight="bold" className="size-5" />
-      </button>
-
-      {user && (
-        <Link to="/profile" aria-label={t('nav.profile')} title={user.first_name || user.username} className={RAIL_BTN}>
-          <span className="size-7 rounded-full bg-linear-to-br from-emerald-400 to-emerald-600 ring-2 ring-white dark:ring-white/15 flex items-center justify-center text-white text-[11px] font-display font-bold">
-            {getFullInitials(user.first_name, user.last_name)}
-          </span>
-        </Link>
-      )}
-
+    <div className="hidden md:flex md:flex-col items-center flex-1 min-h-0 gap-0.5">
+      <RailTip label={t('sidebar.expand')}>
+        <button onClick={onExpand} aria-label={t('sidebar.expand')} className={`${RAIL_BTN} ${RAIL_IDLE}`}>
+          <SidebarSimpleIcon weight="bold" className="size-4.5" />
+        </button>
+      </RailTip>
+      <RailTip label={`${t('cmd.search')} · ${SHORTCUT_LABEL}`}>
+        <button onClick={onOpenSearch} aria-label={t('cmd.search')} className={`${RAIL_BTN} ${RAIL_IDLE}`}>
+          <MagnifyingGlassIcon weight="bold" className="size-4.5" />
+        </button>
+      </RailTip>
       {/* LOCATION — pick / see where you are without expanding */}
       {location}
 
-      <div className="my-1 h-px w-6 bg-ink/8 dark:bg-white/8" />
+      {divider}
 
-      <div className="flex-1 min-h-0 overflow-y-auto emerald-scrollbar flex flex-col items-center gap-1 w-full">
-        {navItems.map((item) => {
-          const active = currentPath === item.route;
-          return (
-            <Link
-              key={item.route}
-              to={item.route}
-              aria-label={item.label}
-              aria-current={active ? 'page' : undefined}
-              title={item.label}
-              className={`${RAIL_BTN} ${active ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30' : RAIL_IDLE}`}
-            >
-              <item.icon weight={active ? 'fill' : 'regular'} className="size-5" />
-              {item.badgeCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
-              )}
-            </Link>
-          );
-        })}
-      </div>
+      <nav className="flex-1 min-h-0 w-full overflow-y-auto scrollbar-hide flex flex-col items-center gap-0.5" aria-label={t('nav.menu')}>
+        {groups.map((items, gi) => (
+          <div key={gi} className="contents">
+            {gi > 0 && divider}
+            {items.map((item) => {
+              const active = currentPath === item.route;
+              return (
+                <RailTip key={item.route} label={item.badgeCount > 0 ? `${item.label} · ${item.badgeCount}` : item.label}>
+                  <Link
+                    to={item.route}
+                    aria-label={item.label}
+                    aria-current={active ? 'page' : undefined}
+                    className={`${RAIL_BTN} ${active ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/25' : RAIL_IDLE}`}
+                  >
+                    <item.icon weight={active ? 'fill' : 'regular'} className="size-4.5" />
+                    {item.badgeCount > 0 && (
+                      <span className="absolute top-1 right-1 size-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+                    )}
+                  </Link>
+                </RailTip>
+              );
+            })}
+          </div>
+        ))}
+      </nav>
+
+      {divider}
 
       <div className={RAIL_BTN}>
         <NotificationsBell />
       </div>
-
-      <button
-        onClick={logout}
-        aria-label={t('nav.logout')}
-        title={t('nav.logout')}
-        className={`${RAIL_BTN} text-rose-600 dark:text-rose-400 hover:bg-rose-500/8`}
-      >
-        <SignOutIcon weight="bold" className="size-5" />
-      </button>
+      {user && (
+        <RailTip label={`${user.first_name || user.username} · ${t('nav.profile')}`}>
+          <Link to="/profile" aria-label={t('nav.profile')} className={`${RAIL_BTN} ${RAIL_IDLE}`}>
+            <span className="size-6.5 rounded-full bg-linear-to-br from-emerald-400 to-emerald-600 ring-2 ring-white dark:ring-white/15 flex items-center justify-center text-white text-[10px] font-display font-bold">
+              {getFullInitials(user.first_name, user.last_name)}
+            </span>
+          </Link>
+        </RailTip>
+      )}
+      <RailTip label={t('nav.logout')}>
+        <button onClick={logout} aria-label={t('nav.logout')} className={`${RAIL_BTN} text-rose-600 dark:text-rose-400 hover:bg-rose-500/8`}>
+          <SignOutIcon weight="bold" className="size-4.5" />
+        </button>
+      </RailTip>
     </div>
   );
 }
