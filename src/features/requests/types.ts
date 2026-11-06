@@ -7,10 +7,15 @@ import type { TimeOff } from '@shared/types';
  */
 export interface RequestItem {
     key: string; // `${type}:${id}`
-    type: 'timeoff' | 'name' | 'swap';
+    type: 'timeoff' | 'name' | 'swap' | 'role' | 'other' | 'complaint';
     id: string;
+    /** Empty for an anonymous complaint seen by a reviewer. */
     userId: string;
     personName: string;
+    /** The signed-in user's own request (set by the server for member requests). */
+    mine?: boolean;
+    /** Server-decided: may the signed-in user approve / decline it. */
+    canReview?: boolean;
     status: 'pending' | 'approved' | 'declined';
     createdAt: string;
     reviewedAt: string | null;
@@ -30,4 +35,12 @@ export interface RequestItem {
     shiftEnd?: string;
     shiftAllDay?: boolean;
     locationName?: string;
+    // role / other / complaint
+    subject?: string | null;
+    body?: string | null;
+    roleName?: string | null;
+    roleColor?: string | null;
+    currentRoleName?: string | null;
+    anonymous?: boolean;
+    reviewerName?: string | null;
 }

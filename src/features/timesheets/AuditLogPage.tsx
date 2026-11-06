@@ -35,6 +35,7 @@ import {
     UsersThreeIcon,
     BuildingsIcon,
     ClockIcon,
+    ChatTextIcon,
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
@@ -118,6 +119,10 @@ const ACTION: Record<string, ActionMeta> = {
     location_restored: { labelKey: 'audit.a.location_restored', Icon: ArrowCounterClockwiseIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
     location_hours: { labelKey: 'audit.a.location_hours', Icon: ClockIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
     org_created: { labelKey: 'audit.a.org_created', Icon: BuildingsIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    request_submitted: { labelKey: 'audit.a.request_submitted', Icon: ChatTextIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
+    request_approved: { labelKey: 'audit.a.request_approved', Icon: CheckCircleIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    request_declined: { labelKey: 'audit.a.request_declined', Icon: XCircleIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    request_cancelled: { labelKey: 'audit.a.request_cancelled', Icon: XCircleIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
     org_updated: { labelKey: 'audit.a.org_updated', Icon: BuildingsIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
 };
 
@@ -358,7 +363,7 @@ function AuditBody({ entry }: { entry: ShiftAuditLog }) {
         case 'timeoff_approved':
         case 'timeoff_declined': {
             const parts: string[] = [];
-            if (d.kind) parts.push(t(`timeoff.${d.kind}` as TranslationKey));
+            if (d.kind) parts.push(t((entry.action.startsWith('request_') ? `mreq.kind.${d.kind}` : `timeoff.${d.kind}`) as TranslationKey));
             if (d.starts_on) {
                 const from = new Date(`${d.starts_on}T00:00`);
                 const range =
@@ -445,13 +450,14 @@ function GenericBody({ entry }: { entry: ShiftAuditLog }) {
     const t = useTranslation();
     const d = entry.details;
     const parts: string[] = [];
-    if (d.kind) parts.push(t(`timeoff.${d.kind}` as TranslationKey));
+    if (d.kind) parts.push(t((entry.action.startsWith('request_') ? `mreq.kind.${d.kind}` : `timeoff.${d.kind}`) as TranslationKey));
     if (d.starts_at) parts.push(fmtRange(d.starts_at, d.ends_at, d.all_day));
     if (d.start_time) parts.push(`${d.start_time}–${d.end_time ?? ''}`);
     if (d.starts_on) parts.push(entry.action === 'wage_changed' ? t('audit.fromDate', { date: fmtDays(d.starts_on) }) : fmtDays(d.starts_on, d.ends_on));
+    if (d.subject_name && entry.action.startsWith('request_')) parts.push(d.subject_name);
     if (d.shift_role) parts.push(d.shift_role);
     if (d.location_name) parts.push(d.location_name);
-    if (d.role_name && entry.action === 'member_invited') parts.push(d.role_name);
+    if (d.role_name && (entry.action === 'member_invited' || entry.action.startsWith('request_'))) parts.push(d.role_name);
     if (d.email) parts.push(d.email);
     if (d.to_name) parts.push(t('audit.offeredTo', { name: d.to_name }));
     if (d.auto) parts.push(t('audit.autoClosed'));
@@ -484,12 +490,15 @@ function GenericBody({ entry }: { entry: ShiftAuditLog }) {
 function AuditCard({ entry, onOpenUser }: { entry: ShiftAuditLog; onOpenUser: (userId: string) => void }) {
     const t = useTranslation();
     const meta = ACTION[entry.action] ?? FALLBACK_META;
-    const actor = entry.details.actor_name ?? t('audit.someone');
+    const actor = entry.details.anonymous && !entry.actor_id ? t('audit.anonymous') : (entry.details.actor_name ?? t('audit.someone'));
     // Who/what the entry is about: a role, a place/announcement/template, or a person.
     const personId = entry.subject_id ?? entry.target_user_id;
+    const isRequest = entry.action.startsWith('request_');
     const target = entry.action.startsWith('role_')
         ? (entry.details.role_name ?? '—')
-        : (entry.details.subject_name ?? entry.details.target_name ?? (personId ? t('audit.member') : null));
+        : isRequest
+          ? (entry.details.target_name ?? (entry.details.anonymous ? t('audit.anonymous') : null))
+          : (entry.details.subject_name ?? entry.details.target_name ?? (personId ? t('audit.member') : null));
     const when = formatDateTime(entry.created_at);
 
     return (
@@ -504,7 +513,7 @@ function AuditCard({ entry, onOpenUser }: { entry: ShiftAuditLog; onOpenUser: (u
                         {t(meta.labelKey)}
                         {target ? ' ·' : ''}
                     </span>
-                    {target && <PersonButton name={target} userId={entry.details.subject_name ? null : personId} onOpenUser={onOpenUser} strong />}
+                    {target && <PersonButton name={target} userId={entry.details.subject_name && !isRequest ? null : personId} onOpenUser={onOpenUser} strong />}
                 </div>
                 {/* Who did it + when — own line so nothing gets squeezed off-screen. */}
                 <p className="text-micro text-gray-400">

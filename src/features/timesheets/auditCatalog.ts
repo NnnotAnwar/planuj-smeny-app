@@ -18,6 +18,7 @@ export const AUDIT_GROUPS = {
         'timeoff_requested', 'timeoff_approved', 'timeoff_declined', 'timeoff_cancelled',
         'swap_offered', 'swap_taken', 'swap_requested', 'swap_approved', 'swap_declined', 'swap_withdrawn', 'swap_released',
         'name_requested', 'name_request_approved', 'name_request_rejected', 'name_request_cancelled',
+        'request_submitted', 'request_approved', 'request_declined', 'request_cancelled',
     ],
     team: [
         'member_invited', 'member_removed', 'member_left', 'profile_updated', 'username_change',
@@ -37,7 +38,7 @@ export const groupLabel = (g: AuditGroup): TranslationKey => `audit.group.${g}` 
  * One event can fan out into a row per recipient (e.g. a time-off request
  * notifies every reviewer). The log shows it once.
  */
-const FANOUT = new Set(['timeoff_requested', 'swap_requested', 'swap_approved', 'swap_declined']);
+const FANOUT = new Set(['timeoff_requested', 'swap_requested', 'swap_approved', 'swap_declined', 'request_submitted']);
 
 export function dedupeFanout<T extends { action: string; created_at: string; actor_id: string | null }>(rows: T[]): T[] {
     const seen = new Set<string>();

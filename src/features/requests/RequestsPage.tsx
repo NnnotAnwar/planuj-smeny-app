@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { PlusIcon, UserCircleIcon, CheckCircleIcon } from '@phosphor-icons/react';
+import { PlusIcon, UserCircleIcon, CheckCircleIcon, ChatTextIcon } from '@phosphor-icons/react';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { can } from '@shared/auth/permissions';
 import { PageHeader } from '@shared/components/PageHeader';
@@ -9,11 +9,13 @@ import { Button } from '@shared/components/Button';
 import { Skeleton } from '@shared/components/Skeleton';
 import { TimeOffRequestModal } from '@features/schedule/components/TimeOffCard';
 import { RequestCard } from './RequestCard';
+import { MemberRequestModal } from './MemberRequestModal';
 import { useRequests, canDecideOn, markRequestsSeen } from './useRequests';
 
 /**
  * --- REQUESTS (the shared inbox) ---
- * Every request lands here — time off and name changes.
+ * Every request lands here — time off, name changes, swaps, role requests,
+ * other requests and complaints (optionally anonymous).
  *   • Admins decide (approve / decline with a reason), never on their own.
  *   • Managers observe: they see the same queue and history, without buttons.
  *   • Everyone sees "My requests" with each decision and its reason, can
@@ -28,6 +30,7 @@ export function RequestsPage() {
     const canObserve = can(user, 'requests.view');
     const [tab, setTab] = useState<Tab>(canObserve ? 'review' : 'mine');
     const [requesting, setRequesting] = useState(false);
+    const [asking, setAsking] = useState(false);
 
     // Looking at your own requests clears the "new decision" badge.
     useEffect(() => {
@@ -44,7 +47,7 @@ export function RequestsPage() {
           ]
         : [];
 
-    const busyKey = decide.isPending ? decide.variables?.item.key : withdraw.isPending ? `timeoff:${withdraw.variables?.id}` : null;
+    const busyKey = decide.isPending ? decide.variables?.item.key : withdraw.isPending ? withdraw.variables?.key : null;
     const empty = (text: string) => (
         <div className="glass flex flex-col items-center rounded-2xl px-6 py-8 text-center">
             <div className="mb-2.5 flex size-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">
@@ -116,6 +119,9 @@ export function RequestsPage() {
                         <Button size="sm" icon={PlusIcon} onClick={() => setRequesting(true)}>
                             {t('timeoff.request')}
                         </Button>
+                        <Button size="sm" variant="secondary" icon={ChatTextIcon} onClick={() => setAsking(true)}>
+                            {t('mreq.new')}
+                        </Button>
                         <Link
                             to="/profile"
                             className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-meta font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink dark:text-slate-400 dark:hover:bg-white/8 dark:hover:text-white"
@@ -144,6 +150,7 @@ export function RequestsPage() {
             )}
 
             <AnimatePresence>
+                {asking && <MemberRequestModal onClose={() => setAsking(false)} onSent={() => setTab('mine')} />}
                 {requesting && (
                     <TimeOffRequestModal members={[]} selfId={user.id} orgId={user.organization_id} managerMode={false} onClose={() => setRequesting(false)} />
                 )}
