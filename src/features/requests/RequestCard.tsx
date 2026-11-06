@@ -42,6 +42,7 @@ export function RequestCard({
     conflicts = 0,
     canDecide = false,
     observer = false,
+    own = false,
     busy = false,
     onDecide,
     onWithdraw,
@@ -54,6 +55,8 @@ export function RequestCard({
     canDecide?: boolean;
     /** Can see but not decide (managers) — shows who it waits for. */
     observer?: boolean;
+    /** The viewer's own request in the review queue: no buttons, someone else decides. */
+    own?: boolean;
     busy?: boolean;
     onDecide?: (approve: boolean, note: string | null) => void;
     onWithdraw?: () => void;
@@ -100,6 +103,11 @@ export function RequestCard({
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         {showPerson && <span className="truncate text-meta font-semibold text-ink dark:text-white">{person}</span>}
                         <span className="rounded-full bg-ink/6 px-2 py-0.5 text-[11px] font-semibold text-ink-soft dark:bg-white/8 dark:text-slate-300">{typeLabel}</span>
+                        {own && (
+                            <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                                {t('requests.yours')}
+                            </span>
+                        )}
                         {item.anonymous && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/12 px-2 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-300">
                                 <EyeSlashIcon weight="bold" className="size-3" />
@@ -169,9 +177,11 @@ export function RequestCard({
                     {item.status !== 'pending' && item.reviewerName && (
                         <p className="mt-0.5 text-caption text-ink-soft dark:text-slate-400">{t('mreq.decidedBy', { name: item.reviewerName })}</p>
                     )}
-                    {item.status === 'pending' && observer && !canDecide && (
+                    {item.status === 'pending' && own ? (
+                        <p className="mt-1 text-caption text-ink-soft dark:text-slate-400">{t('requests.decidedByOther')}</p>
+                    ) : item.status === 'pending' && observer && !canDecide ? (
                         <p className="mt-1 text-caption text-ink-soft dark:text-slate-400">{t('requests.waitsForAdmin')}</p>
-                    )}
+                    ) : null}
 
                     {/* Decide. */}
                     {item.status === 'pending' && canDecide && onDecide && (
