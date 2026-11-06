@@ -13,6 +13,7 @@ import { swapBlockReason, swapService } from '@features/schedule/swaps/swapServi
 import { swapKeys } from '@features/schedule/swaps/useShiftSwaps';
 import { personName, type ShiftSwap } from '@features/schedule/swaps/types';
 import type { RequestItem } from './types';
+import { memberRequestError, memberRequestsService, type MemberRequest } from './memberRequestsService';
 
 /**
  * --- useRequests ---
@@ -80,14 +81,46 @@ const fromSwap = (w: ShiftSwap): RequestItem | null => {
     };
 };
 
+/** Role request / other request / complaint. */
+const fromMember = (r: MemberRequest): RequestItem => ({
+    key: `${r.kind}:${r.id}`,
+    type: r.kind,
+    id: r.id,
+    userId: r.user_id ?? '',
+    personName: r.person_name ?? '',
+    mine: r.mine,
+    canReview: r.can_review,
+    status: r.status,
+    createdAt: r.created_at,
+    reviewedAt: r.reviewed_at,
+    reviewNote: r.review_note,
+    note: r.kind === 'role' ? r.body : null,
+    subject: r.subject,
+    body: r.body,
+    roleName: r.role_name,
+    roleColor: r.role_color,
+    currentRoleName: r.current_role_name,
+    anonymous: r.anonymous,
+    reviewerName: r.reviewer_name,
+});
+
+const MEMBER_TYPES = new Set<RequestItem['type']>(['role', 'other', 'complaint']);
+export const isMemberRequest = (i: RequestItem) => MEMBER_TYPES.has(i.type);
+
+/** The signed-in user's own request (or the shift they're taking). */
+export const isMine = (i: RequestItem, me: string | undefined) => i.mine ?? (!!me && (i.userId === me || i.takerId === me));
+
 export const requestKeys = {
     timeOff: ['time-off', 'requests'] as const,
     names: ['requests', 'names'] as const,
+    member: ['requests', 'member'] as const,
 };
 
 /** Whether `user` may decide on `item` (mirrors can_review_request in the DB). */
 export function canDecideOn(user: User | null, item: RequestItem): boolean {
-    if (!user || !can(user, 'requests.decide')) return false;
+    if (!user) return false;
+    if (item.canReview !== undefined) return item.canReview; // the server knows (anonymous, role rights)
+    if (!can(user, 'requests.decide')) return false;
     const involved = item.userId === user.id || item.takerId === user.id;
     return !involved || isSuperAdmin(user) || user.role.rank >= RANK.OWNER;
 }
@@ -96,18 +129,20 @@ function useRequestQueries(user: User | null) {
     const timeOffQ = useQuery({ queryKey: requestKeys.timeOff, queryFn: requestsService.getTimeOff, enabled: !!user });
     const namesQ = useQuery({ queryKey: requestKeys.names, queryFn: requestsService.getNameRequests, enabled: !!user });
     const swapsQ = useQuery({ queryKey: swapKeys.all, queryFn: swapService.list, enabled: !!user });
+    const memberQ = useQuery({ queryKey: requestKeys.member, queryFn: memberRequestsService.list, enabled: !!user });
     const items = useMemo(
         () => [
             ...(timeOffQ.data ?? []).map(fromTimeOff),
             ...(namesQ.data ?? []).map(fromName),
             ...(swapsQ.data ?? []).map(fromSwap).filter((i): i is RequestItem => !!i),
+            ...(memberQ.data ?? []).map(fromMember),
         ],
-        [timeOffQ.data, namesQ.data, swapsQ.data],
+        [timeOffQ.data, namesQ.data, swapsQ.data, memberQ.data],
     );
     return {
         items,
-        isLoading: timeOffQ.isLoading || namesQ.isLoading || swapsQ.isLoading,
-        error: timeOffQ.error ?? namesQ.error ?? swapsQ.error,
+        isLoading: timeOffQ.isLoading || namesQ.isLoading || swapsQ.isLoading || memberQ.isLoading,
+        error: timeOffQ.error ?? namesQ.error ?? swapsQ.error ?? memberQ.error,
     };
 }
 
@@ -126,12 +161,12 @@ export function useRequests() {
         return {
             // Oldest first: a fair queue.
             toReview: items
-                .filter((i) => i.status === 'pending' && i.userId !== me && i.takerId !== me)
+                .filter((i) => i.status === 'pending' && !isMine(i, me))
                 .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
             history: items
                 .filter((i) => i.status !== 'pending' && decidedAt(i) >= monthAgo)
                 .sort((a, b) => decidedAt(b) - decidedAt(a)),
-            mine: items.filter((i) => i.userId === me || i.takerId === me).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+            mine: items.filter((i) => isMine(i, me)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
         };
     }, [items, me, now]);
 
@@ -176,7 +211,8 @@ export function useRequests() {
     const decide = useMutation({
         mutationFn: async ({ item, approve, note }: { item: RequestItem; approve: boolean; note?: string | null }) => {
             if (!user) throw new Error('Not signed in.');
-            if (item.type === 'timeoff') await scheduleService.reviewTimeOff(item.id, approve, user.id, note);
+            if (isMemberRequest(item)) await memberRequestsService.review(item.id, approve, note?.trim() || null);
+            else if (item.type === 'timeoff') await scheduleService.reviewTimeOff(item.id, approve, user.id, note);
             else if (item.type === 'swap') await swapService.review(item.id, approve, note?.trim() || null);
             else await adminService.reviewNameChange(item.id, approve, note?.trim() || null);
         },
@@ -185,13 +221,20 @@ export function useRequests() {
             toast(v.approve ? t('requests.approved') : t('requests.declined'), 'success');
         },
         onError: (e) => {
+            const code = memberRequestError(e);
+            if (code) return toast(t(`mreq.err.${code}` as 'mreq.err.request_empty'), 'error');
             const blocked = swapBlockReason(e);
             toast(blocked ? t(`swap.blocked_${blocked}` as 'swap.blocked_busy') : leaveErr(e, t) || t('requests.error'), 'error');
         },
     });
 
     const withdraw = useMutation({
-        mutationFn: (item: RequestItem) => (item.type === 'swap' ? swapService.withdraw(item.id) : scheduleService.deleteTimeOff(item.id)),
+        mutationFn: (item: RequestItem) =>
+            isMemberRequest(item)
+                ? memberRequestsService.cancel(item.id)
+                : item.type === 'swap'
+                  ? swapService.withdraw(item.id)
+                  : scheduleService.deleteTimeOff(item.id),
         onSuccess: refresh,
         onError: () => toast(t('requests.error'), 'error'),
     });
@@ -240,6 +283,6 @@ export function useRequestsBadge(): number {
     if (!user) return 0;
     if (can(user, 'requests.decide')) return items.filter((i) => i.status === 'pending' && canDecideOn(user, i)).length;
     return items.filter(
-        (i) => (i.userId === user.id || i.takerId === user.id) && i.status !== 'pending' && i.reviewedAt && new Date(i.reviewedAt).getTime() > seen,
+        (i) => isMine(i, user.id) && i.status !== 'pending' && i.reviewedAt && new Date(i.reviewedAt).getTime() > seen,
     ).length;
 }

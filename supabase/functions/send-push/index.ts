@@ -149,6 +149,28 @@ function render(msg: PushMessage, lang: Lang): { title: string; body: string } {
             return cs
                 ? { title: 'Výměna zamítnuta', body: `Výměna směny${v.when ? ` (${v.when})` : ''} byla zamítnuta.` }
                 : { title: 'Swap declined', body: `The shift swap${v.when ? ` (${v.when})` : ''} was declined.` };
+        case 'request_submitted': {
+            // Complaints never put their text on a lock screen.
+            if (v.kind === 'complaint')
+                return cs
+                    ? { title: 'Nová stížnost', body: v.anonymous ? 'Byla podána anonymní stížnost.' : `${who} podal(a) stížnost.` }
+                    : { title: 'New complaint', body: v.anonymous ? 'An anonymous complaint was filed.' : `${who} filed a complaint.` };
+            if (v.kind === 'role')
+                return cs
+                    ? { title: 'Žádost o roli', body: `${who} žádá o roli ${v.role || '—'}.` }
+                    : { title: 'Role request', body: `${who} asks for the ${v.role || '—'} role.` };
+            return cs
+                ? { title: 'Nová žádost', body: `${who}: ${v.subject || 'žádost'}` }
+                : { title: 'New request', body: `${who}: ${v.subject || 'request'}` };
+        }
+        case 'request_approved':
+        case 'request_declined': {
+            const ok = msg.key === 'request_approved';
+            const what = v.kind === 'role' ? (v.role ? (cs ? `o roli ${v.role}` : `for the ${v.role} role`) : '') : String(v.subject || '');
+            return cs
+                ? { title: ok ? 'Žádost schválena' : 'Žádost zamítnuta', body: `Vaše žádost${what ? ` ${v.kind === 'role' ? what : `„${what}“`}` : ''} byla ${ok ? 'schválena' : 'zamítnuta'}.` }
+                : { title: ok ? 'Request approved' : 'Request declined', body: `Your request${what ? ` ${v.kind === 'role' ? what : `“${what}”`}` : ''} was ${ok ? 'approved' : 'declined'}.` };
+        }
         case 'name_request_new':
             return cs
                 ? { title: 'Nová žádost o změnu jména', body: 'Člen týmu požádal o změnu jména.' }
@@ -414,6 +436,22 @@ async function messagesFromWebhook(table: string, record: Record<string, unknown
                     category: 'requests',
                 }];
             }
+            case 'request_submitted':
+            case 'request_approved':
+            case 'request_declined':
+                return [{
+                    userId: target,
+                    key: action,
+                    vars: {
+                        who: (details.target_name as string) || '',
+                        kind: (details.kind as string) || 'other',
+                        role: (details.role_name as string) || '',
+                        subject: (details.subject_name as string) || '',
+                        anonymous: details.anonymous ? 1 : 0,
+                    },
+                    route: '/requests',
+                    category: 'requests',
+                }];
             case 'profile_updated': {
                 const changes = (details.changes as { field: string }[] | undefined) ?? [];
                 // Regular users have no admin screen for this — open the app on the

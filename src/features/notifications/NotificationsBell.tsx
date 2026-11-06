@@ -15,6 +15,7 @@ import {
     UserGearIcon,
     XIcon,
     ArrowsLeftRightIcon,
+    ChatTextIcon,
     type Icon,
 } from '@phosphor-icons/react';
 import type { ShiftAuditLog, ShiftSnapshot } from '@shared/types';
@@ -69,6 +70,7 @@ function fmtLeave(d: { kind?: string | null; starts_on?: string | null; ends_on?
 }
 
 const FIELD_LABEL: Record<string, TranslationKey> = {
+    manager: 'notif.field.manager',
     name: 'notif.field.name',
     role: 'notif.field.role',
     organization: 'notif.field.organization',
@@ -143,6 +145,23 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
                 ? { Icon: CheckCircleIcon, tint: 'text-emerald-500', title: t('notif.swapApproved'), detail: when }
                 : { Icon: XCircleIcon, tint: 'text-red-500', title: t('notif.swapDeclined'), detail: [when, d.note].filter(Boolean).join(' · ') || undefined };
         }
+        case 'request_submitted':
+            return d.kind === 'complaint'
+                ? { Icon: ChatTextIcon, tint: 'text-amber-500', title: t('notif.complaintSubmitted'), detail: d.target_name || t('audit.anonymous') }
+                : {
+                      Icon: ChatTextIcon,
+                      tint: 'text-amber-500',
+                      title: t('notif.requestSubmitted', { name: d.target_name || '—' }),
+                      detail: [t(`mreq.kind.${d.kind ?? 'other'}` as TranslationKey), d.role_name, d.subject_name].filter(Boolean).join(' · '),
+                  };
+        case 'request_approved':
+        case 'request_declined':
+            return {
+                Icon: entry.action === 'request_approved' ? CheckCircleIcon : XCircleIcon,
+                tint: entry.action === 'request_approved' ? 'text-emerald-500' : 'text-red-500',
+                title: t(entry.action === 'request_approved' ? 'notif.requestApproved' : 'notif.requestDeclined'),
+                detail: [d.role_name ?? d.subject_name, d.note].filter(Boolean).join(' · ') || undefined,
+            };
         default:
             return { Icon: BellIcon, tint: 'text-gray-400', title: t('notif.account') };
     }

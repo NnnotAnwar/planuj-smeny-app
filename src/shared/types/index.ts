@@ -310,6 +310,7 @@ export const ShiftAuditLogSchema = z.object({
       auto: z.boolean().nullable().optional(),
       pinned: z.boolean().nullable().optional(),
       email: z.string().nullable().optional(),
+      anonymous: z.boolean().nullable().optional(),
     })
     .passthrough()
     .default({}),
