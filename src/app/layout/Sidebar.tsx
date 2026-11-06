@@ -11,6 +11,7 @@ import { useAuthContext } from '@features/auth/AuthContext';
 import { useShiftContext } from '@features/shifts/ShiftContext';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { getFullInitials } from '@shared/utils/getInitials';
+import { roleLabel } from '@shared/auth/permissions';
 import { useNavItems, NAV_SECTIONS, SECTION_LABEL_KEYS, type ResolvedNavItem } from '../navigation';
 import { useRecentLocations } from '@features/locations/useRecentLocations';
 import { LocationPicker } from '@features/locations/components/LocationPicker';
@@ -560,7 +561,7 @@ export function Sidebar({ onLocationSelect, onOpenSearch }: SidebarProps) {
                     <div className="font-display text-sm font-bold tracking-[-0.01em] text-ink dark:text-white truncate leading-tight">
                       {user.first_name || user.username}
                     </div>
-                    <div className="mt-0.5 text-eyebrow text-ink-soft dark:text-slate-400">{user.role.name}</div>
+                    <div className="mt-0.5 text-eyebrow text-ink-soft dark:text-slate-400">{roleLabel(user)}</div>
                   </div>
                 </Link>
               )}

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { can } from '@shared/auth/permissions';
 import { toast } from '@shared/toast/toastStore';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { type User } from '@shared/types';
@@ -17,7 +18,7 @@ export function useAvailability(user: User | null) {
   const t = useTranslation();
   const qc = useQueryClient();
   const enabled = !!user;
-  const isManager = enabled && (user.role.rank ?? 0) >= 20;
+  const isManager = enabled && can(user, 'rota.view');
 
   const mine = useQuery({
     queryKey: availabilityKeys.mine(user?.id ?? 'anon'),

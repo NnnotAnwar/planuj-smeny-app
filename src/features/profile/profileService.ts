@@ -2,7 +2,7 @@ import { supabase } from '@shared/api/supabaseClient';
 import { ProfileSchema, type ProfileDetail } from '@shared/types';
 
 const PROFILE_SELECT =
-  'id, username, first_name, last_name, email, organization_id, username_changed_at, role(name, is_admin, rank), organization:organizations(name)';
+  'id, username, first_name, last_name, email, organization_id, username_changed_at, role(name, is_admin, rank), org_role_id, org_role:org_roles!profiles_org_role_id_fkey(id, name, color, base_role, preset_key), organization:organizations(name)';
 
 function mapProfileRow(data: Record<string, unknown>): ProfileDetail {
   const validated = ProfileSchema.parse({

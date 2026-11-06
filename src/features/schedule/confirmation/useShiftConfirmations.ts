@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { can } from '@shared/auth/permissions';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@shared/toast/toastStore';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
@@ -20,7 +21,7 @@ export function useShiftConfirmations(user: User | null) {
   const t = useTranslation();
   const qc = useQueryClient();
   const enabled = !!user;
-  const isManager = enabled && (user.role.rank ?? 0) >= 20;
+  const isManager = enabled && can(user, 'rota.view');
 
   const mine = useQuery({
     queryKey: shiftConfirmationKeys.mine(user?.id ?? 'anon'),

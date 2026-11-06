@@ -25,7 +25,7 @@ type Tab = 'review' | 'history' | 'mine';
 export function RequestsPage() {
     const t = useTranslation();
     const { user, toReview, history, mine, isLoading, conflictsFor, decide, withdraw } = useRequests();
-    const canObserve = can(user, 'team.view');
+    const canObserve = can(user, 'requests.view');
     const [tab, setTab] = useState<Tab>(canObserve ? 'review' : 'mine');
     const [requesting, setRequesting] = useState(false);
 

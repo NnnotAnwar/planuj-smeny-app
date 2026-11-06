@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@shared/api/supabaseClient';
-import { type User, type NameChangeRequest } from '@shared/types';
+import { type User, type NameChangeRequest, type PermissionMap, type PermissionArea } from '@shared/types';
 import { ProfileSchema, NameChangeRequestSchema } from '@shared/types';
 
 /**
@@ -25,7 +25,10 @@ export const authService = {
   async getUserProfile(userId: string): Promise<User | null> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, first_name, last_name, role(name, is_admin, rank), email, organization_id, username_changed_at')
+      .select(
+        'id, username, first_name, last_name, role(name, is_admin, rank), email, organization_id, username_changed_at, ' +
+          'org_role_id, org_role:org_roles!profiles_org_role_id_fkey(id, name, color, base_role, preset_key, permissions:org_role_permissions(area, can_read, can_write, can_delete))',
+      )
       .eq('id', userId)
       .single();
 
@@ -34,6 +37,11 @@ export const authService = {
 
     // Validate the data from DB before using it in the app.
     const validated = ProfileSchema.parse(data);
+    // The role's permission rows → { area: { read, write, delete } } for can().
+    const rows = ((data as { org_role?: { permissions?: { area: PermissionArea; can_read: boolean; can_write: boolean; can_delete: boolean }[] } | null }).org_role?.permissions) ?? null;
+    const permissions: PermissionMap | undefined = rows
+      ? Object.fromEntries(rows.map((r) => [r.area, { read: r.can_read, write: r.can_write, delete: r.can_delete }]))
+      : undefined;
     return {
       id: validated.id,
       username: validated.username,
@@ -46,7 +54,10 @@ export const authService = {
       email: validated.email,
       last_name: validated.last_name ?? null,
       organization_id: validated.organization_id,
-      username_changed_at: validated.username_changed_at ?? null
+      username_changed_at: validated.username_changed_at ?? null,
+      org_role_id: validated.org_role_id ?? null,
+      org_role: validated.org_role ?? null,
+      permissions,
     };
   },
 

@@ -24,12 +24,15 @@ import { z } from 'zod';
 
 // Shared select used to hydrate the full organization tree (locations + members).
 const ORG_TREE_SELECT =
-    '*, locations(id, name, code, organization_id, archived_at), profiles(id, role(name, is_admin, rank), email, username, first_name, last_name, organization_id, manager_id)';
+    '*, locations(id, name, code, organization_id, archived_at), profiles(id, role(name, is_admin, rank), email, username, first_name, last_name, organization_id, manager_id, org_role_id, org_role:org_roles!profiles_org_role_id_fkey(id, name, color, base_role, preset_key))';
 
 export interface EmployeeUpdate {
     first_name: string | null;
     last_name: string | null;
-    role: string;
+    /** The member's organization role; its level becomes `role` (DB trigger). */
+    org_role_id?: string;
+    /** Legacy level-only change (e.g. moving orgs): the level's preset role is used. */
+    role?: string;
     organization_id?: string;
     /** Manager this member reports to (rota scoping); null clears it. */
     manager_id?: string | null;

@@ -17,7 +17,7 @@ import {
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
-import { canManageEmployees } from '@shared/auth/permissions';
+import { can } from '@shared/auth/permissions';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { type ShiftAuditLog, type ShiftSnapshot, type Profile } from '@shared/types';
 import { formatClock, formatDateTime, monthShort } from '@shared/utils/date';
@@ -78,7 +78,7 @@ function fmtSnapshot(s?: ShiftSnapshot | null): string {
  */
 export function AuditLogPage() {
     const { user } = useAuthContext();
-    if (user && !canManageEmployees(user)) return <Navigate to="/" replace />;
+    if (user && !can(user, 'activity.view')) return <Navigate to="/" replace />;
     return <AuditLogInner />;
 }
 

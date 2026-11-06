@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
+import { RoleBadge } from '@shared/components/RoleBadge';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Profile, User } from '@/shared/types';
-import { getRoleBadgeColor } from '@/shared/utils/roleColors';
 import { getFullInitials } from '@/shared/utils/getInitials';
 import { DataTable, type Column } from '@/shared/components/DataTable';
 import { canManageMember, RANK } from '@shared/auth/permissions';
@@ -52,11 +52,6 @@ function AdminBadgeWithTooltip() {
     );
 }
 
-function RoleBadge({ role }: { role: Profile['role'] }) {
-    return (
-        <span className={`inline-block px-1.5 py-1 text-micro tracking-tight rounded-md whitespace-nowrap ${getRoleBadgeColor(role.name)}`}>{role.name}</span>
-    );
-}
 
 export type EmployeeRow = Profile & { organizationName?: string };
 
@@ -117,7 +112,7 @@ export function EmployeesList({
         ...(showOrganization
             ? [{ key: 'org', header: t('profile.field.organization'), hideOnMobile: true, className: 'truncate', render: (emp: EmployeeRow) => <span className="text-body text-gray-500 dark:text-gray-400">{emp.organizationName ?? '—'}</span> }]
             : []),
-        { key: 'role', header: t('profile.field.role'), align: 'right', width: 'w-24 sm:w-32', render: (emp) => <RoleBadge role={emp.role} /> },
+        { key: 'role', header: t('profile.field.role'), align: 'right', width: 'w-24 sm:w-32', render: (emp) => <RoleBadge profile={emp} /> },
         ...(anyManageable
             ? [
                 {
