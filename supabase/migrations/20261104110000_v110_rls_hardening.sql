@@ -12,6 +12,8 @@
 --    longer withdraw it; only a manager in the org can reset one.
 -- 4. shift_templates: at most 8 per organization (they become buttons all over
 --    the rota UI, so an unbounded list would crowd it out).
+-- 5. Changing a shift's time, day, location or person clears its confirmation
+--    — the member confirmed a different shift and must confirm again.
 -- =============================================================================
 
 -- True when `target` is in my organization and ranks strictly below me.
@@ -101,5 +103,28 @@ DROP TRIGGER IF EXISTS shift_templates_limit ON public.shift_templates;
 CREATE TRIGGER shift_templates_limit
   BEFORE INSERT ON public.shift_templates
   FOR EACH ROW EXECUTE FUNCTION public.shift_templates_limit();
+
+-- A changed shift needs a fresh confirmation (a note edit doesn't count).
+CREATE OR REPLACE FUNCTION public.reset_confirmation_on_shift_change()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+BEGIN
+  IF (NEW.starts_at, NEW.ends_at, NEW.all_day, NEW.location_id, NEW.user_id)
+     IS DISTINCT FROM
+     (OLD.starts_at, OLD.ends_at, OLD.all_day, OLD.location_id, OLD.user_id) THEN
+    DELETE FROM public.shift_confirmations WHERE scheduled_shift_id = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION public.reset_confirmation_on_shift_change() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS reset_confirmation_on_shift_change ON public.scheduled_shifts;
+CREATE TRIGGER reset_confirmation_on_shift_change
+  AFTER UPDATE ON public.scheduled_shifts
+  FOR EACH ROW EXECUTE FUNCTION public.reset_confirmation_on_shift_change();
 
 NOTIFY pgrst, 'reload schema';

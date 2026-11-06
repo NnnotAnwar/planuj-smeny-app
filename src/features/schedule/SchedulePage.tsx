@@ -12,7 +12,7 @@ import { MonthPicker } from '@shared/components/MonthPicker';
 import { Skeleton } from '@shared/components/Skeleton';
 import { ConfirmDialog } from '@features/admin/components/Modal';
 import { timesheetService } from '@features/timesheets/timesheetService';
-import { formatTime, formatDateLong } from '@shared/utils/date';
+import { formatTime } from '@shared/utils/date';
 import type { ScheduledShift, TimeOff } from '@shared/types';
 import { scheduleService } from './scheduleService';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
@@ -38,7 +38,6 @@ import { useShiftConfirmations } from './confirmation/useShiftConfirmations';
 import { UpcomingShifts } from './confirmation/UpcomingShifts';
 import { useShiftTemplates } from './templates/useShiftTemplates';
 import { OpenShiftsCard } from './openShifts/OpenShiftsCard';
-import { ShiftTimeMenu, type ShiftTimeValue } from './templates/ShiftTimeMenu';
 import { tplTime } from './templates/templateTime';
 import { TemplateBrush } from './templates/TemplateBrush';
 import { TemplatesDialog } from './templates/TemplatesDialog';
@@ -162,10 +161,8 @@ export default function SchedulePage() {
     // Roster grid "brush": what a tap on an empty cell puts down (null = all day).
     const [brushId, setBrushId] = useState<string | null>(null);
     const brush = templateList.find((tpl) => tpl.id === brushId) ?? null;
-    const [cellMenu, setCellMenu] = useState<{ shift: ScheduledShift; anchor: DOMRect } | null>(null);
     const [managingTemplates, setManagingTemplates] = useState(false);
-    const saveTemplateFromTimes = (start: string, end: string) =>
-        templates.create.mutate({ name: `${start}–${end}`, start_time: start, end_time: end });
+
 
     /** Approved leave covering a local day, if any. */
     const leaveOn = (userId: string, date: string): TimeOff | undefined =>
@@ -341,7 +338,7 @@ export default function SchedulePage() {
 
     /** Tap a roster cell: toggle an all-day assignment for that member+day at
      *  this location; if they're busy elsewhere that day, explain via a toast. */
-    const cellTap = (locId: string | null) => (memberId: string, date: string, anchor: DOMRect) => {
+    const cellTap = (locId: string | null) => (memberId: string, date: string) => {
         const leave = leaveOn(memberId, date);
         if (leave) {
             toast(t('schedule.busyAt', { where: t(`timeoff.${leave.kind}` as 'timeoff.vacation') }), 'info');
@@ -349,9 +346,25 @@ export default function SchedulePage() {
         }
         const sameDay = shifts.filter((s) => s.user_id === memberId && sameLocalDay(s.starts_at, date));
         const here = sameDay.filter((s) => s.location_id === locId);
-        // Tapping an existing shift opens its menu (times / template / all day / remove).
+        // Tapping an existing shift removes it at once — Undo in the toast puts it back.
         if (here.length > 0) {
-            setCellMenu({ shift: here[0], anchor });
+            quickM.mutate(() => scheduleService.removeMany(here.map((s) => s.id)), {
+                onSuccess: () =>
+                    toast(t('schedule.shiftRemoved'), 'success', {
+                        action: {
+                            label: t('common.undo'),
+                            onClick: () =>
+                                quickM.mutate(() =>
+                                    scheduleService.createMany(
+                                        user.organization_id,
+                                        user.id,
+                                        here.map((s) => ({ user_id: s.user_id, starts_at: s.starts_at, ends_at: s.ends_at, all_day: s.all_day })),
+                                        { location_id: locId, note: here[0].note ?? null },
+                                    ),
+                                ),
+                        },
+                    }),
+            });
             return;
         }
         if (sameDay.length > 0) {
@@ -381,29 +394,6 @@ export default function SchedulePage() {
         const holiday = holidayFor(date);
         if (holiday && !holidayWarn.dismissed) setHolidayAsk({ date, name: holiday, run });
         else run();
-    };
-
-    /** Apply a cell-menu choice to that shift (same day, new times / all day). */
-    const applyCellTime = (shift: ScheduledShift, v: ShiftTimeValue) => {
-        const day = new Date(shift.starts_at);
-        const date = `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
-        const bounds = v.allDay
-            ? { starts_at: new Date(day.getFullYear(), day.getMonth(), day.getDate()).toISOString(), ends_at: new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).toISOString() }
-            : (() => {
-                  const { startDate, endDate } = buildShiftDates(date, v.start, v.end);
-                  return { starts_at: startDate.toISOString(), ends_at: endDate.toISOString() };
-              })();
-        quickM.mutate(
-            () =>
-                scheduleService.update(shift.id, {
-                    user_id: shift.user_id,
-                    location_id: shift.location_id,
-                    note: shift.note ?? null,
-                    all_day: v.allDay,
-                    ...bounds,
-                }),
-            { onSuccess: () => setCellMenu(null) },
-        );
     };
 
     /** Restaurant-style month fill: weeks alternate SHORT (Wed+Thu) and LONG
@@ -864,7 +854,7 @@ export default function SchedulePage() {
                                                                 return e ? t(`timeoff.short_${e.kind}` as 'timeoff.short_vacation') : undefined;
                                                             }}
                                                             canManage
-                                                            onCellTap={(memberId, date, anchor) => cellTap(sec.id)(memberId, date, anchor)}
+                                                            onCellTap={(memberId, date) => cellTap(sec.id)(memberId, date)}
                                                             onQuickFill={quickFill(sec.id)}
                                                             onRemoveRow={removeMember(sec.id, sec.items)}
                                                             onOpenProfile={setProfileUserId}
@@ -964,29 +954,6 @@ export default function SchedulePage() {
                     <CoverageDialog user={user} locationId={coverageFor.id} locationName={coverageFor.name} onClose={() => setCoverageFor(null)} />
                 )}
             </AnimatePresence>
-
-            {/* Roster-grid cell menu for an existing shift. */}
-            {cellMenu && (() => {
-                const s0 = cellMenu.shift;
-                const hhmm = (iso: string) => {
-                    const d = new Date(iso);
-                    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                };
-                const fallback = brush ? { start: tplTime(brush.start_time), end: tplTime(brush.end_time) } : { start: '08:00', end: '16:00' };
-                return (
-                    <ShiftTimeMenu
-                        anchor={cellMenu.anchor}
-                        title={`${memberFull(s0)} · ${formatDateLong(s0.starts_at)}`}
-                        value={s0.all_day ? { allDay: true, ...fallback } : { allDay: false, start: hhmm(s0.starts_at), end: hhmm(s0.ends_at) }}
-                        templates={templateList}
-                        busy={quickM.isPending}
-                        onPick={(v) => applyCellTime(s0, v)}
-                        onSaveTemplate={saveTemplateFromTimes}
-                        onRemove={() => quickM.mutate(() => scheduleService.removeMany([s0.id]), { onSuccess: () => setCellMenu(null) })}
-                        onClose={() => setCellMenu(null)}
-                    />
-                );
-            })()}
         </div>
     );
 }
