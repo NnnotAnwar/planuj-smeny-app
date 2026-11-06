@@ -140,7 +140,7 @@ export function ActiveShift({ onPickLocation }: { onPickLocation?: (locationId: 
             </div>
 
             {/* --- MOBILE STICKY: swipe to end --- */}
-            <div className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 border-t border-white/70 bg-white/70 px-3 py-2.5 backdrop-blur-xl dark:border-white/5 dark:bg-slate-950/70 md:hidden">
+            <div data-mobile-dock className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 border-t border-white/70 bg-white/70 px-3 py-2.5 backdrop-blur-xl dark:border-white/5 dark:bg-slate-950/70 md:hidden">
                 <SwipeToEnd
                     busy={isEnding}
                     label={t('shifts.swipeToEnd')}
