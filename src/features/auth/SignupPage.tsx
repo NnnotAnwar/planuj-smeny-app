@@ -80,8 +80,10 @@ export function SignupPage() {
         );
     }
 
+    // Placeholders carry the visible label so the whole form fits one phone
+    // screen; the real <label> stays for screen readers.
     const label = (id: string, text: string) => (
-        <label htmlFor={id} className="text-eyebrow text-ink-soft dark:text-slate-400 ml-1">
+        <label htmlFor={id} className="sr-only">
             {text}
         </label>
     );
@@ -99,31 +101,31 @@ export function SignupPage() {
                 </p>
             }
         >
-            <p className="-mt-2 mb-4 text-center text-meta text-ink-soft dark:text-slate-400">{t('signup.lead')}</p>
-            <form className="space-y-3" onSubmit={submit} noValidate>
+            <p className="-mt-2 mb-3 text-center text-caption text-ink-soft sm:mb-4 sm:text-meta dark:text-slate-400">{t('signup.lead')}</p>
+            <form className="space-y-2.5" onSubmit={submit} noValidate>
                 <div>
                     {label('org', t('signup.orgName'))}
-                    <div className="mt-1.5">
-                        <Input id="org" icon={BuildingsIcon} required maxLength={80} value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder={t('signup.orgPh')} autoComplete="organization" />
+                    <div>
+                        <Input id="org" icon={BuildingsIcon} required maxLength={80} value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder={t('signup.orgName')} autoComplete="organization" />
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                     <div>
                         {label('first', t('signup.firstName'))}
-                        <div className="mt-1.5">
-                            <Input id="first" icon={UserIcon} required maxLength={60} value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" />
+                        <div>
+                            <Input id="first" icon={UserIcon} required maxLength={60} value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" placeholder={t('signup.firstName')} />
                         </div>
                     </div>
                     <div>
                         {label('last', t('signup.lastName'))}
-                        <div className="mt-1.5">
-                            <Input id="last" required maxLength={60} value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" />
+                        <div>
+                            <Input id="last" required maxLength={60} value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" placeholder={t('signup.lastName')} />
                         </div>
                     </div>
                 </div>
                 <div>
                     {label('email', t('signup.email'))}
-                    <div className="mt-1.5">
+                    <div>
                         <Input
                             id="email"
                             icon={EnvelopeSimpleIcon}
@@ -134,13 +136,13 @@ export function SignupPage() {
                             autoComplete="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="you@example.com"
+                            placeholder={t('signup.email')}
                         />
                     </div>
                 </div>
                 <div>
                     {label('pw', t('auth.password'))}
-                    <div className="mt-1.5">
+                    <div>
                         <Input
                             id="pw"
                             icon={LockIcon}
