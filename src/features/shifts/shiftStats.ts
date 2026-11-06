@@ -48,3 +48,49 @@ export function fmtDuration(h: number): string {
     const min = totalMin % 60;
     return hrs > 0 ? `${hrs}h ${min}m` : `${min}m`;
 }
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** Local `YYYY-MM` of an ISO timestamp. */
+function localMonthKey(iso: string): string {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+}
+
+/** `YYYY-MM` of the month before `key` (`2026-01` → `2025-12`). */
+export function prevMonthKey(key: string): string {
+    const [y, m] = key.split('-').map(Number);
+    const d = new Date(y, m - 2, 1);
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+}
+
+/**
+ * Net hours per day of a month (index 0 = the 1st), bucketed by each shift's
+ * local START day — a shift past midnight counts on the day it began, the same
+ * way the history table lists it.
+ */
+export function hoursByDay(shifts: Pick<Shift, 'started_at' | 'ended_at'>[], key: string, now: number = Date.now()): number[] {
+    const [y, m] = key.split('-').map(Number);
+    const days = new Date(y, m, 0).getDate();
+    const out = new Array<number>(days).fill(0);
+    for (const s of shifts) {
+        if (localMonthKey(s.started_at) !== key) continue;
+        out[new Date(s.started_at).getDate() - 1] += shiftHours(s, now);
+    }
+    return out;
+}
+
+/**
+ * Net hours in a month; with `uptoDay`, only shifts started on or before that
+ * day-of-month (for a fair "same days last month" comparison).
+ */
+export function monthHours(
+    shifts: Pick<Shift, 'started_at' | 'ended_at'>[],
+    key: string,
+    now: number = Date.now(),
+    uptoDay?: number,
+): number {
+    return hoursByDay(shifts, key, now)
+        .slice(0, uptoDay ?? undefined)
+        .reduce((a, b) => a + b, 0);
+}
