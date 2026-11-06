@@ -7,7 +7,8 @@ import { useTranslation } from '@shared/preferences/PreferencesContext';
 import type { TranslationKey } from '@shared/i18n/translations';
 import { useOrgRoles } from './useOrgRoles';
 import { RoleEditor } from './RoleEditor';
-import { AREAS, type OrgRole } from './types';
+import { Select } from '@shared/components/Select';
+import { AREAS, peopleKey, type OrgRole } from './types';
 
 /**
  * --- ROLES (Head Admin) ---
@@ -15,9 +16,21 @@ import { AREAS, type OrgRole } from './types';
  * presets (editable, Head Admin locked); add your own ("Shift lead", "Bar
  * manager"…), pick a level and tick what they may read, change or delete.
  */
-export function RolesPanel({ organizationId }: { organizationId: string }) {
+export function RolesPanel({
+    organizationId,
+    organizations,
+}: {
+    organizationId: string;
+    /** Superadmin: every organization (picks whose roles to edit). */
+    organizations?: { id: string; name: string; people: number }[];
+}) {
     const t = useTranslation();
-    const { list, roles, counts, save, remove } = useOrgRoles(organizationId);
+    // A Superadmin edits any organization's roles — start on the busiest one
+    // (their own platform org usually has nobody in it).
+    const [orgId, setOrgId] = useState(() =>
+        organizations && organizations.length > 0 ? [...organizations].sort((a, b) => b.people - a.people)[0].id : organizationId,
+    );
+    const { list, roles, counts, save, remove } = useOrgRoles(orgId);
     const [editing, setEditing] = useState<OrgRole | 'new' | null>(null);
 
     const summary = (r: OrgRole) => {
@@ -32,8 +45,21 @@ export function RolesPanel({ organizationId }: { organizationId: string }) {
 
     return (
         <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2 px-1">
-                <p className="text-meta text-ink-soft dark:text-slate-400">{t('roles.lead')}</p>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    {organizations && organizations.length > 1 && (
+                        <div className="w-44 shrink-0">
+                        <Select size="sm" aria-label={t('roles.org')} value={orgId} onChange={(e) => { setOrgId(e.target.value); setEditing(null); }}>
+                            {organizations.map((o) => (
+                                <option key={o.id} value={o.id}>
+                                    {o.name}
+                                </option>
+                            ))}
+                        </Select>
+                        </div>
+                    )}
+                    <p className="text-meta text-ink-soft dark:text-slate-400">{t('roles.lead')}</p>
+                </div>
                 <Button size="sm" icon={PlusIcon} onClick={() => setEditing('new')}>
                     {t('roles.new')}
                 </Button>
@@ -69,7 +95,7 @@ export function RolesPanel({ organizationId }: { organizationId: string }) {
                                         {t(`roles.levelName.${r.base_role}` as TranslationKey)} · {summary(r)}
                                     </span>
                                 </span>
-                                <span className="shrink-0 text-caption tabular-nums text-ink-soft dark:text-slate-400">{t('roles.members', { n: counts[r.id] ?? 0 })}</span>
+                                <span className="shrink-0 text-caption tabular-nums text-ink-soft dark:text-slate-400">{t(peopleKey(counts[r.id] ?? 0), { n: counts[r.id] ?? 0 })}</span>
                                 <CaretRightIcon weight="bold" className="size-3.5 shrink-0 text-ink-soft/60" />
                             </button>
                         </li>

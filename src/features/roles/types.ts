@@ -68,3 +68,9 @@ export function toggleGrant(g: Grants, area: PermissionArea, action: PermissionA
     }
     return { ...g, [area]: cur };
 }
+
+/** Plural key for a head-count: 1 → _one, 2–4 → _few (Czech "lidé"), else the base ("lidí" / "people"). */
+export const peopleKey = (n: number) => (n === 1 ? 'roles.members_one' : n >= 2 && n <= 4 ? 'roles.members_few' : 'roles.members') as
+    | 'roles.members_one'
+    | 'roles.members_few'
+    | 'roles.members';

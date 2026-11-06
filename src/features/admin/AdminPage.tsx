@@ -259,7 +259,12 @@ function AdminPanel() {
                                     }
                                 />
                             )}
-                            {safeTab === 'roles' && user && <RolesPanel organizationId={user.organization_id} />}
+                            {safeTab === 'roles' && user && (
+                                <RolesPanel
+                                    organizationId={user.organization_id}
+                                    organizations={isSuperAdmin ? adminData?.map((o) => ({ id: o.id, name: o.name, people: o.profiles.length })) : undefined}
+                                />
+                            )}
                             {safeTab === 'employees' && (
                                 <EmployeesList
                                     items={employees}

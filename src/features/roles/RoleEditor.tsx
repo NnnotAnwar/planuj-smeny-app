@@ -7,7 +7,7 @@ import { Select } from '@shared/components/Select';
 import { FormError } from '@shared/components/FormError';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import type { TranslationKey } from '@shared/i18n/translations';
-import { ACTIONS, AREAS, LEVELS, ROLE_COLORS, emptyGrants, grantsOf, toggleGrant, type Grants, type OrgRole } from './types';
+import { ACTIONS, AREAS, LEVELS, ROLE_COLORS, emptyGrants, grantsOf, peopleKey, toggleGrant, type Grants, type OrgRole } from './types';
 
 /**
  * --- ROLE EDITOR ---
@@ -66,9 +66,9 @@ export function RoleEditor({
     };
 
     return (
-        <Modal title={role ? t('roles.edit') : t('roles.new')} subtitle={role ? t('roles.members', { n: memberCount }) : t('roles.newHint')} onClose={onClose}>
+        <Modal title={role ? t('roles.edit') : t('roles.new')} subtitle={role ? t(peopleKey(memberCount), { n: memberCount }) : t('roles.newHint')} onClose={onClose}>
             <form onSubmit={submit} className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <div className="grid gap-3">
                     <div className="space-y-1.5">
                         <label htmlFor="role-name" className="text-label text-ink-soft dark:text-slate-400">{t('roles.name')}</label>
                         <Input id="role-name" value={name} maxLength={40} disabled={locked} onChange={(e) => setName(e.target.value)} placeholder={t('roles.namePh')} autoFocus={!role} />
