@@ -76,6 +76,8 @@ interface RosterGridProps {
     outsideHours?: (shift: ScheduledShift) => boolean;
     /** Shows as the location letter: all-day, or exactly the location's opening hours. */
     isLetter?: (shift: ScheduledShift) => boolean;
+    /** Czech rest-rule warnings for a planned shift (11 h rest, days in a row), as text. */
+    restFor?: (shift: ScheduledShift) => string[];
 }
 
 /** Diagonal hatch for "can't work" cells — reads as blocked without shouting. */
@@ -94,7 +96,7 @@ function WeekPreview({ days, tone }: { days: number[]; tone: 'sky' | 'emerald' }
     );
 }
 
-export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow, leaveFor, onOpenProfile, holidayFor, requiredOn, availabilityFor, outsideHours, isLetter }: RosterGridProps) {
+export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap, onQuickFill, onRemoveRow, leaveFor, onOpenProfile, holidayFor, requiredOn, availabilityFor, outsideHours, isLetter, restFor }: RosterGridProps) {
     const t = useTranslation();
     const [fillMenu, setFillMenu] = useState<{ id: string; name: string; left: number; top: number } | null>(null);
 
@@ -270,6 +272,9 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                 const avail = !leave ? availabilityFor?.(row.id, d.key) : undefined;
                                                 const conflict = has && avail?.kind === 'unavailable';
                                                 const outside = has && !!outsideHours && items.some((s) => outsideHours(s));
+                                                const rest = has && restFor ? items.flatMap((s) => restFor(s)) : [];
+                                                // Rest-rule breaches (labour law) outrank the softer amber flags.
+                                                const flag = rest.length > 0 ? 'ring-2 ring-rose-500' : conflict || outside ? 'ring-2 ring-amber-400' : '';
                                                 return (
                                                     <td
                                                         key={d.key}
@@ -279,6 +284,7 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                                 has && items.some((s) => !s.all_day) ? items.filter((s) => !s.all_day).map((s) => `${formatTime(s.starts_at)}–${formatTime(s.ends_at)}`).join(', ') : '',
                                                                 avail ? availText(avail) : '',
                                                                 outside ? t('locset.outsideShort') : '',
+                                                                ...rest,
                                                             ].filter(Boolean).join('\n') || undefined
                                                         }
                                                         className={`border-b border-l border-gray-100 dark:border-gray-800 h-9 px-0 align-middle select-none ${zebra} ${
@@ -301,11 +307,11 @@ export function RosterGrid({ monthKey, rows, shifts, code, canManage, onCellTap,
                                                         )}
                                                         {has &&
                                                             (allDay ? (
-                                                                <span className={`inline-block w-5.5 h-5.5 rounded-lg bg-emerald-500 text-white text-[11px] font-bold leading-5.5 shadow-sm shadow-emerald-500/30 ${items.some((s) => !s.published) ? 'opacity-50 ring-1 ring-emerald-600 ring-dashed' : ''} ${conflict ? 'ring-2! ring-amber-400!' : ''}`}>
+                                                                <span className={`inline-block w-5.5 h-5.5 rounded-lg bg-emerald-500 text-white text-[11px] font-bold leading-5.5 shadow-sm shadow-emerald-500/30 ${items.some((s) => !s.published) ? 'opacity-50 ring-1 ring-emerald-600 ring-dashed' : ''} ${rest.length > 0 ? 'ring-2! ring-rose-500!' : conflict || outside ? 'ring-2! ring-amber-400!' : ''}`}>
                                                                     {code || '✓'}
                                                                 </span>
                                                             ) : (
-                                                                <span className={`inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-0.5 py-0.5 leading-[1.15] tabular-nums ${items.some((s) => !s.published) ? 'opacity-50' : ''} ${conflict || outside ? 'ring-2 ring-amber-400' : ''}`}>
+                                                                <span className={`inline-block rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold px-0.5 py-0.5 leading-[1.15] tabular-nums ${items.some((s) => !s.published) ? 'opacity-50' : ''} ${flag}`}>
                                                                     {hm(items[0].starts_at)}
                                                                     <br />
                                                                     {hm(items[0].ends_at)}

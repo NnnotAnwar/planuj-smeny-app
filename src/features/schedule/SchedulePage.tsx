@@ -43,6 +43,7 @@ import { tplTime } from './templates/templateTime';
 import { TemplateBrush } from './templates/TemplateBrush';
 import { TemplatesDialog } from './templates/TemplatesDialog';
 import { useLocationSettings } from '@features/locations/settings/useLocationSettings';
+import { restIssues, restIssuesFor, type RestIssue } from './restRules';
 import { openingHours, isOutsideHours, isHoursShift, fullDayShift, type OpeningHours } from '@features/locations/settings/openingHours';
 import { buildShiftDates } from '@features/timesheets/shiftTimes';
 
@@ -233,6 +234,10 @@ export default function SchedulePage() {
     });
 
     const shifts = useMemo(() => scheduleQ.data ?? [], [scheduleQ.data]);
+    // Czech rest rules (11 h between shifts, days in a row) across every
+    // location of the month — warnings for the planner, never blocks.
+    const rest = useMemo(() => restIssues(shifts), [shifts]);
+    const restText = (i: RestIssue) => (i.kind === 'short-rest' ? t('rest.short', { h: i.hours }) : t('rest.streak', { n: i.day }));
     const teamView = canObserve && activeTab === 'team';
     const draftCount = useMemo(() => shifts.filter((s) => !s.published).length, [shifts]);
 
@@ -867,6 +872,7 @@ export default function SchedulePage() {
                                                             availabilityFor={availabilityFor}
                                                             outsideHours={(sh) => isOutsideHours(sh.starts_at, sh.ends_at, hoursOf(sec.id), sh.all_day)}
                                                             isLetter={isLetterShift}
+                                                            restFor={(sh) => (rest.get(sh.id) ?? []).map(restText)}
                                                         />
                                                     )}
                                                     {sec.id && canManage && addable.length > 0 && (
@@ -931,6 +937,9 @@ export default function SchedulePage() {
                         availabilityFor={availabilityFor}
                         templates={templateList}
                         hoursFor={hoursOf}
+                        restFor={(memberId, candidate, replacing) =>
+                            restIssuesFor({ user_id: memberId, ...candidate }, shifts.filter((s) => s.id !== replacing)).map(restText)
+                        }
                         onSaveTemplate={(input) => templates.create.mutateAsync(input)}
                         onRemoveTemplate={(id) => templates.remove.mutate(id)}
                     />
