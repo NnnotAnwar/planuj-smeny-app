@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@shared/api/supabaseClient';
 import { isSuperAdmin } from '@shared/auth/permissions';
@@ -24,6 +24,10 @@ export function useAnnouncements(user: User | null) {
   const sa = enabled && isSuperAdmin(user);
   const orgId = user?.organization_id ?? 'anon';
   const listKey = announcementKeys.list(orgId);
+  // Per-instance channel name: supabase.channel(name) hands back an existing,
+  // already-subscribed channel for a repeated name, and adding listeners to it
+  // throws — so two mounted users of this hook must not share one.
+  const instanceId = useId();
 
   const list = useQuery({
     queryKey: listKey,
@@ -68,7 +72,7 @@ export function useAnnouncements(user: User | null) {
   useEffect(() => {
     if (!user?.organization_id) return;
     const channel = supabase
-      .channel(`announcements:${user.organization_id}`)
+      .channel(`announcements:${user.organization_id}:${instanceId}`)
       .on(
         'postgres_changes',
         {
@@ -86,7 +90,7 @@ export function useAnnouncements(user: User | null) {
     };
     // listKey is derived from orgId; re-subscribe only when the org changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.organization_id, sa]);
+  }, [user?.organization_id, sa, instanceId]);
 
   return { list, create, update, remove };
 }

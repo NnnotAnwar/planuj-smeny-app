@@ -154,7 +154,7 @@ function AdminPanel() {
             {/* --- HEADER --- */}
             <PageHeader
                 eyebrow={t('admin.systemInfra')}
-                title={t('admin.panelTitle')}
+                title={t('nav.team')}
                 description={isSuperAdmin ? t('admin.fullAccess') : t('admin.managingOrg')}
                 actions={
                     canAdd && (
