@@ -13,6 +13,7 @@ import { UserProfileModal } from '@features/profile/components/UserProfileModal'
 import { AnnouncementBanner } from '@features/announcements/AnnouncementBanner';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { DashboardHeader } from './DashboardHeader';
+import { GettingStarted } from './GettingStarted';
 import { usePullToRefresh } from '@shared/hooks/usePullToRefresh';
 import { shiftKeys } from '@features/shifts/shiftKeys';
 import { type ShiftDisplayData } from '@shared/types';
@@ -111,6 +112,9 @@ export function HomePage() {
       <div className="mx-auto w-full max-w-5xl">
       {/* 1. GREETING + DATE (+ live clock on desktop) */}
       <DashboardHeader firstName={user.first_name || user.username} />
+
+      {/* New owners: a three-step setup checklist until the org is up. */}
+      <GettingStarted user={user} locationCount={activeLocations.length} />
 
       <AnnouncementBanner />
 

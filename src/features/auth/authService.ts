@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '@shared/api/supabaseClient';
 import { type User, type NameChangeRequest } from '@shared/types';
 import { ProfileSchema, NameChangeRequestSchema } from '@shared/types';
@@ -73,6 +74,29 @@ export const authService = {
   /**
    * Standard email + password sign in.
    */
+  /**
+   * Self sign-up of an organization OWNER (store release, #125). The DB
+   * provisioning trigger creates a new organization from `organization_name`
+   * and makes this user its Head Admin — role/org metadata from the client is
+   * ignored there by design. The confirmation email brings them to /login.
+   */
+  async signUpOwner(input: { firstName: string; lastName: string; email: string; password: string; organizationName: string }) {
+    // The native app has no web origin of its own for the email link.
+    const origin = Capacitor.isNativePlatform() ? 'https://planuj-smeny.vercel.app' : window.location.origin;
+    return await supabase.auth.signUp({
+      email: input.email,
+      password: input.password,
+      options: {
+        data: {
+          first_name: input.firstName,
+          last_name: input.lastName,
+          organization_name: input.organizationName,
+        },
+        emailRedirectTo: `${origin}/login`,
+      },
+    });
+  },
+
   async signIn(email: string, password: string) {
     return await supabase.auth.signInWithPassword({
       email,

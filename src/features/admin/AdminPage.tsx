@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     BuildingsIcon,
@@ -68,7 +69,12 @@ function AdminPanel() {
     const canManageEmp = user ? canManageEmployees(user) : false;
     const canManageLoc = user ? canManageLocations(user) : false;
 
-    const [activeTab, setActiveTab] = useState<TabType>('employees');
+    // `?tab=locations` (e.g. from the Home setup checklist) opens that tab.
+    const [params] = useSearchParams();
+    const [activeTab, setActiveTab] = useState<TabType>(() => {
+        const q = params.get('tab');
+        return q === 'locations' || q === 'organizations' ? q : 'employees';
+    });
     const [searchQuery, setSearchQuery] = useState('');
     const [modal, setModal] = useState<ModalState>(null);
 
