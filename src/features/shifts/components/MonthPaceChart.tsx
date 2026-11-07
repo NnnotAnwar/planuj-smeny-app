@@ -246,26 +246,30 @@ export function MonthPaceChart({
                 )}
             </div>
 
-            {/* Table view for screen readers (the values must not live only in a tooltip). */}
-            <table className="sr-only">
-                <caption>{t('overview.pace')}</caption>
-                <thead>
-                    <tr>
-                        <th>{t('overview.colDate')}</th>
-                        <th>{thisName}</th>
-                        {prev && <th>{prevName}</th>}
-                    </tr>
-                </thead>
-                <tbody>
-                    {Array.from({ length: days }, (_, i) => (
-                        <tr key={i}>
-                            <td>{i + 1}.</td>
-                            <td>{cur[i] !== undefined ? fmtHours(cur[i]) : '—'}</td>
-                            {prev && <td>{prev[i] !== undefined ? fmtHours(prev[i]) : '—'}</td>}
+            {/* Table view for screen readers (the values must not live only in a tooltip).
+                sr-only sits on a wrapper: a <table> ignores the 1px box + overflow
+                clip, so it kept its full height and stretched the page downwards. */}
+            <div className="sr-only">
+                <table>
+                    <caption>{t('overview.pace')}</caption>
+                    <thead>
+                        <tr>
+                            <th>{t('overview.colDate')}</th>
+                            <th>{thisName}</th>
+                            {prev && <th>{prevName}</th>}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {Array.from({ length: days }, (_, i) => (
+                            <tr key={i}>
+                                <td>{i + 1}.</td>
+                                <td>{cur[i] !== undefined ? fmtHours(cur[i]) : '—'}</td>
+                                {prev && <td>{prev[i] !== undefined ? fmtHours(prev[i]) : '—'}</td>}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }

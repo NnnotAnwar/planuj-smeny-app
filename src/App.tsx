@@ -39,6 +39,7 @@ import { PageLoader } from './shared/components/PageLoader';
 // Lazy page chunks. Named exports are mapped to a `default` for React.lazy.
 const HomePage = lazy(() => import('./app/layout/HomePage').then((m) => ({ default: m.HomePage })));
 const LoginPage = lazy(() => import('./features/auth/LoginPage').then((m) => ({ default: m.LoginPage })));
+const SignupPage = lazy(() => import('./features/auth/SignupPage').then((m) => ({ default: m.SignupPage })));
 const AcceptInvitePage = lazy(() =>
   import('./features/auth/AcceptInvitePage').then((m) => ({ default: m.AcceptInvitePage })),
 );
@@ -100,6 +101,8 @@ export default function App() {
                     {/* LOGGED-OUT ONLY: redirects to "/" if already authenticated. */}
                     <Route element={<PublicRoute />}>
                       <Route path="/login" element={<LoginPage />} />
+                      {/* Owners create their organization (store release); staff join by invite. */}
+                      <Route path="/signup" element={<SignupPage />} />
                     </Route>
 
                     {/* PROTECTED: requires a session; redirects to "/login" otherwise. */}

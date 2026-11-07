@@ -1,88 +1,131 @@
-import type { User, Profile, Role } from '@shared/types';
+import type { User, Profile, Role, PermissionArea, PermissionAction } from '@shared/types';
 
 /**
  * --- PERMISSIONS ---
- * Capability checks derived from the role hierarchy (rank). Mirrors the RLS
- * policies in the database so the UI only offers what the server will allow.
+ * What a user may do. Since custom roles (#124) a Head Admin grants read /
+ * write / delete per AREA to each organization role; the user's role
+ * permissions ride on `user.permissions` (loaded with the profile). The rank
+ * (the role's LEVEL) still decides the hierarchy — who may manage whom.
  *
  *   Superadmin 100 > Head Admin 40 > Admin 30 > Manager 20 > Supervisor 10 > Employee 0
  *
- * These are pure functions (no React) so they can be used in route guards and
- * tests. For components, prefer the `usePermissions()` hook which wraps these
- * with the current auth user.
+ * Mirrors the database (`has_permission(area, action)` + RLS), so the UI only
+ * offers what the server will allow. Pure functions — usable in route guards
+ * and tests; components can use `usePermissions()`.
  */
 
 export const RANK = {
-    MANAGER: 20, // observer: sees the team's rota, timesheets, team page and requests
-    ADMIN: 30, // acts: plans the rota, edits timesheets, decides requests, manages members
-    OWNER: 40, // "Head Admin" — can also manage locations
+    MANAGER: 20,
+    ADMIN: 30,
+    OWNER: 40, // "Head Admin" — always holds every permission; manages roles
 } as const;
 
 /**
  * --- CAPABILITIES ---
- * What a user may do, named by area rather than by rank. Today each one maps
- * to a minimum rank (managers OBSERVE, admins ACT — Supervisor is only a
- * badge); the plan is custom roles where a Head Admin grants these per role,
- * Discord-style. Screens ask `can(user, 'rota.edit')`, so that switch only
- * changes this table, never the UI.
+ * Screens ask by capability (`can(user, 'rota.edit')`); each one is an area +
+ * action. Before a user's permissions are known (or for profiles without an
+ * organization role) the preset thresholds below apply — the same defaults the
+ * presets ship with.
  */
 export type Capability =
-    | 'team.view' // see the team rota, timesheets, team page and requests (read-only)
+    | 'team.view' // any observer view of the team (rota, timesheets, team, requests)
+    | 'rota.view'
     | 'rota.edit' // plan / publish the rota, templates, coverage, open shifts, teams
-    | 'requests.decide' // approve or decline time off and name changes
+    | 'timesheets.view'
+    | 'timesheets.edit'
+    | 'requests.view'
+    | 'requests.decide' // approve or decline time off, name changes, swaps
     | 'announcements.post' // post, edit, pin and delete announcements
-    | 'members.manage' // invite and edit members ranked below you
-    | 'locations.manage'; // create, edit and archive locations
+    | 'members.view'
+    | 'members.manage' // invite and edit members below your level
+    | 'wages.edit'
+    | 'locations.manage' // create, edit and archive locations
+    | 'activity.view'
+    | 'roles.view'
+    | 'roles.manage'; // create, edit, reorder roles below your own
 
-const CAPABILITY_MIN_RANK: Record<Capability, number> = {
-    'team.view': RANK.MANAGER,
-    'rota.edit': RANK.ADMIN,
-    'requests.decide': RANK.ADMIN,
-    'announcements.post': RANK.ADMIN,
-    'members.manage': RANK.ADMIN,
-    'locations.manage': RANK.OWNER,
+const CAP: Record<Exclude<Capability, 'team.view'>, [PermissionArea, PermissionAction, number]> = {
+    'rota.view': ['rota', 'read', RANK.MANAGER],
+    'rota.edit': ['rota', 'write', RANK.ADMIN],
+    'timesheets.view': ['timesheets', 'read', RANK.MANAGER],
+    'timesheets.edit': ['timesheets', 'write', RANK.ADMIN],
+    'requests.view': ['requests', 'read', RANK.MANAGER],
+    'requests.decide': ['requests', 'write', RANK.ADMIN],
+    'announcements.post': ['announcements', 'write', RANK.ADMIN],
+    'members.view': ['members', 'read', RANK.MANAGER],
+    'members.manage': ['members', 'write', RANK.ADMIN],
+    'wages.edit': ['wages', 'write', RANK.ADMIN],
+    'locations.manage': ['locations', 'write', RANK.OWNER],
+    'activity.view': ['activity', 'read', RANK.ADMIN],
+    'roles.view': ['roles', 'read', RANK.OWNER],
+    'roles.manage': ['roles', 'write', RANK.OWNER],
 };
 
-/** Whether `user` holds a capability (Superadmin holds them all). */
-export function can(user: Pick<User, 'role'> | null | undefined, cap: Capability): boolean {
+/**
+ * Hierarchy rank: the position of the member's organization role (Head Admin
+ * 40 at the top, the default role 0 at the bottom); Superadmin above all.
+ * Falls back to the legacy level before role data is loaded.
+ */
+export function rankOf(p: Pick<Profile, 'role' | 'org_role'>): number {
+    if (p.role.name === 'Superadmin') return 100;
+    return p.org_role?.sort ?? p.role.rank;
+}
+
+/** Whether `user` holds a capability (Superadmin and Head Admin hold them all). */
+export function can(user: Pick<User, 'role' | 'permissions' | 'org_role'> | null | undefined, cap: Capability): boolean {
     if (!user) return false;
-    return isSuperAdmin(user) || user.role.rank >= CAPABILITY_MIN_RANK[cap];
+    if (isSuperAdmin(user) || rankOf(user as Pick<Profile, 'role' | 'org_role'>) >= RANK.OWNER) return true;
+    if (cap === 'team.view') return (['rota.view', 'timesheets.view', 'members.view', 'requests.view'] as const).some((c) => can(user, c));
+    const [area, action, minRank] = CAP[cap];
+    if (user.permissions) return !!user.permissions[area]?.[action];
+    return rankOf(user as Pick<Profile, 'role' | 'org_role'>) >= minRank;
 }
 
 export function isSuperAdmin(user: Pick<User, 'role'>): boolean {
     return user.role.name === 'Superadmin';
 }
 
-/**
- * May open the admin panel. Manager and above can VIEW it (read-only for
- * Manager); write capabilities are gated separately (canManageEmployees /
- * canManageLocations) and enforced by RLS. Single source of truth for the
- * /admin route guard and the nav item — replaces the legacy `is_admin` flag.
- */
-export function canViewAdminPanel(user: Pick<User, 'role'>): boolean {
-    return can(user, 'team.view');
+/** May open the Team (admin) panel. */
+export function canViewAdminPanel(user: Pick<User, 'role' | 'permissions'>): boolean {
+    return can(user, 'members.view');
 }
 
-/** Admin level or above: may invite and manage lower-ranked members. */
-export function canManageEmployees(user: Pick<User, 'role'>): boolean {
+/** May invite and manage members below their level. */
+export function canManageEmployees(user: Pick<User, 'role' | 'permissions'>): boolean {
     return can(user, 'members.manage');
 }
 
-/** Head Admin (owner) or above: may create/edit/delete locations. */
-export function canManageLocations(user: Pick<User, 'role'>): boolean {
+/** May create/edit/delete locations. */
+export function canManageLocations(user: Pick<User, 'role' | 'permissions'>): boolean {
     return can(user, 'locations.manage');
 }
 
-/** Roles this user may assign/invite: strictly below their own rank. */
+/** Roles (levels) this user may assign/invite: strictly below their own rank. */
 export function assignableRoles(roles: Role[], user: Pick<User, 'role'>): Role[] {
     return roles.filter((r) => r.rank < user.role.rank);
 }
 
-/**
- * Whether this user may edit/delete a specific member: they must out-rank the
- * target and it cannot be themselves.
- */
-export function canManageMember(user: User, target: Pick<Profile, 'id' | 'role'>): boolean {
-    if (target.id === user.id) return false;
-    return canManageEmployees(user) && target.role.rank < user.role.rank;
+/** Out-ranks the target (and isn't them) — the hierarchy half of every "manage X" check. */
+export function outranks(user: Pick<User, 'id' | 'role' | 'org_role'>, target: Pick<Profile, 'id' | 'role' | 'org_role'>): boolean {
+    return target.id !== user.id && (isSuperAdmin(user as Pick<User, 'role'>) || rankOf(target) < rankOf(user));
+}
+
+/** May edit/delete a specific member: holds members.manage and out-ranks them. */
+export function canManageMember(user: User, target: Pick<Profile, 'id' | 'role' | 'org_role'>): boolean {
+    return canManageEmployees(user) && outranks(user, target);
+}
+
+/** May edit a specific member's timesheet: holds timesheets.edit and out-ranks them. */
+export function canEditTimesheetOf(user: User, target: Pick<Profile, 'id' | 'role' | 'org_role'>): boolean {
+    return can(user, 'timesheets.edit') && outranks(user, target);
+}
+
+/** May set a specific member's wage: holds wages.edit and out-ranks them. */
+export function canSetWageOf(user: User, target: Pick<Profile, 'id' | 'role' | 'org_role'>): boolean {
+    return can(user, 'wages.edit') && outranks(user, target);
+}
+
+/** What people see as someone's role: their organization role, else the level. */
+export function roleLabel(p: Pick<Profile, 'role' | 'org_role'>): string {
+    return p.org_role?.name ?? p.role.name;
 }

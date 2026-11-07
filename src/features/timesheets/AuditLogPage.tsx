@@ -14,14 +14,37 @@ import {
     UserGearIcon,
     PaperPlaneTiltIcon,
     SunHorizonIcon,
+    IdentificationBadgeIcon,
+    ArrowsDownUpIcon,
+    SignInIcon,
+    SignOutIcon,
+    MapPinIcon,
+    MapPinLineIcon,
+    ArchiveIcon,
+    ArrowCounterClockwiseIcon,
+    MegaphoneIcon,
+    HandGrabbingIcon,
+    HandIcon,
+    SealCheckIcon,
+    CalendarCheckIcon,
+    SwapIcon,
+    UserPlusIcon,
+    UserMinusIcon,
+    CoinsIcon,
+    StackIcon,
+    UsersThreeIcon,
+    BuildingsIcon,
+    ClockIcon,
+    ChatTextIcon,
 } from '@phosphor-icons/react';
 
 import { useAuthContext } from '@features/auth/AuthContext';
-import { canManageEmployees } from '@shared/auth/permissions';
+import { can } from '@shared/auth/permissions';
 import { UserProfileModal } from '@features/profile/components/UserProfileModal';
 import { type ShiftAuditLog, type ShiftSnapshot, type Profile } from '@shared/types';
 import { formatClock, formatDateTime, monthShort } from '@shared/utils/date';
 import { timesheetService, type AuditLogQuery } from './timesheetService';
+import { AUDIT_GROUPS, AUDIT_GROUP_KEYS, dedupeFanout, groupLabel, type AuditGroup } from './auditCatalog';
 import { useTimesheetRealtime } from './useTimesheetRealtime';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { Select } from '@shared/components/Select';
@@ -50,7 +73,65 @@ const ACTION: Record<string, ActionMeta> = {
     timeoff_declined: { labelKey: 'audit.actionTimeoffDeclined', Icon: XCircleIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
     late_15: { labelKey: 'audit.actionLate', Icon: ClockCountdownIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
     late_60: { labelKey: 'audit.actionLate', Icon: ClockCountdownIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
+    role_created: { labelKey: 'audit.roleCreated', Icon: IdentificationBadgeIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    role_updated: { labelKey: 'audit.roleUpdated', Icon: PencilSimpleIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    role_permissions: { labelKey: 'audit.rolePermissions', Icon: IdentificationBadgeIcon, badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400' },
+    role_moved: { labelKey: 'audit.roleMoved', Icon: ArrowsDownUpIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    role_deleted: { labelKey: 'audit.roleDeleted', Icon: TrashIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    clock_in: { labelKey: 'audit.a.clock_in', Icon: SignInIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    clock_out: { labelKey: 'audit.a.clock_out', Icon: SignOutIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+    clock_switched: { labelKey: 'audit.a.clock_switched', Icon: MapPinIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    shift_confirmed: { labelKey: 'audit.a.shift_confirmed', Icon: SealCheckIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    open_shift_posted: { labelKey: 'audit.a.open_shift_posted', Icon: HandIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    open_shift_edited: { labelKey: 'audit.a.open_shift_edited', Icon: PencilSimpleIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    open_shift_claimed: { labelKey: 'audit.a.open_shift_claimed', Icon: HandGrabbingIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    open_shift_released: { labelKey: 'audit.a.open_shift_released', Icon: HandIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
+    open_shift_removed: { labelKey: 'audit.a.open_shift_removed', Icon: TrashIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    template_created: { labelKey: 'audit.a.template_created', Icon: StackIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    template_updated: { labelKey: 'audit.a.template_updated', Icon: StackIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    template_deleted: { labelKey: 'audit.a.template_deleted', Icon: TrashIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    coverage_updated: { labelKey: 'audit.a.coverage_updated', Icon: UsersThreeIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    availability_updated: { labelKey: 'audit.a.availability_updated', Icon: CalendarCheckIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    availability_removed: { labelKey: 'audit.a.availability_removed', Icon: CalendarCheckIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+    timeoff_cancelled: { labelKey: 'audit.a.timeoff_cancelled', Icon: XCircleIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+    swap_offered: { labelKey: 'audit.a.swap_offered', Icon: SwapIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
+    swap_taken: { labelKey: 'audit.a.swap_taken', Icon: SwapIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    swap_requested: { labelKey: 'audit.a.swap_requested', Icon: SwapIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
+    swap_approved: { labelKey: 'audit.a.swap_approved', Icon: CheckCircleIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    swap_declined: { labelKey: 'audit.a.swap_declined', Icon: XCircleIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    swap_withdrawn: { labelKey: 'audit.a.swap_withdrawn', Icon: XCircleIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+    swap_released: { labelKey: 'audit.a.swap_released', Icon: SwapIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+    name_requested: { labelKey: 'audit.a.name_requested', Icon: UserGearIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
+    name_request_cancelled: { labelKey: 'audit.a.name_request_cancelled', Icon: XCircleIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+    member_invited: { labelKey: 'audit.a.member_invited', Icon: UserPlusIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    member_removed: { labelKey: 'audit.a.member_removed', Icon: UserMinusIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    member_left: { labelKey: 'audit.a.member_left', Icon: UserMinusIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+    wage_changed: { labelKey: 'audit.a.wage_changed', Icon: CoinsIcon, badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400' },
+    wage_removed: { labelKey: 'audit.a.wage_removed', Icon: CoinsIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+    roster_added: { labelKey: 'audit.a.roster_added', Icon: MapPinLineIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    roster_removed: { labelKey: 'audit.a.roster_removed', Icon: MapPinLineIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+    announcement_posted: { labelKey: 'audit.a.announcement_posted', Icon: MegaphoneIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    announcement_edited: { labelKey: 'audit.a.announcement_edited', Icon: MegaphoneIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    announcement_deleted: { labelKey: 'audit.a.announcement_deleted', Icon: TrashIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    location_created: { labelKey: 'audit.a.location_created', Icon: MapPinIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    location_updated: { labelKey: 'audit.a.location_updated', Icon: MapPinIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    location_archived: { labelKey: 'audit.a.location_archived', Icon: ArchiveIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+    location_restored: { labelKey: 'audit.a.location_restored', Icon: ArrowCounterClockwiseIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    location_hours: { labelKey: 'audit.a.location_hours', Icon: ClockIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
+    org_created: { labelKey: 'audit.a.org_created', Icon: BuildingsIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    request_submitted: { labelKey: 'audit.a.request_submitted', Icon: ChatTextIcon, badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
+    request_approved: { labelKey: 'audit.a.request_approved', Icon: CheckCircleIcon, badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
+    request_declined: { labelKey: 'audit.a.request_declined', Icon: XCircleIcon, badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' },
+    request_cancelled: { labelKey: 'audit.a.request_cancelled', Icon: XCircleIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+    org_updated: { labelKey: 'audit.a.org_updated', Icon: BuildingsIcon, badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' },
 };
+
+/** "rw" → "View · Change" for a permission cell. */
+function fmtRights(flags: string | null | undefined, t: ReturnType<typeof useTranslation>): string {
+    const f = flags ?? '';
+    const parts = [f.includes('r') && t('roles.action.read'), f.includes('w') && t('roles.action.write'), f.includes('d') && t('roles.action.delete')].filter(Boolean);
+    return parts.length ? parts.join(' · ') : t('audit.noRights');
+}
 
 const FALLBACK_META: ActionMeta = { labelKey: 'audit.actionGeneric', Icon: ClockCounterClockwiseIcon, badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' };
 
@@ -78,7 +159,7 @@ function fmtSnapshot(s?: ShiftSnapshot | null): string {
  */
 export function AuditLogPage() {
     const { user } = useAuthContext();
-    if (user && !canManageEmployees(user)) return <Navigate to="/" replace />;
+    if (user && !can(user, 'activity.view')) return <Navigate to="/" replace />;
     return <AuditLogInner />;
 }
 
@@ -88,7 +169,7 @@ function AuditLogInner() {
     useTimesheetRealtime();
 
     const [targetUserId, setTargetUserId] = useState<string>('');
-    const [action, setAction] = useState<string>('');
+    const [group, setGroup] = useState<AuditGroup | ''>('');
     const [sort, setSort] = useState<'desc' | 'asc'>('desc');
     // Which person's profile modal is open (from tapping a name in a log entry).
     const [profileUserId, setProfileUserId] = useState<string | null>(null);
@@ -102,7 +183,7 @@ function AuditLogInner() {
 
     const filters: AuditLogQuery = {
         targetUserId: targetUserId || null,
-        action: action || null,
+        actions: group ? AUDIT_GROUPS[group] : null,
         sort,
     };
 
@@ -114,7 +195,7 @@ function AuditLogInner() {
         enabled: !!user,
     });
 
-    const entries = data?.pages.flat() ?? [];
+    const entries = dedupeFanout(data?.pages.flat() ?? []);
 
     return (
         <div className="space-y-4 px-1 pb-10">
@@ -130,14 +211,13 @@ function AuditLogInner() {
                         </option>
                     ))}
                 </Select>
-                <Select size="sm" fullWidth={false} value={action} onChange={(e) => setAction(e.target.value)}>
+                <Select size="sm" fullWidth={false} value={group} onChange={(e) => setGroup(e.target.value as AuditGroup | '')}>
                     <option value="">{t('audit.allActions')}</option>
-                    <option value="create">{t('audit.optAddedShift')}</option>
-                    <option value="update">{t('audit.optEditedShift')}</option>
-                    <option value="delete">{t('audit.optDeletedShift')}</option>
-                    <option value="username_change">{t('audit.optUsername')}</option>
-                    <option value="name_request_approved">{t('audit.optNameApproved')}</option>
-                    <option value="name_request_rejected">{t('audit.optNameDeclined')}</option>
+                    {AUDIT_GROUP_KEYS.map((g) => (
+                        <option key={g} value={g}>
+                            {t(groupLabel(g))}
+                        </option>
+                    ))}
                 </Select>
                 <Select size="sm" fullWidth={false} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
                     <option value="desc">{t('audit.newest')}</option>
@@ -148,7 +228,7 @@ function AuditLogInner() {
             <section className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
                     <ClockCounterClockwiseIcon weight="bold" className="w-4 h-4 text-emerald-500" />
-                    <h2 className="text-label text-gray-400">{t('audit.shiftChanges')}</h2>
+                    <h2 className="text-label text-gray-400">{t(group ? groupLabel(group) : 'audit.everything')}</h2>
                 </div>
 
                 {error ? (
@@ -283,7 +363,7 @@ function AuditBody({ entry }: { entry: ShiftAuditLog }) {
         case 'timeoff_approved':
         case 'timeoff_declined': {
             const parts: string[] = [];
-            if (d.kind) parts.push(t(`timeoff.${d.kind}` as TranslationKey));
+            if (d.kind) parts.push(t((entry.action.startsWith('request_') ? `mreq.kind.${d.kind}` : `timeoff.${d.kind}`) as TranslationKey));
             if (d.starts_on) {
                 const from = new Date(`${d.starts_on}T00:00`);
                 const range =
@@ -296,16 +376,129 @@ function AuditBody({ entry }: { entry: ShiftAuditLog }) {
                 <p className="text-caption tabular-nums text-gray-700 dark:text-gray-200">{parts.join(' · ')}</p>
             ) : null;
         }
-        default:
+        case 'profile_updated': {
+            const rows = (d.changes ?? []).filter((c) => !!c.field);
+            if (rows.length === 0) return null;
+            return (
+                <div className="space-y-0.5">
+                    {rows.map((c, i) => (
+                        <div key={i} className="flex flex-wrap items-baseline gap-x-1.5">
+                            <span className="text-caption text-gray-400">{t(`notif.field.${c.field}` as TranslationKey)}:</span>
+                            <DiffRow before={c.old || '—'} after={c.new || '—'} />
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+        case 'role_created':
             return null;
+        case 'role_updated':
+            return d.old_name && d.old_name !== d.role_name ? <DiffRow before={d.old_name} after={d.role_name ?? '—'} /> : (
+                <p className="flex items-center gap-1.5 text-caption text-gray-700 dark:text-gray-200">
+                    {t('audit.roleColor')}
+                    <span className="size-3 rounded-full" style={{ backgroundColor: d.old_color ?? undefined }} />
+                    <ArrowRightIcon weight="bold" className="size-3 text-gray-300" />
+                    <span className="size-3 rounded-full" style={{ backgroundColor: d.color ?? undefined }} />
+                </p>
+            );
+        case 'role_moved':
+            return (
+                <p className="text-caption text-gray-700 dark:text-gray-200">
+                    {t(d.direction === 'up' ? 'audit.roleMovedAbove' : 'audit.roleMovedBelow', { other: d.other_name ?? '—' })}
+                </p>
+            );
+        case 'role_deleted':
+            return d.moved ? (
+                <p className="text-caption text-gray-700 dark:text-gray-200">{t('roles.deleteMoves', { n: d.moved, role: d.moved_to ?? '—' })}</p>
+            ) : null;
+        case 'role_permissions':
+            return (
+                <div className="space-y-0.5">
+                    {(d.changes ?? []).filter((c) => !!c.area).map((c, i) => (
+                        <div key={i} className="flex flex-wrap items-baseline gap-x-1.5">
+                            <span className="text-caption text-gray-400">{t(`roles.area.${c.area}` as TranslationKey)}:</span>
+                            <DiffRow before={fmtRights(c.old, t)} after={fmtRights(c.new, t)} />
+                        </div>
+                    ))}
+                </div>
+            );
+        default:
+            return <GenericBody entry={entry} />;
     }
+}
+
+/** "6 Nov · 09:00–17:00" (or just the date for all-day). */
+function fmtRange(start?: string | null, end?: string | null, allDay?: boolean | null): string {
+    if (!start) return '';
+    const s = new Date(start);
+    const day = `${s.getDate()} ${monthShort(s)}`;
+    if (allDay) return day;
+    return end ? `${day} · ${fmtClock(start)}–${fmtClock(end)}` : `${day} · ${fmtClock(start)}`;
+}
+
+function fmtDays(from?: string | null, to?: string | null): string {
+    if (!from) return '';
+    const a = new Date(`${from}T00:00`);
+    const first = `${a.getDate()} ${monthShort(a)}`;
+    if (!to || to === from) return first;
+    const b = new Date(`${to}T00:00`);
+    return `${first} – ${b.getDate()} ${monthShort(b)}`;
+}
+
+/** Shared layout for the newer events: one detail line + any field diffs. */
+function GenericBody({ entry }: { entry: ShiftAuditLog }) {
+    const t = useTranslation();
+    const d = entry.details;
+    const parts: string[] = [];
+    if (d.kind) parts.push(t((entry.action.startsWith('request_') ? `mreq.kind.${d.kind}` : `timeoff.${d.kind}`) as TranslationKey));
+    if (d.starts_at) parts.push(fmtRange(d.starts_at, d.ends_at, d.all_day));
+    if (d.start_time) parts.push(`${d.start_time}–${d.end_time ?? ''}`);
+    if (d.starts_on) parts.push(entry.action === 'wage_changed' ? t('audit.fromDate', { date: fmtDays(d.starts_on) }) : fmtDays(d.starts_on, d.ends_on));
+    if (d.subject_name && entry.action.startsWith('request_')) parts.push(d.subject_name);
+    if (d.shift_role) parts.push(d.shift_role);
+    if (d.location_name) parts.push(d.location_name);
+    if (d.role_name && (entry.action === 'member_invited' || entry.action.startsWith('request_'))) parts.push(d.role_name);
+    if (d.email) parts.push(d.email);
+    if (d.to_name) parts.push(t('audit.offeredTo', { name: d.to_name }));
+    if (d.auto) parts.push(t('audit.autoClosed'));
+    if (d.pinned) parts.push(t('audit.pinned'));
+    const rows = (d.changes ?? []).filter((c) => !!c.field);
+    const yesNo = (v?: string | null) => (v === 'true' ? t('audit.yes') : v === 'false' ? t('audit.no') : v || '—');
+
+    if (parts.length === 0 && rows.length === 0 && !d.new_name && !d.note) return null;
+    return (
+        <div className="space-y-0.5">
+            {parts.length > 0 && <p className="text-caption tabular-nums text-gray-700 dark:text-gray-200">{parts.join(' · ')}</p>}
+            {d.new_name && (d.old_name ? <DiffRow before={d.old_name} after={d.new_name} /> : <p className="text-caption text-gray-700 dark:text-gray-200">{t('audit.requested', { name: d.new_name })}</p>)}
+            {rows.map((c, i) => (
+                <div key={i} className="flex flex-wrap items-baseline gap-x-1.5">
+                    <span className="text-caption text-gray-400">{t(`audit.field.${c.field}` as TranslationKey)}{c.field === 'text' ? '' : ':'}</span>
+                    {c.field !== 'text' && (
+                        c.old == null && c.new != null ? (
+                            <span className="text-caption tabular-nums text-gray-700 dark:text-gray-200">{c.field === 'pinned' ? yesNo(c.new) : c.new}</span>
+                        ) : (
+                            <DiffRow before={c.field === 'pinned' ? yesNo(c.old) : c.old || '—'} after={c.field === 'pinned' ? yesNo(c.new) : c.new || '—'} />
+                        )
+                    )}
+                </div>
+            ))}
+            {d.note && <p className="text-caption text-gray-400">{d.note}</p>}
+        </div>
+    );
 }
 
 function AuditCard({ entry, onOpenUser }: { entry: ShiftAuditLog; onOpenUser: (userId: string) => void }) {
     const t = useTranslation();
     const meta = ACTION[entry.action] ?? FALLBACK_META;
-    const actor = entry.details.actor_name ?? t('audit.someone');
-    const target = entry.details.target_name ?? t('audit.member');
+    const actor = entry.details.anonymous && !entry.actor_id ? t('audit.anonymous') : (entry.details.actor_name ?? t('audit.someone'));
+    // Who/what the entry is about: a role, a place/announcement/template, or a person.
+    const personId = entry.subject_id ?? entry.target_user_id;
+    const isRequest = entry.action.startsWith('request_');
+    const target = entry.action.startsWith('role_')
+        ? (entry.details.role_name ?? '—')
+        : isRequest
+          ? (entry.details.target_name ?? (entry.details.anonymous ? t('audit.anonymous') : null))
+          : (entry.details.subject_name ?? entry.details.target_name ?? (personId ? t('audit.member') : null));
     const when = formatDateTime(entry.created_at);
 
     return (
@@ -317,9 +510,10 @@ function AuditCard({ entry, onOpenUser }: { entry: ShiftAuditLog; onOpenUser: (u
                 {/* Action + who it was about (wraps instead of cramming on mobile). */}
                 <div className="flex flex-wrap items-baseline gap-x-1.5">
                     <span className="text-body-strong text-gray-900 dark:text-white">
-                        {t(meta.labelKey)} ·
+                        {t(meta.labelKey)}
+                        {target ? ' ·' : ''}
                     </span>
-                    <PersonButton name={target} userId={entry.target_user_id} onOpenUser={onOpenUser} strong />
+                    {target && <PersonButton name={target} userId={entry.details.subject_name && !isRequest ? null : personId} onOpenUser={onOpenUser} strong />}
                 </div>
                 {/* Who did it + when — own line so nothing gets squeezed off-screen. */}
                 <p className="text-micro text-gray-400">

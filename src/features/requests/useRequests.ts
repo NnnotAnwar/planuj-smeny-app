@@ -1,7 +1,7 @@
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthContext } from '@/features/auth/AuthContext';
-import { can, isSuperAdmin, RANK } from '@shared/auth/permissions';
+import { can } from '@shared/auth/permissions';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { toast } from '@shared/toast/toastStore';
 import type { NameChangeRequest, TimeOff, User } from '@shared/types';
@@ -9,7 +9,11 @@ import { scheduleService } from '@features/schedule/scheduleService';
 import { adminService } from '@features/admin/adminService';
 import { leaveErr } from '@features/schedule/timeOffShared';
 import { requestsService } from './requestsService';
+import { swapBlockReason, swapService } from '@features/schedule/swaps/swapService';
+import { swapKeys } from '@features/schedule/swaps/useShiftSwaps';
+import { personName, type ShiftSwap } from '@features/schedule/swaps/types';
 import type { RequestItem } from './types';
+import { memberRequestError, memberRequestsService, type MemberRequest } from './memberRequestsService';
 
 /**
  * --- useRequests ---
@@ -54,25 +58,92 @@ const fromName = (r: NameChangeRequest): RequestItem => ({
     newName: [r.requested_first_name, r.requested_last_name].filter(Boolean).join(' ') || '—',
 });
 
+/** A swap is a request once someone took it; open offers live on the Schedule. */
+const fromSwap = (w: ShiftSwap): RequestItem | null => {
+    if (!w.shift || (w.status !== 'taken' && w.status !== 'approved' && w.status !== 'declined')) return null;
+    return {
+        key: `swap:${w.id}`,
+        type: 'swap',
+        id: w.id,
+        userId: w.from_user,
+        personName: personName(w.from),
+        status: w.status === 'taken' ? 'pending' : w.status,
+        createdAt: w.updated_at,
+        reviewedAt: w.reviewed_at ?? null,
+        reviewNote: w.review_note ?? null,
+        note: w.note ?? null,
+        takerId: w.taker_id ?? null,
+        takerName: personName(w.taker),
+        shiftStart: w.shift.starts_at,
+        shiftEnd: w.shift.ends_at,
+        shiftAllDay: w.shift.all_day,
+        locationName: w.shift.location?.name ?? '',
+    };
+};
+
+/** Role request / other request / complaint. */
+const fromMember = (r: MemberRequest): RequestItem => ({
+    key: `${r.kind}:${r.id}`,
+    type: r.kind,
+    id: r.id,
+    userId: r.user_id ?? '',
+    personName: r.person_name ?? '',
+    mine: r.mine,
+    canReview: r.can_review,
+    status: r.status,
+    createdAt: r.created_at,
+    reviewedAt: r.reviewed_at,
+    reviewNote: r.review_note,
+    note: r.kind === 'role' ? r.body : null,
+    subject: r.subject,
+    body: r.body,
+    roleName: r.role_name,
+    roleColor: r.role_color,
+    currentRoleName: r.current_role_name,
+    anonymous: r.anonymous,
+    reviewerName: r.reviewer_name,
+});
+
+const MEMBER_TYPES = new Set<RequestItem['type']>(['role', 'other', 'complaint']);
+export const isMemberRequest = (i: RequestItem) => MEMBER_TYPES.has(i.type);
+
+/** The signed-in user's own request (or the shift they're taking). */
+export const isMine = (i: RequestItem, me: string | undefined) => i.mine ?? (!!me && (i.userId === me || i.takerId === me));
+
 export const requestKeys = {
     timeOff: ['time-off', 'requests'] as const,
     names: ['requests', 'names'] as const,
+    member: ['requests', 'member'] as const,
 };
 
-/** Whether `user` may decide on `item` (mirrors can_review_request in the DB). */
+/** Whether `user` may decide on `item` (mirrors can_review_request in the DB):
+ *  never on your own request — someone else always approves. */
 export function canDecideOn(user: User | null, item: RequestItem): boolean {
-    if (!user || !can(user, 'requests.decide')) return false;
-    return item.userId !== user.id || isSuperAdmin(user) || user.role.rank >= RANK.OWNER;
+    if (!user) return false;
+    if (item.canReview !== undefined) return item.canReview; // the server knows (anonymous, role rights)
+    if (!can(user, 'requests.decide')) return false;
+    return item.userId !== user.id && item.takerId !== user.id;
 }
 
 function useRequestQueries(user: User | null) {
     const timeOffQ = useQuery({ queryKey: requestKeys.timeOff, queryFn: requestsService.getTimeOff, enabled: !!user });
     const namesQ = useQuery({ queryKey: requestKeys.names, queryFn: requestsService.getNameRequests, enabled: !!user });
+    const swapsQ = useQuery({ queryKey: swapKeys.all, queryFn: swapService.list, enabled: !!user });
+    const memberQ = useQuery({ queryKey: requestKeys.member, queryFn: memberRequestsService.list, enabled: !!user });
     const items = useMemo(
-        () => [...(timeOffQ.data ?? []).map(fromTimeOff), ...(namesQ.data ?? []).map(fromName)],
-        [timeOffQ.data, namesQ.data],
+        () => [
+            ...(timeOffQ.data ?? []).map(fromTimeOff),
+            ...(namesQ.data ?? []).map(fromName),
+            ...(swapsQ.data ?? []).map(fromSwap).filter((i): i is RequestItem => !!i),
+            ...(memberQ.data ?? []).map(fromMember),
+        ],
+        [timeOffQ.data, namesQ.data, swapsQ.data, memberQ.data],
     );
-    return { items, isLoading: timeOffQ.isLoading || namesQ.isLoading, error: timeOffQ.error ?? namesQ.error };
+    return {
+        items,
+        isLoading: timeOffQ.isLoading || namesQ.isLoading || swapsQ.isLoading || memberQ.isLoading,
+        error: timeOffQ.error ?? namesQ.error ?? swapsQ.error ?? memberQ.error,
+    };
 }
 
 export function useRequests() {
@@ -88,12 +159,15 @@ export function useRequests() {
         const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
         const decidedAt = (i: RequestItem) => new Date(i.reviewedAt ?? i.createdAt).getTime();
         return {
-            // Oldest first: a fair queue.
-            toReview: items.filter((i) => i.status === 'pending' && i.userId !== me).sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+            // Oldest first: a fair queue. Your own pending ones show too
+            // (without buttons) so the queue is the whole picture.
+            toReview: items
+                .filter((i) => i.status === 'pending')
+                .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
             history: items
                 .filter((i) => i.status !== 'pending' && decidedAt(i) >= monthAgo)
                 .sort((a, b) => decidedAt(b) - decidedAt(a)),
-            mine: items.filter((i) => i.userId === me).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+            mine: items.filter((i) => isMine(i, me)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
         };
     }, [items, me, now]);
 
@@ -108,7 +182,7 @@ export function useRequests() {
         : null;
     const rotaQ = useQuery({
         queryKey: ['schedule', 'request-conflicts', range?.from, range?.to],
-        enabled: !!range && can(user, 'team.view'),
+        enabled: !!range && can(user, 'rota.view'),
         queryFn: () => {
             const [fy, fm, fd] = range!.from.split('-').map(Number);
             const [ty, tm, td] = range!.to.split('-').map(Number);
@@ -131,23 +205,37 @@ export function useRequests() {
         qc.invalidateQueries({ queryKey: ['admin'] });
         // Approved leave removes rota shifts on those days.
         qc.invalidateQueries({ queryKey: ['schedule'] });
+        // An approved swap moves the shift to the taker.
+        qc.invalidateQueries({ queryKey: swapKeys.all });
     };
 
     const decide = useMutation({
         mutationFn: async ({ item, approve, note }: { item: RequestItem; approve: boolean; note?: string | null }) => {
             if (!user) throw new Error('Not signed in.');
-            if (item.type === 'timeoff') await scheduleService.reviewTimeOff(item.id, approve, user.id, note);
+            if (isMemberRequest(item)) await memberRequestsService.review(item.id, approve, note?.trim() || null);
+            else if (item.type === 'timeoff') await scheduleService.reviewTimeOff(item.id, approve, user.id, note);
+            else if (item.type === 'swap') await swapService.review(item.id, approve, note?.trim() || null);
             else await adminService.reviewNameChange(item.id, approve, note?.trim() || null);
         },
         onSuccess: (_d, v) => {
             refresh();
             toast(v.approve ? t('requests.approved') : t('requests.declined'), 'success');
         },
-        onError: (e) => toast(leaveErr(e, t) || t('requests.error'), 'error'),
+        onError: (e) => {
+            const code = memberRequestError(e);
+            if (code) return toast(t(`mreq.err.${code}` as 'mreq.err.request_empty'), 'error');
+            const blocked = swapBlockReason(e);
+            toast(blocked ? t(`swap.blocked_${blocked}` as 'swap.blocked_busy') : leaveErr(e, t) || t('requests.error'), 'error');
+        },
     });
 
     const withdraw = useMutation({
-        mutationFn: (item: RequestItem) => scheduleService.deleteTimeOff(item.id),
+        mutationFn: (item: RequestItem) =>
+            isMemberRequest(item)
+                ? memberRequestsService.cancel(item.id)
+                : item.type === 'swap'
+                  ? swapService.withdraw(item.id)
+                  : scheduleService.deleteTimeOff(item.id),
         onSuccess: refresh,
         onError: () => toast(t('requests.error'), 'error'),
     });
@@ -195,5 +283,7 @@ export function useRequestsBadge(): number {
     );
     if (!user) return 0;
     if (can(user, 'requests.decide')) return items.filter((i) => i.status === 'pending' && canDecideOn(user, i)).length;
-    return items.filter((i) => i.userId === user.id && i.status !== 'pending' && i.reviewedAt && new Date(i.reviewedAt).getTime() > seen).length;
+    return items.filter(
+        (i) => isMine(i, user.id) && i.status !== 'pending' && i.reviewedAt && new Date(i.reviewedAt).getTime() > seen,
+    ).length;
 }

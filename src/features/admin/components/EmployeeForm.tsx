@@ -3,7 +3,8 @@ import { Modal } from './Modal';
 import { Field, TextInput, SelectInput, FormError, FormActions } from './FormControls';
 import { useAdminContext } from '../AdminContext';
 import { useAuthContext } from '@/features/auth/AuthContext';
-import { assignableRoles as getAssignableRoles, canManageMember } from '@shared/auth/permissions';
+import { canSetWageOf, isSuperAdmin as isSuper, rankOf } from '@shared/auth/permissions';
+import { useOrgRoles } from '@features/roles/useOrgRoles';
 import { Input } from '@shared/components/Input';
 import type { Profile } from '@/shared/types';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
@@ -18,17 +19,17 @@ import { useWages } from '@features/wages/useWages';
  * form manages the profile + role of users who already exist.
  */
 export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose: () => void }) {
-    const { adminData, roles, isSuperAdmin, updateEmployee } = useAdminContext();
+    const { adminData, isSuperAdmin, updateEmployee } = useAdminContext();
     const { user } = useAuthContext();
     const t = useTranslation();
 
     const [firstName, setFirstName] = useState(employee.first_name ?? '');
     const [lastName, setLastName] = useState(employee.last_name ?? '');
-    const [role, setRole] = useState(employee.role.name);
+    const [orgRoleId, setOrgRoleId] = useState(employee.org_role_id ?? '');
     const [organizationId, setOrganizationId] = useState(employee.organization_id);
     const [managerId, setManagerId] = useState(employee.manager_id ?? '');
     // Hourly rate — admins only, for someone strictly below them (RLS enforces the same).
-    const canSetRate = !!user && canManageMember(user, employee) && user.id !== employee.id;
+    const canSetRate = !!user && canSetWageOf(user, employee);
     const wages = useWages(canSetRate ? user : null);
     const currentRate = wages.org.data?.find((w) => w.user_id === employee.id);
     const [rate, setRate] = useState(currentRate ? String(currentRate.hourly_rate) : '');
@@ -49,10 +50,11 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
         .filter((p) => p.role.rank >= 20 && p.id !== employee.id)
         .sort((a, b) => (a.first_name ?? a.username).localeCompare(b.first_name ?? b.username));
 
-    // Roles strictly below the current user's rank (e.g. an Admin can assign up
-    // to Manager). The edited member always ranks below us, so their current
-    // role is already part of this list.
-    const roleOptions = user ? getAssignableRoles(roles, user) : [];
+    // The organization's roles BELOW yours in the hierarchy (top → bottom).
+    // The member's current role stays listed so the form opens on it.
+    const orgRoles = useOrgRoles(employee.organization_id);
+    const myRank = user ? (isSuper(user) ? 1000 : rankOf(user)) : -1;
+    const roleOptions = orgRoles.roles.filter((r) => r.sort < myRank || r.id === employee.org_role_id);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,7 +64,7 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
             await updateEmployee(employee.id, {
                 first_name: firstName.trim() || null,
                 last_name: lastName.trim() || null,
-                role,
+                ...(orgRoleId && orgRoleId !== employee.org_role_id ? { org_role_id: orgRoleId } : {}),
                 manager_id: managerId || null,
                 ...(isSuperAdmin ? { organization_id: organizationId } : {}),
             });
@@ -90,11 +92,10 @@ export function EmployeeForm({ employee, onClose }: { employee: Profile; onClose
                 </div>
 
                 <Field label={t('profile.field.role')}>
-                    <SelectInput value={role} onChange={(e) => setRole(e.target.value)}>
+                    <SelectInput value={orgRoleId} onChange={(e) => setOrgRoleId(e.target.value)}>
                         {roleOptions.map((r) => (
-                            <option key={r.name} value={r.name}>
+                            <option key={r.id} value={r.id}>
                                 {r.name}
-                                {r.description ? ` — ${r.description}` : ''}
                             </option>
                         ))}
                     </SelectInput>

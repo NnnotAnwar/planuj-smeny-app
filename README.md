@@ -1,12 +1,13 @@
 # Planuj Směny
 
 A modern, cross-platform **shift-planning and time-tracking** app for Czech
-teams. People clock in and out by location in real time and confirm their
-planned shifts; admins plan the rota, decide requests and post announcements;
-managers keep an eye on the team. On the web or as a native Android/iOS app.
+teams. An owner signs up and creates their organization; people clock in and out
+by location in real time, confirm and swap their planned shifts; admins plan the
+rota, decide requests and post announcements — each with exactly the rights
+their (custom) role gives them. On the web or as a native Android/iOS app.
 
 > **Status: active development (beta).** Features and UI change frequently.
-> _Version 1.10.0 — “Beroun” · last updated: November 6, 2026._ · See the [Roadmap](ROADMAP.md).
+> _Version 1.11.0 — “Cheb” · last updated: November 7, 2026._ · See the [Roadmap](ROADMAP.md).
 
 ---
 
@@ -77,6 +78,14 @@ _Czech UI, dark theme with the Amber scheme. Test data from the preprod project.
   an admin adds it to the rota in one tap.
 - **Czech public holidays** are marked in the rota. Working on a holiday is
   allowed; the app warns once (with "don't show again").
+- **Location opening hours** — a location's hours are its default shift: the
+  location letter in the grid means "the whole opening time", and planning
+  outside the hours is flagged.
+- **Rest rules (Czech labour law)** — the grid warns when someone gets less than
+  11 h between two shifts or works more than 6 days in a row.
+- **Shift swaps** — a member offers an upcoming shift (to anyone or one
+  colleague), a teammate who is free takes it, and someone with the right to
+  decide approves it in Requests; the shift then moves to the taker.
 
 ### Timesheets & analytics
 - **My hours** (Overview, per member): this month's plan (worked vs. planned
@@ -87,27 +96,54 @@ _Czech UI, dark theme with the Amber scheme. Test data from the preprod project.
   delete shifts, with an overnight-shift-aware time picker.
 - **Exports** as **PDF / Excel / CSV**, per employee or the whole team; on native
   they open the OS **share sheet**, on web they download.
-- **Activity Log** (admins+): append-only feed of administrative changes.
+- **Activity Log**: an append-only record of **every action** in the app —
+  clock-ins and -outs, the rota, requests and decisions, swaps, announcements,
+  open shifts, templates, availability, wages (who changed whose rate, never the
+  amount), locations and their hours, roles and permissions, invites and
+  removals. Filter by person or by group (Shifts, Rota, Requests, Team, Roles,
+  Announcements, Locations).
 - Months are bucketed by the viewer's **local** calendar month (no UTC-boundary
   surprises).
 
-### Admin & roles
-- **Admin Panel** for Organizations (Superadmin), Locations (Head Admin), and
-  Employees (admins): create / edit / delete, with search.
-- **Admins act, managers observe** — admins plan, edit, decide and post;
-  managers see the team rota, timesheets, team and requests without changing
-  them. Enforced in the database (RLS), not just the UI.
-- **Hourly wages** are set by admins only (for people below them, never
-  themselves) and feed a pay estimate.
-- **Invite by email** — new members are provisioned into the right organization
-  and role atomically, finishing onboarding on a branded `/accept-invite` page.
+### Sign-up & admin
+- **Owner sign-up** — anyone can create an account (email + password) together
+  with a brand-new organization and becomes its Head Admin. Invited members
+  still join an existing organization through their invite.
+- **Admin Panel** for Organizations (Superadmin), Locations and Team: create /
+  edit / delete, with search. An empty organization can be deleted.
+- **Hourly wages** are set by people with the Wages right (for people below
+  them, never themselves) and feed a pay estimate.
+- **Invite by email, with a role** — new members are provisioned into the right
+  organization and role atomically, finishing onboarding on a branded
+  `/accept-invite` page.
+
+### Custom roles (Discord-style)
+- **Roles your way** — the Head Admin creates roles with any name and colour and
+  ticks **view / change / delete** per area: rota, timesheets, requests,
+  announcements, team, wages, locations, activity log and roles.
+- **The order is the hierarchy** — move roles up and down; you manage only people
+  and roles below your own, and can hand out only the rights you hold yourself.
+- **Presets to start from** (Employee, Supervisor, Manager, Admin, Head Admin) —
+  editable, or used as a template for a new role. Head Admin always stays on top
+  with every right.
+- **A default role for everyone** — "Employee" sits at the bottom and its rights
+  add to every member's own role. Deleting a role moves its people there.
+- Everything is enforced in the database (RLS, triggers, checked RPCs), not just
+  the UI.
 
 ### Requests
-- **One inbox for every request** — time off (vacation / sick / other) and name
-  changes, with *To review*, *History* and *My requests* tabs.
-- **Admins decide**: approve, or decline with a reason the member sees. Approving
-  leave warns first when it would remove planned shifts. Nobody decides on their
-  own request (except the Head Admin). Managers see the queue read-only.
+- **One inbox for every request** — time off (vacation / sick / other), name
+  changes, shift swaps, **role requests**, any **other request**, and
+  **complaints**, with *To review*, *History* and *My requests* tabs.
+- **New request** form: ask for a role (approving applies it at once — only
+  someone allowed to give that role can), write any other request, or file a
+  complaint, **optionally anonymous** (reviewers never see the sender; the
+  activity log and pushes don't either).
+- **Four eyes**: approve, or decline with a reason the member sees. Nobody
+  decides on their own request — not even the Head Admin; your own pending
+  requests show in the queue without buttons. Approving leave warns first when it
+  would remove planned shifts. People with view-only access see the queue
+  read-only; complaints only reach those who can decide them.
 - Members track every decision and can withdraw a pending request. **Username**
   is self-service but rate-limited to once every 7 days.
 
@@ -118,14 +154,14 @@ _Czech UI, dark theme with the Amber scheme. Test data from the preprod project.
 
 ### Notifications
 - **In-app bell** — a personal feed of what concerns you: your schedule being
-  published / changed / removed, time-off decisions, late-shift alerts,
-  name-change decisions, announcements, and admin edits to your profile.
+  published / changed / removed, time-off and request decisions, swaps, new
+  requests to review, late-shift alerts, name-change decisions, announcements,
+  and edits to your profile or role.
 - **Push notifications** (Firebase Cloud Messaging, native): the same events,
   delivered to your device, with **per-category preferences** (master switch +
   shift / account / requests) in Settings. Tapping opens the relevant screen —
   or the notifications panel when there's no dedicated one.
-- **Activity Log** captures every schedule and time-off action (create, edit,
-  delete, publish, request, approve/decline, late) for admins.
+- Everything also lands in the **Activity Log** for people with that right.
 
 ### Navigation
 - **Command palette** (**⌘K / Ctrl K**) to jump to any page or location.
@@ -182,8 +218,9 @@ src/
 │  ├─ schedule/    # rota: roster grid + calendar, day editor, time off, exports
 │  ├─ locations/   # location picker (recent + search), confirm/switch popup
 │  ├─ timesheets/  # admin shift management, exports, Activity Log
-│  ├─ admin/       # Admin Panel: orgs / locations / employees / roles
-│  ├─ requests/    # Requests inbox: time off + name changes, decisions
+│  ├─ admin/       # Admin Panel: orgs / locations / team
+│  ├─ roles/       # custom roles: list + hierarchy, editor, permission matrix
+│  ├─ requests/    # Requests inbox: time off, names, swaps, role/other/complaints
 │  ├─ announcements/# team announcements, read state, home banner
 │  ├─ availability/# "can't work" days
 │  ├─ wages/       # hourly rates (admin-only) + pay estimate
@@ -193,31 +230,42 @@ src/
 └─ shared/         # api client, types (zod), i18n, UI components, hooks, utils
 supabase/
 ├─ migrations/     # SQL schema, RLS policies, triggers, cron
-└─ functions/      # Edge Functions (Deno)
+├─ functions/      # Edge Functions (Deno)
+└─ tests/          # rls_smoke.sql — org isolation + request rules (rolled back)
 ```
 
 ### Roles & permissions
 
-| Role | Rank | Can |
-| --- | --- | --- |
-| Superadmin | 100 | Everything, across all organizations |
-| Head Admin | 40 | Everything an Admin can, plus locations; may decide own requests |
-| Admin | 30 | Plan the rota, edit timesheets, decide requests, post announcements, manage members below them, set wages |
-| Manager | 20 | An employee who can also **see** the team rota, timesheets, team and requests — read-only |
-| Supervisor | 10 | A badge — same rights as Employee |
-| Employee | 0 | Own shifts, own requests, clock in/out |
+Each organization has its own **roles** (`org_roles`), ordered top to bottom:
+the order is the hierarchy (Head Admin is always 40 at the top, the default
+Employee role always 0 at the bottom). A role carries **view / change / delete**
+per area (`org_role_permissions`). A member's rights are their own role's plus
+the default role's; Head Admin and Superadmin hold everything.
+
+| Preset | Starts with |
+| --- | --- |
+| Head Admin | Everything, incl. roles and locations (locked) |
+| Admin | Change rota, timesheets, requests, announcements, team, wages; view locations + activity |
+| Manager | View rota, timesheets, requests, team, announcements |
+| Supervisor | Nothing beyond the default role |
+| Employee (default) | Own shifts, own requests, clock in/out — its rights add to everyone's |
 
 The UI asks for a **capability** (`can(user, 'rota.edit')` in
-`src/shared/auth/permissions.ts`); the database enforces the same rule with
-**RLS policies, triggers and checked RPCs**, so it holds even for direct API
-calls. Assigning roles below your own, no self-escalation and org scoping are
-enforced the same way.
+`src/shared/auth/permissions.ts`, read from the role's matrix); the database
+enforces the same rule with `has_permission(area, action)` in **RLS policies,
+triggers and checked RPCs**, so it holds even for direct API calls. Managing
+only people and roles below your own, handing out only rights you hold, no
+self-escalation, four-eyes request decisions and org scoping are enforced the
+same way.
 
 ### Edge Functions (`supabase/functions/`)
-- **`invite-employee`** — invites a user and provisions org + role.
-- **`delete-employee`** — removes a member with rank/org checks.
+- **`invite-employee`** — invites a user and provisions org + (custom) role;
+  logs who invited whom.
+- **`delete-employee`** — removes a member with permission + hierarchy checks;
+  logged.
 - **`username-login`** — resolves a username to an email for sign-in.
-- **`delete-account`** — GDPR self-service account deletion.
+- **`delete-account`** — GDPR self-service account deletion; the organization
+  keeps a log entry.
 - **`send-push`** — sends FCM (HTTP v1) pushes from Database Webhooks
   (`shift_audit_log`, `name_change_requests`, `announcements`), localized per
   recipient (EN/CS) and honouring per-user preferences. Schedule and time-off
@@ -284,6 +332,10 @@ and `announcements` pointing at the `send-push` function. Keep the Firebase
 | `yarn format` | Prettier write — run it on the files you touch, not the whole repo |
 | `yarn test` / `test:watch` | Vitest (run / watch) |
 
+Database checks: `supabase/tests/rls_smoke.sql` proves organization isolation,
+no self-promotion and the four-eyes rule in a transaction that is rolled back —
+run it against **preprod** (SQL editor, or `psql -f`).
+
 ---
 
 ## 🚢 Deployment
@@ -295,7 +347,7 @@ and `announcements` pointing at the `send-push` function. Keep the Firebase
   and the build on every PR.
 - **Versioning:** semver tags (`vX.Y.Z`) + GitHub Releases per release. Notable
   releases also carry a **codename** — a Czech town, advancing A→Z
-  (v1.9.0 = _Adamov_, v1.10.0 = _Beroun_).
+  (v1.9.0 = _Adamov_, v1.10.0 = _Beroun_, v1.11.0 = _Cheb_).
 - **Scheduled jobs (pg_cron):** auto-end open shifts at Europe/Prague midnight;
   late-for-shift alerts every 5 minutes.
 

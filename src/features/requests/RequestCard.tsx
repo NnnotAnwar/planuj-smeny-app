@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { CheckIcon, WarningIcon, XIcon, ArrowRightIcon } from '@phosphor-icons/react';
+import { CheckIcon, WarningIcon, XIcon, ArrowRightIcon, EyeSlashIcon } from '@phosphor-icons/react';
 import { Button } from '@shared/components/Button';
 import { Textarea } from '@shared/components/Input';
 import { useTranslation } from '@shared/preferences/PreferencesContext';
-import { formatDateShort } from '@shared/utils/date';
+import { formatDateShort, formatTime } from '@shared/utils/date';
 import { KIND_KEYS } from '@features/schedule/timeOffShared';
 import type { RequestItem } from './types';
 
@@ -42,6 +42,7 @@ export function RequestCard({
     conflicts = 0,
     canDecide = false,
     observer = false,
+    own = false,
     busy = false,
     onDecide,
     onWithdraw,
@@ -54,6 +55,8 @@ export function RequestCard({
     canDecide?: boolean;
     /** Can see but not decide (managers) — shows who it waits for. */
     observer?: boolean;
+    /** The viewer's own request in the review queue: no buttons, someone else decides. */
+    own?: boolean;
     busy?: boolean;
     onDecide?: (approve: boolean, note: string | null) => void;
     onWithdraw?: () => void;
@@ -62,9 +65,24 @@ export function RequestCard({
     const [declining, setDeclining] = useState(false);
     const [reason, setReason] = useState('');
 
-    const typeLabel = item.type === 'name' ? t('requests.typeName') : t(KIND_KEYS[item.kind ?? 'other']);
+    const isMember = item.type === 'role' || item.type === 'other' || item.type === 'complaint';
+    const freeText = item.type === 'other' || item.type === 'complaint';
+    const typeLabel =
+        item.type === 'name'
+            ? t('requests.typeName')
+            : item.type === 'swap'
+              ? t('swap.typeLabel')
+              : isMember
+                ? t(`mreq.kind.${item.type}` as 'mreq.kind.role')
+                : t(KIND_KEYS[item.kind ?? 'other']);
     const statusLabel =
-        item.status === 'pending' ? t('requests.statusPending') : item.status === 'approved' ? t('timeoff.approved') : t('timeoff.declined');
+        item.status === 'pending'
+            ? t('requests.statusPending')
+            : item.status === 'approved'
+              ? freeText ? t('mreq.done') : t('timeoff.approved')
+              : t('timeoff.declined');
+    // An anonymous complaint, as a reviewer sees it.
+    const person = item.personName || t('mreq.anonymousSender');
     const range =
         item.type === 'timeoff' && item.startsOn && item.endsOn
             ? item.startsOn === item.endsOn
@@ -78,13 +96,24 @@ export function RequestCard({
             <div className="flex items-start gap-2.5">
                 {showPerson && (
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/12 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-                        {initials(item.personName)}
+                        {item.personName ? initials(item.personName) : <EyeSlashIcon weight="bold" className="size-3.5" />}
                     </span>
                 )}
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        {showPerson && <span className="truncate text-meta font-semibold text-ink dark:text-white">{item.personName}</span>}
+                        {showPerson && <span className="truncate text-meta font-semibold text-ink dark:text-white">{person}</span>}
                         <span className="rounded-full bg-ink/6 px-2 py-0.5 text-[11px] font-semibold text-ink-soft dark:bg-white/8 dark:text-slate-300">{typeLabel}</span>
+                        {own && (
+                            <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                                {t('requests.yours')}
+                            </span>
+                        )}
+                        {item.anonymous && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/12 px-2 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-300">
+                                <EyeSlashIcon weight="bold" className="size-3" />
+                                {t('mreq.anonymousBadge')}
+                            </span>
+                        )}
                         {(!canDecide || item.status !== 'pending') && (
                             <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_TONE[item.status]}`}>{statusLabel}</span>
                         )}
@@ -98,6 +127,33 @@ export function RequestCard({
                         <p className="mt-1 text-meta tabular-nums text-ink dark:text-slate-200">
                             {range} · {t('requests.days', { n: days })}
                         </p>
+                    ) : item.type === 'swap' && item.shiftStart ? (
+                        <div className="mt-1 space-y-0.5 text-meta text-ink dark:text-slate-200">
+                            <p className="tabular-nums">
+                                {formatDateShort(item.shiftStart)} ·{' '}
+                                {item.shiftAllDay ? t('schedule.allDay') : `${formatTime(item.shiftStart)}–${formatTime(item.shiftEnd!)}`}
+                                {item.locationName ? ` · ${item.locationName}` : ''}
+                            </p>
+                            <p className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-ink-soft dark:text-slate-400">{item.personName}</span>
+                                <ArrowRightIcon weight="bold" className="size-3 text-ink-soft" />
+                                <span className="font-semibold">{item.takerName}</span>
+                            </p>
+                        </div>
+                    ) : item.type === 'role' ? (
+                        <p className="mt-1 flex flex-wrap items-center gap-1.5 text-meta text-ink dark:text-slate-200">
+                            <span className="text-ink-soft dark:text-slate-400">{item.currentRoleName ?? '—'}</span>
+                            <ArrowRightIcon weight="bold" className="size-3 text-ink-soft" />
+                            <span className="inline-flex items-center gap-1.5 font-semibold">
+                                {item.roleColor && <span className="size-2.5 rounded-full" style={{ backgroundColor: item.roleColor }} aria-hidden />}
+                                {item.roleName ?? t('mreq.roleGone')}
+                            </span>
+                        </p>
+                    ) : freeText ? (
+                        <div className="mt-1 space-y-0.5">
+                            {item.subject && <p className="text-meta font-semibold text-ink dark:text-white">{item.subject}</p>}
+                            {item.body && <p className="whitespace-pre-line text-meta text-ink dark:text-slate-200">{item.body}</p>}
+                        </div>
                     ) : (
                         <p className="mt-1 flex flex-wrap items-center gap-1.5 text-meta text-ink dark:text-slate-200">
                             <span className="text-ink-soft line-through decoration-ink/30 dark:text-slate-400">{item.oldName}</span>
@@ -115,12 +171,17 @@ export function RequestCard({
                     )}
                     {item.status !== 'pending' && item.reviewNote && (
                         <p className="mt-1 text-caption text-ink-soft dark:text-slate-400">
-                            {t('requests.reason')}: {item.reviewNote}
+                            {freeText ? t('mreq.reply') : t('requests.reason')}: {item.reviewNote}
                         </p>
                     )}
-                    {item.status === 'pending' && observer && !canDecide && (
-                        <p className="mt-1 text-caption text-ink-soft dark:text-slate-400">{t('requests.waitsForAdmin')}</p>
+                    {item.status !== 'pending' && item.reviewerName && (
+                        <p className="mt-0.5 text-caption text-ink-soft dark:text-slate-400">{t('mreq.decidedBy', { name: item.reviewerName })}</p>
                     )}
+                    {item.status === 'pending' && own ? (
+                        <p className="mt-1 text-caption text-ink-soft dark:text-slate-400">{t('requests.decidedByOther')}</p>
+                    ) : item.status === 'pending' && observer && !canDecide ? (
+                        <p className="mt-1 text-caption text-ink-soft dark:text-slate-400">{t('requests.waitsForAdmin')}</p>
+                    ) : null}
 
                     {/* Decide. */}
                     {item.status === 'pending' && canDecide && onDecide && (
@@ -142,7 +203,13 @@ export function RequestCard({
                                     {t('requests.decline')}
                                 </Button>
                                 <Button size="sm" icon={CheckIcon} loading={busy} onClick={() => onDecide(true, null)}>
-                                    {conflicts > 0 ? t('requests.approveRemoving', { n: conflicts }) : t('requests.approve')}
+                                    {conflicts > 0
+                                        ? t('requests.approveRemoving', { n: conflicts })
+                                        : item.type === 'role'
+                                          ? t('mreq.giveRole')
+                                          : freeText
+                                            ? t('mreq.markDone')
+                                            : t('requests.approve')}
                                 </Button>
                             </div>
                         )

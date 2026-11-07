@@ -14,6 +14,8 @@ import {
     XCircleIcon,
     UserGearIcon,
     XIcon,
+    ArrowsLeftRightIcon,
+    ChatTextIcon,
     type Icon,
 } from '@phosphor-icons/react';
 import type { ShiftAuditLog, ShiftSnapshot } from '@shared/types';
@@ -68,16 +70,18 @@ function fmtLeave(d: { kind?: string | null; starts_on?: string | null; ends_on?
 }
 
 const FIELD_LABEL: Record<string, TranslationKey> = {
+    manager: 'notif.field.manager',
     name: 'notif.field.name',
     role: 'notif.field.role',
     organization: 'notif.field.organization',
 };
 
 /** "Role: Manager · Organization: Acme" from a profile_updated audit entry. */
-function fmtProfileChanges(changes: { field: string; new?: string | null }[] | undefined, t: Translate): string | undefined {
-    if (!changes || changes.length === 0) return undefined;
-    return changes
-        .map((c) => `${t(FIELD_LABEL[c.field] ?? 'notif.field.name')}: ${c.new || '—'}`)
+function fmtProfileChanges(changes: { field?: string; new?: string | null }[] | undefined, t: Translate): string | undefined {
+    const rows = (changes ?? []).filter((c) => !!c.field);
+    if (rows.length === 0) return undefined;
+    return rows
+        .map((c) => `${t(FIELD_LABEL[c.field!] ?? 'notif.field.name')}: ${c.new || '—'}`)
         .join(' · ');
 }
 
@@ -121,6 +125,43 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
                 title: t(entry.action === 'late_60' ? 'notif.late60' : 'notif.late15', { name: d.target_name || '—' }),
                 detail: [d.location_name, d.scheduled_start ? fmtClock(d.scheduled_start) : null].filter(Boolean).join(' · ') || undefined,
             };
+        case 'swap_taken':
+        case 'swap_requested':
+        case 'swap_approved':
+        case 'swap_declined': {
+            const when = d.scheduled_start
+                ? `${formatDateTime(d.scheduled_start)}${d.location_name ? ` · ${d.location_name}` : ''}`
+                : d.location_name || undefined;
+            if (entry.action === 'swap_taken')
+                return { Icon: ArrowsLeftRightIcon, tint: 'text-blue-500', title: t('notif.swapTaken', { name: d.taker_name || '—' }), detail: when };
+            if (entry.action === 'swap_requested')
+                return {
+                    Icon: ArrowsLeftRightIcon,
+                    tint: 'text-amber-500',
+                    title: t('notif.swapRequested', { from: d.from_name || '—', taker: d.taker_name || '—' }),
+                    detail: when,
+                };
+            return entry.action === 'swap_approved'
+                ? { Icon: CheckCircleIcon, tint: 'text-emerald-500', title: t('notif.swapApproved'), detail: when }
+                : { Icon: XCircleIcon, tint: 'text-red-500', title: t('notif.swapDeclined'), detail: [when, d.note].filter(Boolean).join(' · ') || undefined };
+        }
+        case 'request_submitted':
+            return d.kind === 'complaint'
+                ? { Icon: ChatTextIcon, tint: 'text-amber-500', title: t('notif.complaintSubmitted'), detail: d.target_name || t('audit.anonymous') }
+                : {
+                      Icon: ChatTextIcon,
+                      tint: 'text-amber-500',
+                      title: t('notif.requestSubmitted', { name: d.target_name || '—' }),
+                      detail: [t(`mreq.kind.${d.kind ?? 'other'}` as TranslationKey), d.role_name, d.subject_name].filter(Boolean).join(' · '),
+                  };
+        case 'request_approved':
+        case 'request_declined':
+            return {
+                Icon: entry.action === 'request_approved' ? CheckCircleIcon : XCircleIcon,
+                tint: entry.action === 'request_approved' ? 'text-emerald-500' : 'text-red-500',
+                title: t(entry.action === 'request_approved' ? 'notif.requestApproved' : 'notif.requestDeclined'),
+                detail: [d.role_name ?? d.subject_name, d.note].filter(Boolean).join(' · ') || undefined,
+            };
         default:
             return { Icon: BellIcon, tint: 'text-gray-400', title: t('notif.account') };
     }
@@ -137,7 +178,7 @@ function describe(entry: ShiftAuditLog, t: Translate): { Icon: Icon; tint: strin
  *   panel commits the "seen" watermark so the badge clears.
  * - Notifications can be dismissed individually or all at once (per device).
  */
-export function NotificationsBell() {
+export function NotificationsBell({ variant = 'header' }: { variant?: 'header' | 'rail' } = {}) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
@@ -213,9 +254,14 @@ export function NotificationsBell() {
                 onClick={() => (open ? close() : setOpen(true))}
                 aria-label={t('notif.title')}
                 aria-expanded={open}
-                className="relative -mr-2 p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-emerald-500/5 dark:hover:bg-white/5 transition-all cursor-pointer active:scale-90"
+                className={
+                    variant === 'rail'
+                        ? // Collapsed sidebar: same 36px square and idle colours as the other rail icons.
+                          'relative flex size-9 items-center justify-center rounded-xl text-ink-soft transition-colors hover:bg-white/60 active:scale-90 dark:text-slate-400 dark:hover:bg-white/5'
+                        : 'relative -mr-2 p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-emerald-500/5 dark:hover:bg-white/5 transition-all cursor-pointer active:scale-90'
+                }
             >
-                <BellIcon weight="bold" className="w-7 h-7 md:w-5 md:h-5" />
+                <BellIcon weight="bold" className={variant === 'rail' ? 'size-4.5' : 'w-7 h-7 md:w-5 md:h-5'} />
                 {!open && unread > 0 && (
                     <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-micro font-bold flex items-center justify-center leading-none">
                         {unread > 9 ? '9+' : unread}

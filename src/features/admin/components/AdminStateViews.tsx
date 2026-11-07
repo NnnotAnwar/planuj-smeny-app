@@ -21,14 +21,15 @@ export function StatCard({
     accent: string;
 }) {
     return (
-        <div className="glass p-3 rounded-2xl min-w-0">
+        <div className="glass p-2.5 sm:p-3 rounded-2xl min-w-0">
             <div className="flex items-center gap-2.5 min-w-0">
-                <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${STAT_ACCENTS[accent]}`}>
+                {/* Phones: three cards share ~110px each — drop the icon so the label fits. */}
+                <div className={`hidden sm:flex size-8 rounded-lg items-center justify-center shrink-0 ${STAT_ACCENTS[accent]}`}>
                     <StatIcon className="size-4" weight="bold" />
                 </div>
                 <div className="min-w-0">
                     <p className="text-metric leading-none text-ink dark:text-white">{value}</p>
-                    <p className="text-eyebrow text-ink-soft dark:text-slate-400 mt-1 truncate">{label}</p>
+                    <p className="text-eyebrow max-sm:tracking-[0.04em] text-ink-soft dark:text-slate-400 mt-1 truncate">{label}</p>
                 </div>
             </div>
         </div>

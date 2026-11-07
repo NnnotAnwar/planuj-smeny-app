@@ -221,7 +221,7 @@ export default function OverviewPage() {
       key: 'break',
       header: t('overview.colBreak'),
       align: 'right',
-      width: 'w-20',
+      width: 'w-24', // the monthly total ("−1h 30m") must fit
       hideOnMobile: true,
       className: 'text-xs font-bold tabular-nums whitespace-nowrap text-amber-600 dark:text-amber-400',
       footer: <span className="text-xs font-bold tabular-nums whitespace-nowrap text-amber-600 dark:text-amber-400">−{fmtDuration(stats.totalBreak)}</span>,

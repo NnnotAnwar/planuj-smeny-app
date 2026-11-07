@@ -20,7 +20,7 @@ import { z } from 'zod';
  */
 
 const MEMBER_SELECT =
-    'id, username, first_name, last_name, email, role(name, is_admin, rank), organization_id, username_changed_at, manager_id';
+    'id, username, first_name, last_name, email, role(name, is_admin, rank), organization_id, username_changed_at, manager_id, org_role_id, org_role:org_roles!profiles_org_role_id_fkey(id, name, color, base_role, preset_key, sort)';
 
 export interface ShiftInput {
     user_id: string;
@@ -32,7 +32,8 @@ export interface ShiftInput {
 
 export interface AuditLogQuery {
     targetUserId?: string | null;
-    action?: string | null;
+    /** Only these actions (a filter group). */
+    actions?: readonly string[] | null;
     sort?: 'asc' | 'desc';
     limit?: number;
     offset?: number;
@@ -153,10 +154,11 @@ export const timesheetService = {
      * filters, sort and offset pagination.
      */
     async getAuditLog(q: AuditLogQuery = {}): Promise<ShiftAuditLog[]> {
-        const { targetUserId = null, action = null, sort = 'desc', limit = 50, offset = 0 } = q;
+        const { targetUserId = null, actions = null, sort = 'desc', limit = 50, offset = 0 } = q;
         let query = supabase.from('shift_audit_log').select('*');
-        if (targetUserId) query = query.eq('target_user_id', targetUserId);
-        if (action) query = query.eq('action', action);
+        // About this person, or notifying them (older entries have no subject).
+        if (targetUserId) query = query.or(`subject_id.eq.${targetUserId},target_user_id.eq.${targetUserId}`);
+        if (actions && actions.length > 0) query = query.in('action', [...actions]);
         query = query
             .order('created_at', { ascending: sort === 'asc' })
             .range(offset, offset + limit - 1);

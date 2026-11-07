@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
+import { useTranslation } from '@shared/preferences/PreferencesContext';
 import { createContext, useContext, useCallback, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, type EmployeeUpdate, type EmployeeInvite } from './adminService';
@@ -72,6 +73,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     // A mutation that runs a service call then re-syncs the tree. We keep the
     // imperative async signatures the existing forms already call/await.
+    const t = useTranslation();
     const mutation = useMutation({
         mutationFn: (action: () => Promise<void>) => action(),
         onSuccess: invalidateTree,
@@ -101,9 +103,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         (id: string) =>
             run(async () => {
                 if (!isSuperAdmin) throw new Error('Only a Superadmin can manage organizations.');
-                await adminService.deleteOrganization(id);
+                try {
+                    await adminService.deleteOrganization(id);
+                } catch (e) {
+                    if (e instanceof Error && e.message === 'ORG_HAS_MEMBERS') throw new Error(t('admin.orgHasMembers'));
+                    throw e;
+                }
             }),
-        [isSuperAdmin, run],
+        [isSuperAdmin, run, t],
     );
 
     // Locations -----------------------------------------------------

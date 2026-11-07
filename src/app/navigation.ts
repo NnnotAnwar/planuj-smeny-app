@@ -39,8 +39,9 @@ export const SECTION_LABEL_KEYS: Record<NavSection, TranslationKey> = {
 
 /** Capabilities a nav item can gate on (a subset of usePermissions). */
 export interface NavCaps {
-    canViewAdminPanel: boolean;
-    canManageEmployees: boolean;
+    team: boolean; // the Team page (members.view)
+    timesheets: boolean; // timesheets.view
+    activity: boolean; // activity.view
 }
 
 /** Named live-badge sources, resolved by `useNavItems`. */
@@ -78,10 +79,10 @@ export const NAV_ITEMS: readonly NavItemDef[] = [
     { id: 'overview', labelKey: 'nav.myHours', icon: ChartBarIcon, route: '/overview', section: 'work', mobileSlot: { staff: 3 } },
     { id: 'announcements', labelKey: 'nav.announcements', icon: MegaphoneIcon, route: '/announcements', section: 'work', mobileSlot: { staff: 4 }, badge: 'unreadAnnouncements' },
     { id: 'requests', labelKey: 'nav.requests', icon: UserCircleGearIcon, route: '/requests', section: 'work', badge: 'pendingRequests' },
-    { id: 'timesheets', labelKey: 'nav.timesheets', icon: ClockUserIcon, route: '/timesheets', section: 'manage', visible: (c) => c.canViewAdminPanel, mobileSlot: { manager: 3 } },
-    { id: 'admin', labelKey: 'nav.team', icon: ShieldCheckIcon, route: '/admin', section: 'manage', visible: (c) => c.canViewAdminPanel, mobileSlot: { manager: 4 } },
+    { id: 'timesheets', labelKey: 'nav.timesheets', icon: ClockUserIcon, route: '/timesheets', section: 'manage', visible: (c) => c.timesheets, mobileSlot: { manager: 3 } },
+    { id: 'admin', labelKey: 'nav.team', icon: ShieldCheckIcon, route: '/admin', section: 'manage', visible: (c) => c.team, mobileSlot: { manager: 4 } },
     
-    { id: 'activity', labelKey: 'nav.activity', icon: ClockCounterClockwiseIcon, route: '/activity', section: 'manage', visible: (c) => c.canManageEmployees },
+    { id: 'activity', labelKey: 'nav.activity', icon: ClockCounterClockwiseIcon, route: '/activity', section: 'manage', visible: (c) => c.activity },
     { id: 'settings', labelKey: 'nav.settings', icon: GearIcon, route: '/settings', section: 'system' },
 ];
 
@@ -103,15 +104,19 @@ export interface ResolvedNavItem {
  * and with live badge counts folded in. Consumed by Sidebar and BottomNav.
  */
 export function useNavItems(): ResolvedNavItem[] {
-    const { canViewAdminPanel, canManageEmployees } = usePermissions();
+    const { can } = usePermissions();
+    const team = can('members.view');
+    const timesheets = can('timesheets.view');
+    const activity = can('activity.view');
+    const observer = can('team.view');
     // Deciders: requests waiting for them; everyone else: unseen decisions on their own.
     const pendingRequests = useRequestsBadge();
     const unreadAnnouncements = useUnreadAnnouncementCount();
     const t = useTranslation();
 
     return useMemo(() => {
-        const caps: NavCaps = { canViewAdminPanel, canManageEmployees };
-        const audience: MobileAudience = canViewAdminPanel ? 'manager' : 'staff';
+        const caps: NavCaps = { team, timesheets, activity };
+        const audience: MobileAudience = observer ? 'manager' : 'staff';
         const badges: Record<BadgeSource, number> = { pendingRequests, unreadAnnouncements };
         return NAV_ITEMS.filter((i) => !i.visible || i.visible(caps)).map((i) => ({
             id: i.id,
@@ -123,5 +128,5 @@ export function useNavItems(): ResolvedNavItem[] {
             mobileSlot: i.mobileSlot?.[audience] ?? null,
             badgeCount: i.badge ? badges[i.badge] : 0,
         }));
-    }, [canViewAdminPanel, canManageEmployees, pendingRequests, unreadAnnouncements, t]);
+    }, [team, timesheets, activity, observer, pendingRequests, unreadAnnouncements, t]);
 }
