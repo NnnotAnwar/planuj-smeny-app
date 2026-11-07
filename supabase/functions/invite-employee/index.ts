@@ -131,6 +131,17 @@ Deno.serve(async (req) => {
         const { data: inviter } = await admin.from('profiles').select('first_name, last_name, username').eq('id', caller.id).single();
         const inviterName = [inviter?.first_name, inviter?.last_name].filter(Boolean).join(' ') || inviter?.username || '';
         const target = redirectTo || Deno.env.get('SITE_URL') || '';
+        // The provisioning trigger trusts only this server-written record for
+        // the organization and role (auth sets invited_at only after the
+        // insert, and user metadata can't be trusted).
+        const { error: pendingError } = await admin.from('pending_invites').upsert({
+            email,
+            organization_id: organizationId,
+            role,
+            org_role_id: orgRoleId || null,
+            created_by: caller.id,
+        });
+        if (pendingError) return json({ error: 'Could not prepare the invitation.' }, 500);
         const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
             data: {
                 organization_id: organizationId,
@@ -147,6 +158,7 @@ Deno.serve(async (req) => {
         });
 
         if (inviteError) {
+            await admin.from('pending_invites').delete().eq('email', email);
             // AuthError often serialises to "{}", so surface its useful fields.
             const e = inviteError as { message?: string; status?: number; code?: string; name?: string };
             const message =
