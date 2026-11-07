@@ -4,12 +4,20 @@ Living plan for **Planuj Směny**. Direction, not commitments — dates and scop
 change. Concrete work is tracked as **GitHub Issues** grouped into **Milestones**;
 this file is the high-level story, plus a large **idea backlog** to draw from.
 
-_Last updated: November 6, 2026 · current version 1.10.0 “Beroun”._
+_Last updated: November 7, 2026 · current version 1.11.0 “Cheb”._
 
 ---
 
 ## ✅ Shipped (recent highlights)
 
+- **v1.11.0 “Cheb”** — **owner sign-up** (create your organization); **custom
+  roles**, Discord-style (view / change / delete per area, order = hierarchy,
+  hand out only what you hold, a default Employee role for everyone); **shift
+  swaps** (offer → take → approve); **role / other requests and complaints**
+  (optionally anonymous) in the Requests inbox; **four-eyes** decisions (nobody
+  approves their own request); location opening hours drive the grid; Czech
+  rest-rule warnings (11 h rest, > 6 days in a row); the **Activity Log records
+  every action** with group filters; 136 tests + an RLS smoke test.
 - **v1.10.0 “Beroun”** — glass redesign across every page; **roles: admins act,
   managers observe** (Supervisor is a badge); **Requests** is the shared inbox
   (time off + name changes, decline with a reason, history, my requests);
@@ -42,29 +50,16 @@ _Last updated: November 6, 2026 · current version 1.10.0 “Beroun”._
 
 ---
 
-## 🔭 Next — v1.11 “C” (finish what v1.10 opened)
+## 🔭 Next — v1.12 “D”
 
-- **Location hours that do something** — opening hours become the location's
-  default shift time (a built-in template outside the 8-template limit) and
-  planning outside them warns. The break field goes away; breaks already follow
-  Czech law. _(Today the hours are saved but unused.)_
-- **Shift swaps** — a member offers a shift, a teammate takes it, an admin
-  approves it in Requests.
-- **Rest & fatigue warnings** — under 11 h between shifts, close-then-open, too
-  many days in a row; shown in the grid like conflicts.
-- **#97 Tests + E2E** — Playwright happy paths in CI (sign in, clock in,
-  publish, request and approve time off).
+- **E2E tests** — Playwright happy paths in CI (sign up, clock in, publish,
+  request and approve time off, a role request).
 - **#99 Lock down RLS helper functions** — needs a schema move (a naive revoke
   breaks RLS); a dedicated, tested change. **#98** unused-index review with it.
-
-## 🗺 After that — v1.12 “D” (roles your way)
-
-- **Custom roles** — a Head Admin creates roles with any name and sets read /
-  write / delete per area (rota, timesheets, requests, announcements, members),
-  Discord-style. Today's fixed ranks stay as presets; the capability layer
-  (`can()`) is already the seam to build on.
 - **Targeted announcements** (per location) with read receipts for admins.
 - **Calendar sync** — your rota as an ICS feed.
+- **Store release** — polish sign-up and onboarding for the App Store / Google
+  Play listing.
 
 ## ⏳ Later / blocked
 
@@ -222,6 +217,6 @@ Opinionated guidance for where to invest next.
 - **Issues** — one per concrete task, labelled by `area:*` and `priority:*`.
 - **Milestones** — group issues into shippable chunks.
 - **Releases** — semver tags (`vX.Y.Z`) + GitHub Releases with changelogs; notable
-  releases carry a Czech-town codename A→Z (v1.9.0 = _Adamov_, v1.10.0 = _Beroun_; next = _C_).
+  releases carry a Czech-town codename A→Z (v1.9.0 = _Adamov_, v1.10.0 = _Beroun_, v1.11.0 = _Cheb_; next = _D_).
 
 Have an idea or found a bug? Open an issue.
