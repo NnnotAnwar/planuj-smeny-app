@@ -46,6 +46,8 @@ export interface EmployeeInvite {
     org_role_id?: string;
     first_name?: string | null;
     last_name?: string | null;
+    /** Language of the invitation email ("en" | "cs"). */
+    language?: 'en' | 'cs';
 }
 
 export const adminService = {

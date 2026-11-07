@@ -1,80 +1,121 @@
 <!--
-  Invite email — Supabase Auth "Invite user" template.
-  Uses the token_hash flow (prefetch-proof) and surfaces the invitee's name,
-  organization and role from the invite metadata set by the invite-employee
-  Edge Function ({{ .Data }} = raw_user_meta_data).
+  Invite email — Supabase Auth "Invite user" template, in the app's look
+  (Lilac Indigo canvas, white card, indigo accent, the PS tile).
 
-  The link host comes from {{ .RedirectTo }} (the redirect_to the function
-  passes = "<app origin>/accept-invite"), NOT {{ .SiteURL }} — so it is immune
-  to the Vercel↔Supabase integration overwriting the dashboard Site URL.
+  Data ({{ .Data }} = raw_user_meta_data, set by the invite-employee Edge
+  Function): first_name, organization_name, role_name (the organization role's
+  name; `role` = the level, a fallback), inviter_name, language ("en" | "cs" —
+  the inviter's UI language; anything else → English).
+
+  Link: the token_hash flow (prefetch-proof) on {{ .RedirectTo }} — the
+  redirect_to the function passes = "<app origin>/accept-invite" — NOT
+  {{ .SiteURL }}, so it is immune to the Vercel↔Supabase integration
+  overwriting the dashboard Site URL.
+
   Paste the contents into Authentication → Emails → Invite user (Source).
+  Suggested subject: Pozvánka do týmu · You're invited — Planuj Směny
 -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;margin:0;padding:32px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+{{ $cs := false }}{{ with index .Data "language" }}{{ if eq . "cs" }}{{ $cs = true }}{{ end }}{{ end }}
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+  {{ if $cs }}Máte pozvánku do týmu{{ with index .Data "organization_name" }} {{ . }}{{ end }}. Nastavte si heslo a začněte.{{ else }}You're invited to join{{ with index .Data "organization_name" }} {{ . }}{{ else }} the team{{ end }}. Set a password to get started.{{ end }}
+</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f5f4f9" style="background-color:#f5f4f9;margin:0;padding:32px 12px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <tr>
     <td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 6px 28px rgba(16,24,40,0.08);">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;">
 
-        <!-- Header -->
+        <!-- Brand row -->
         <tr>
-          <td style="background:linear-gradient(135deg,#047857 0%,#10b981 100%);padding:36px 32px;text-align:center;">
-            <div style="font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#d1fae5;">You've been invited</div>
-            <div style="margin-top:6px;font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">Planuj Směny</div>
+          <td style="padding:0 4px 16px;">
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td width="32" height="32" align="center" valign="middle" bgcolor="#4f46e5" style="width:32px;height:32px;border-radius:8px;background-color:#4f46e5;background-image:linear-gradient(135deg,#818cf8 0%,#4f46e5 100%);color:#ffffff;font-size:13px;font-weight:800;letter-spacing:-0.5px;">PS</td>
+                <td style="padding-left:9px;font-size:14px;font-weight:700;letter-spacing:-0.2px;color:#1b1a2e;">Planuj Směny</td>
+              </tr>
+            </table>
           </td>
         </tr>
 
-        <!-- Body -->
+        <!-- Card -->
         <tr>
-          <td style="padding:32px;">
-            <p style="margin:0 0 18px;font-size:17px;font-weight:600;color:#111827;">
-              {{ with index .Data "first_name" }}Hi {{ . }},{{ else }}Hi there,{{ end }}
-            </p>
-            <p style="margin:0 0 26px;font-size:15px;line-height:1.6;color:#4b5563;">
-              You've been invited to join the team. Set your password to accept and get started.
+          <td bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #e9e7f3;border-radius:16px;box-shadow:0 1px 2px rgba(27,26,46,0.04),0 18px 40px -20px rgba(79,70,229,0.28);padding:28px 28px 24px;">
+
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#4f46e5;">
+              {{ if $cs }}Pozvánka do týmu{{ else }}You're invited{{ end }}
+            </div>
+            <h1 style="margin:8px 0 0;font-size:22px;line-height:1.2;font-weight:700;letter-spacing:-0.4px;color:#1b1a2e;">
+              {{ if $cs }}{{ with index .Data "first_name" }}{{ . }}, vítejte{{ else }}Vítejte{{ end }} v týmu{{ else }}{{ with index .Data "first_name" }}Welcome to the team, {{ . }}{{ else }}Welcome to the team{{ end }}{{ end }}
+            </h1>
+            <p style="margin:10px 0 0;font-size:14px;line-height:1.6;color:#66637f;">
+              {{ if $cs }}{{ with index .Data "inviter_name" }}<strong style="color:#1b1a2e;font-weight:600;">{{ . }}</strong> vás zve{{ else }}Jste zváni{{ end }} do Planuj Směny — tady uvidíte své směny, zapíšete příchod a odchod a pošlete žádosti. Nastavte si heslo a můžete začít.{{ else }}{{ with index .Data "inviter_name" }}<strong style="color:#1b1a2e;font-weight:600;">{{ . }}</strong> invited you{{ else }}You've been invited{{ end }} to Planuj Směny — where you'll see your shifts, clock in and out, and send requests. Set a password to get started.{{ end }}
             </p>
 
-            <!-- Details card -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;border:1px solid #eceef1;border-radius:14px;margin-bottom:30px;">
+            <!-- Organization + role -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f7f6fb" style="background-color:#f7f6fb;border:1px solid #ebe9f4;border-radius:12px;margin-top:20px;">
               <tr>
-                <td style="padding:18px 20px;border-bottom:1px solid #eceef1;">
-                  <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;">Organization</div>
-                  <div style="margin-top:5px;font-size:17px;font-weight:700;color:#111827;">{{ index .Data "organization_name" }}</div>
+                <td style="padding:14px 16px;">
+                  <div style="font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#8e8ba5;">{{ if $cs }}Organizace{{ else }}Organization{{ end }}</div>
+                  <div style="margin-top:4px;font-size:15px;font-weight:700;color:#1b1a2e;">{{ with index .Data "organization_name" }}{{ . }}{{ else }}—{{ end }}</div>
                 </td>
-              </tr>
-              <tr>
-                <td style="padding:18px 20px;">
-                  <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;">Role</div>
-                  <div style="margin-top:8px;">
-                    <span style="display:inline-block;background-color:#d1fae5;color:#065f46;font-size:13px;font-weight:700;padding:5px 14px;border-radius:9999px;">{{ index .Data "role" }}</span>
-                  </div>
+                <td align="right" valign="middle" style="padding:14px 16px 14px 0;">
+                  <div style="font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#8e8ba5;text-align:right;">Role</div>
+                  <span style="display:inline-block;margin-top:5px;background-color:#eef2ff;color:#4338ca;font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;padding:5px 8px;border-radius:6px;white-space:nowrap;">{{ with index .Data "role_name" }}{{ . }}{{ else }}{{ with index .Data "role" }}{{ . }}{{ else }}Employee{{ end }}{{ end }}</span>
                 </td>
               </tr>
             </table>
 
-            <!-- CTA -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <!-- Button -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;">
               <tr>
-                <td align="center">
-                  <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=invite"
-                     style="display:inline-block;background-color:#059669;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;padding:15px 36px;border-radius:12px;box-shadow:0 4px 14px rgba(5,150,105,0.35);">
-                    Accept invitation
+                <td align="center" bgcolor="#4f46e5" style="border-radius:12px;background-color:#4f46e5;background-image:linear-gradient(180deg,#4f46e5 0%,#4338ca 100%);box-shadow:0 8px 20px -10px rgba(79,70,229,0.7);">
+                  <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=invite" style="display:block;padding:12px 24px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">
+                    {{ if $cs }}Přijmout pozvánku{{ else }}Accept invitation{{ end }}
                   </a>
                 </td>
               </tr>
             </table>
 
-            <p style="margin:26px 0 0;font-size:12px;line-height:1.6;color:#9ca3af;text-align:center;">
-              If the button doesn't work, copy and paste this link into your browser:<br>
-              <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=invite" style="color:#059669;word-break:break-all;">{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=invite</a>
+            <!-- What you get -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;border-top:1px solid #efeef6;">
+              <tr>
+                <td style="padding-top:16px;font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#8e8ba5;">{{ if $cs }}V aplikaci{{ else }}In the app{{ end }}</td>
+              </tr>
+              <tr>
+                <td style="padding-top:10px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td valign="top" style="padding:0 10px 8px 0;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:9999px;background-color:#eef2ff;color:#4338ca;font-size:11px;font-weight:700;">1</span></td>
+                      <td valign="top" style="padding-bottom:8px;font-size:13px;line-height:20px;color:#3a3752;">{{ if $cs }}Váš rozpis směn — vždy aktuální{{ else }}Your shift rota — always up to date{{ end }}</td>
+                    </tr>
+                    <tr>
+                      <td valign="top" style="padding:0 10px 8px 0;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:9999px;background-color:#eef2ff;color:#4338ca;font-size:11px;font-weight:700;">2</span></td>
+                      <td valign="top" style="padding-bottom:8px;font-size:13px;line-height:20px;color:#3a3752;">{{ if $cs }}Příchod a odchod jedním klepnutím{{ else }}Clock in and out with one tap{{ end }}</td>
+                    </tr>
+                    <tr>
+                      <td valign="top" style="padding:0 10px 0 0;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:9999px;background-color:#eef2ff;color:#4338ca;font-size:11px;font-weight:700;">3</span></td>
+                      <td valign="top" style="font-size:13px;line-height:20px;color:#3a3752;">{{ if $cs }}Volno, výměny směn a další žádosti na jednom místě{{ else }}Time off, shift swaps and other requests in one place{{ end }}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Fallback link -->
+            <p style="margin:20px 0 0;font-size:11px;line-height:1.6;color:#8e8ba5;">
+              {{ if $cs }}Tlačítko nefunguje? Zkopírujte tento odkaz do prohlížeče:{{ else }}Button not working? Copy this link into your browser:{{ end }}<br>
+              <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=invite" style="color:#4f46e5;word-break:break-all;">{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=invite</a>
             </p>
           </td>
         </tr>
 
         <!-- Footer -->
         <tr>
-          <td style="padding:20px 32px;background-color:#f9fafb;border-top:1px solid #eceef1;text-align:center;">
-            <p style="margin:0;font-size:12px;line-height:1.5;color:#9ca3af;">
-              This invitation was sent to {{ .Email }}.<br>If you weren't expecting it, you can safely ignore this email.
-            </p>
+          <td style="padding:16px 8px 0;text-align:center;font-size:11px;line-height:1.6;color:#8e8ba5;">
+            {{ if $cs }}Pozvánka pro {{ .Email }}. Pokud ji nečekáte, tento e-mail klidně ignorujte.{{ else }}This invitation was sent to {{ .Email }}. If you weren't expecting it, you can safely ignore this email.{{ end }}
+            <br>Planuj Směny
           </td>
         </tr>
 

@@ -90,6 +90,7 @@ Deno.serve(async (req) => {
         let role = body.role ? String(body.role) : 'Employee';
         const orgRoleId = body.org_role_id ? String(body.org_role_id) : '';
         const redirectTo = body.redirect_to ? String(body.redirect_to) : '';
+        const language = body.language === 'cs' ? 'cs' : 'en';
 
         if (!email || !email.includes('@')) return json({ error: 'A valid email is required.' }, 400);
 
@@ -122,6 +123,13 @@ Deno.serve(async (req) => {
         // 7. Send the invitation. The trigger reads this metadata to provision
         //    the profile into the right org + role. The invitee lands on the
         //    app's /accept-invite page (must be allowlisted in Auth settings).
+        //    The email template also shows the role's name, who invited them
+        //    and is written in `language`.
+        const roleName = orgRoleId
+            ? (await admin.from('org_roles').select('name').eq('id', orgRoleId).single()).data?.name ?? role
+            : role;
+        const { data: inviter } = await admin.from('profiles').select('first_name, last_name, username').eq('id', caller.id).single();
+        const inviterName = [inviter?.first_name, inviter?.last_name].filter(Boolean).join(' ') || inviter?.username || '';
         const target = redirectTo || Deno.env.get('SITE_URL') || '';
         const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
             data: {
@@ -129,6 +137,9 @@ Deno.serve(async (req) => {
                 organization_name: orgRow.name, // surfaced in the invite email template
                 role,
                 ...(orgRoleId ? { org_role_id: orgRoleId } : {}),
+                role_name: roleName,
+                inviter_name: inviterName,
+                language,
                 first_name: firstName,
                 last_name: lastName,
             },
@@ -148,9 +159,6 @@ Deno.serve(async (req) => {
 
         // 8. Activity log: who invited whom, with which role.
         if (invited?.user?.id) {
-            const roleName = orgRoleId
-                ? (await admin.from('org_roles').select('name').eq('id', orgRoleId).single()).data?.name ?? role
-                : role;
             await admin.rpc('log_member_event', {
                 p_org: organizationId,
                 p_action: 'member_invited',
