@@ -5,7 +5,7 @@ import { useAdminContext } from '../AdminContext';
 import { useAuthContext } from '@/features/auth/AuthContext';
 import { isSuperAdmin as isSuper, rankOf } from '@shared/auth/permissions';
 import { useOrgRoles } from '@features/roles/useOrgRoles';
-import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { usePreferences, useTranslation } from '@shared/preferences/PreferencesContext';
 
 /**
  * Invite a brand-new user by email.
@@ -18,6 +18,8 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
     const { adminData, isSuperAdmin, inviteEmployee } = useAdminContext();
     const { user } = useAuthContext();
     const t = useTranslation();
+    // The invitation email is written in the inviter's language.
+    const { language } = usePreferences();
 
     const ownOrgId = user?.organization_id ?? '';
 
@@ -55,6 +57,7 @@ export function InviteEmployeeForm({ onClose }: { onClose: () => void }) {
                 org_role_id: orgRoleId || undefined,
                 first_name: firstName.trim() || null,
                 last_name: lastName.trim() || null,
+                language,
             });
             onClose();
         } catch (err) {
