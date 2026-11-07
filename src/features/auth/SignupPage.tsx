@@ -1,7 +1,7 @@
 import { useState, type SyntheticEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { BuildingsIcon, EnvelopeSimpleIcon, EyeIcon, EyeSlashIcon, LockIcon, UserIcon, PaperPlaneTiltIcon } from '@phosphor-icons/react';
-import { useTranslation } from '@shared/preferences/PreferencesContext';
+import { usePreferences, useTranslation } from '@shared/preferences/PreferencesContext';
 import { Button } from '@shared/components/Button';
 import { Input } from '@shared/components/Input';
 import { FormError } from '@shared/components/FormError';
@@ -20,6 +20,7 @@ const MIN_PASSWORD = 8;
 
 export function SignupPage() {
     const t = useTranslation();
+    const { language } = usePreferences();
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [orgName, setOrgName] = useState('');
@@ -44,6 +45,7 @@ export function SignupPage() {
             email: email.trim(),
             password,
             organizationName: orgName.trim(),
+            language,
         });
         if (err) {
             const m = err.message.toLowerCase();

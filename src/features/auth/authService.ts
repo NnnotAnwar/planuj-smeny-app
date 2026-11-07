@@ -104,7 +104,7 @@ export const authService = {
    * and makes this user its Head Admin — role/org metadata from the client is
    * ignored there by design. The confirmation email brings them to /login.
    */
-  async signUpOwner(input: { firstName: string; lastName: string; email: string; password: string; organizationName: string }) {
+  async signUpOwner(input: { firstName: string; lastName: string; email: string; password: string; organizationName: string; language?: 'en' | 'cs' }) {
     // The native app has no web origin of its own for the email link.
     const origin = Capacitor.isNativePlatform() ? 'https://planuj-smeny.vercel.app' : window.location.origin;
     return await supabase.auth.signUp({
@@ -115,6 +115,8 @@ export const authService = {
           first_name: input.firstName,
           last_name: input.lastName,
           organization_name: input.organizationName,
+          // The confirmation email is written in the language they signed up in.
+          language: input.language ?? 'en',
         },
         emailRedirectTo: `${origin}/login`,
       },
