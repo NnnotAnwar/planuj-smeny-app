@@ -1,0 +1,118 @@
+<!--
+  Confirm-signup email — Supabase Auth "Confirm signup" template, in the app's
+  look (Lilac Indigo canvas, white card, indigo accent, the PS tile).
+  Written in the language the owner signed up in: SignupPage passes
+  `language` ("en" | "cs") in the sign-up metadata ({{ .Data }}); anything else
+  falls back to English. The owner's first name and organization come from the
+  same metadata.
+
+  Paste the contents into Authentication → Emails → Confirm signup (Source).
+  Suggested subject: Potvrďte e-mail · Confirm your email — Planuj Směny
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+{{ $cs := false }}{{ with index .Data "language" }}{{ if eq . "cs" }}{{ $cs = true }}{{ end }}{{ end }}
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+  {{ if $cs }}Ještě jeden krok: potvrďte e-mail a vaše organizace je připravená.{{ else }}One more step: confirm your email and your organization is ready.{{ end }}
+</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f5f4f9" style="background-color:#f5f4f9;margin:0;padding:32px 12px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;">
+
+        <!-- Brand row -->
+        <tr>
+          <td style="padding:0 4px 16px;">
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td width="32" height="32" align="center" valign="middle" bgcolor="#4f46e5" style="width:32px;height:32px;border-radius:8px;background-color:#4f46e5;background-image:linear-gradient(135deg,#818cf8 0%,#4f46e5 100%);color:#ffffff;font-size:13px;font-weight:800;letter-spacing:-0.5px;">PS</td>
+                <td style="padding-left:9px;font-size:14px;font-weight:700;letter-spacing:-0.2px;color:#1b1a2e;">Planuj Směny</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Card -->
+        <tr>
+          <td bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #e9e7f3;border-radius:16px;box-shadow:0 1px 2px rgba(27,26,46,0.04),0 18px 40px -20px rgba(79,70,229,0.28);padding:28px 28px 24px;">
+
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#4f46e5;">
+              {{ if $cs }}Potvrzení registrace{{ else }}Confirm your email{{ end }}
+            </div>
+            <h1 style="margin:8px 0 0;font-size:22px;line-height:1.2;font-weight:700;letter-spacing:-0.4px;color:#1b1a2e;">
+              {{ if $cs }}{{ with index .Data "first_name" }}{{ . }}, ještě{{ else }}Ještě{{ end }} jeden krok{{ else }}{{ with index .Data "first_name" }}{{ . }}, one{{ else }}One{{ end }} more step{{ end }}
+            </h1>
+            <p style="margin:10px 0 0;font-size:14px;line-height:1.6;color:#66637f;">
+              {{ if $cs }}Potvrďte svůj e-mail a můžete začít plánovat směny. Účet je založený, chybí jen tohle kliknutí.{{ else }}Confirm your email and you can start planning shifts. Your account is set up — it only needs this click.{{ end }}
+            </p>
+
+            <!-- Organization -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f7f6fb" style="background-color:#f7f6fb;border:1px solid #ebe9f4;border-radius:12px;margin-top:20px;">
+              <tr>
+                <td style="padding:14px 16px;">
+                  <div style="font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#8e8ba5;">{{ if $cs }}Organizace{{ else }}Organization{{ end }}</div>
+                  <div style="margin-top:4px;font-size:15px;font-weight:700;color:#1b1a2e;">{{ with index .Data "organization_name" }}{{ . }}{{ else }}—{{ end }}</div>
+                </td>
+                <td align="right" valign="middle" style="padding:14px 16px 14px 0;">
+                  <span style="display:inline-block;background-color:#eef2ff;color:#4338ca;font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;padding:5px 8px;border-radius:6px;white-space:nowrap;">Head Admin</span>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Button -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;">
+              <tr>
+                <td align="center" bgcolor="#4f46e5" style="border-radius:12px;background-color:#4f46e5;background-image:linear-gradient(180deg,#4f46e5 0%,#4338ca 100%);box-shadow:0 8px 20px -10px rgba(79,70,229,0.7);">
+                  <a href="{{ .ConfirmationURL }}" style="display:block;padding:12px 24px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">
+                    {{ if $cs }}Potvrdit e-mail{{ else }}Confirm email{{ end }}
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Next steps -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;border-top:1px solid #efeef6;">
+              <tr>
+                <td style="padding-top:16px;font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#8e8ba5;">{{ if $cs }}Co dál{{ else }}What's next{{ end }}</td>
+              </tr>
+              <tr>
+                <td style="padding-top:10px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td valign="top" style="padding:0 10px 8px 0;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:9999px;background-color:#eef2ff;color:#4338ca;font-size:11px;font-weight:700;">1</span></td>
+                      <td valign="top" style="padding-bottom:8px;font-size:13px;line-height:20px;color:#3a3752;">{{ if $cs }}Přidejte pobočky a jejich otevírací dobu{{ else }}Add your locations and their opening hours{{ end }}</td>
+                    </tr>
+                    <tr>
+                      <td valign="top" style="padding:0 10px 8px 0;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:9999px;background-color:#eef2ff;color:#4338ca;font-size:11px;font-weight:700;">2</span></td>
+                      <td valign="top" style="padding-bottom:8px;font-size:13px;line-height:20px;color:#3a3752;">{{ if $cs }}Pozvěte tým — každému dejte jeho roli{{ else }}Invite your team — give everyone their role{{ end }}</td>
+                    </tr>
+                    <tr>
+                      <td valign="top" style="padding:0 10px 0 0;"><span style="display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:9999px;background-color:#eef2ff;color:#4338ca;font-size:11px;font-weight:700;">3</span></td>
+                      <td valign="top" style="font-size:13px;line-height:20px;color:#3a3752;">{{ if $cs }}Naplánujte první rozpis a zveřejněte ho{{ else }}Plan your first rota and publish it{{ end }}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Fallback link -->
+            <p style="margin:20px 0 0;font-size:11px;line-height:1.6;color:#8e8ba5;">
+              {{ if $cs }}Tlačítko nefunguje? Zkopírujte tento odkaz do prohlížeče:{{ else }}Button not working? Copy this link into your browser:{{ end }}<br>
+              <a href="{{ .ConfirmationURL }}" style="color:#4f46e5;word-break:break-all;">{{ .ConfirmationURL }}</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:16px 8px 0;text-align:center;font-size:11px;line-height:1.6;color:#8e8ba5;">
+            {{ if $cs }}Odesláno na {{ .Email }}. Pokud jste se neregistrovali, tento e-mail ignorujte — bez potvrzení se účet nezaktivuje.{{ else }}Sent to {{ .Email }}. If you didn't sign up, ignore this email — the account stays inactive without confirmation.{{ end }}
+            <br>Planuj Směny
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
